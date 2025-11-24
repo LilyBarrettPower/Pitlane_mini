@@ -1,6 +1,6 @@
 // To verify the JWT token and attach req.user 
 
-const jwt = require(jsonwebtoken); // Make jsonwebtoken available in this file 
+const jwt = require('jsonwebtoken'); // Make jsonwebtoken available in this file 
 
 function authMiddleware(req, res, next) { // Define middleware function for express
     const authHeader = req.headers['authorization'] || req.headers['Authorization']; // read authorization heade from incoming requests

@@ -10,7 +10,7 @@ function createToken(user) {
     return jwt.sign(
         {
             userId: user._id.toString(),
-            organisationId: user.organisationId.toStrong(),
+            organisationId: user.organisationId.toString(),
             role: user.role,
         },
         process.env.JWT_SECRET,
