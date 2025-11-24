@@ -18,7 +18,7 @@ function authMiddleware(req, res, next) { // Define middleware function for expr
         next(); // continue if all good
     } catch(err) { // Watching for errors 
         console.error('JWT verify error:', err.message);
-        return res.status(401).json({ message: 'Invalid or expired token' });
+        return res.status(401).json({ message: 'Invalid or expired token' }); 
     }
 }
 
