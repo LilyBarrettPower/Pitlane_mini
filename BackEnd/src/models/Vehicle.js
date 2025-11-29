@@ -19,8 +19,10 @@ const VehicleSchema = new mongoose.Schema(
         model: { type: String },
         year: { type: String },
         owner: { type: String },
-        previousOwner: { type: String },
+        odo: {type: Number},
+        isActive: {type: Boolean, default: true},
     },
+    {timestamps: true}
 );
 
 module.exports = mongoose.model('Vehicle', VehicleSchema);
