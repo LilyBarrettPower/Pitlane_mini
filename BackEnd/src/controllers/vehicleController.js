@@ -27,7 +27,7 @@ exports.createVehicle = async (req, res) => {
 };
 
 //GET vehicle (retireve all vehicles ):
-exports.getVehicle = async (req, res) => {
+exports.getVehicles = async (req, res) => {
     try {
         const vehicles = await Vehicle.find({
             organisationId: req.user.organisationId,
