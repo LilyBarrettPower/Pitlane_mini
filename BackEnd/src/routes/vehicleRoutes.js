@@ -11,5 +11,6 @@ router.get('/', vehicleController.getVehicles);
 router.get('/:id', vehicleController.getVehicleById);
 router.patch('/:id', vehicleController.updateVehicle);
 router.delete('/:id', vehicleController.deleteVehicle);
+router.patch('/:id/unarchive', vehicleController.unarchiveVehicle);
 
 module.exports = router;

@@ -90,7 +90,7 @@ exports.deleteVehicle = async (req, res) => {
 
         const vehicle = await Vehicle.findOneAndUpdate(
             { _id: id, organisationId: req.user.organisationId },
-            { isactive: false },
+            { isActive: false },
             { new: true },
         );
 
@@ -104,3 +104,29 @@ exports.deleteVehicle = async (req, res) => {
     }
 };
 
+exports.unarchiveVehicle = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const vehicle = await Vehicle.findOneAndUpdate(
+            {
+                _id: id,
+                organisationId: req.user.organisationId
+            },
+            { isActive: true },
+            { new: true }
+        );
+
+        if (!vehicle) {
+            return res.status(404).json({ message: 'Vehicle not found' });
+        }
+
+        res.json({
+            message: 'Vehicle Unarchived',
+            vehicle,
+        });
+    } catch (err) {
+        console.error('unarchive Vehicle error', err);
+        res.status(500).json({ message: 'Server error ' });
+    }
+};

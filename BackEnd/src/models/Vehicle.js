@@ -17,7 +17,7 @@ const VehicleSchema = new mongoose.Schema(
         },
         make: { type: String },
         model: { type: String },
-        year: { type: String },
+        year: { type: Number },
         owner: { type: String },
         odo: {type: Number},
         isActive: {type: Boolean, default: true},

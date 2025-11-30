@@ -4,8 +4,15 @@ const cors = require('cors');
 const morgan = require('morgan');
 
 const connectDB = require('./config/db');
+
+console.log("uploading auth routes");
 const authRoutes = require('./routes/authRoutes');
+
+console.log("Uploading org routes");
 const organisationRoutes = require('./routes/organisationRoutes');
+
+console.log("Uploading vehicle routes");
+const vehicleRoutes = require('./routes/vehicleRoutes');
 
 const app = express();
 
@@ -15,6 +22,7 @@ app.use(morgan('dev'));
 
 app.use('/auth', authRoutes);
 app.use('/organisations', organisationRoutes);
+app.use('/vehicles', vehicleRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'Pitlane Mini API' });
@@ -23,7 +31,9 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 4000;
 
 async function start() {
+    console.log("About to connect MongoDB");
     await connectDB(process.env.MONGO_URI);
+    console.log("Connected to mongo, about to start server");
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`)
     });
