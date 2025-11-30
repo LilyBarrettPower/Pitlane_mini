@@ -124,7 +124,7 @@ exports.unarchiveDriver = async (req, res) => {
             return res.status(404).json({ message: 'Driver not found' });
         }
         res.json({
-            message: 'Driver archived',
+            message: 'Driver unarchived',
             driver,
         });
     } catch (err) {
