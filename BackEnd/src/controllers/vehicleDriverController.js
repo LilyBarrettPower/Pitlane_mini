@@ -16,17 +16,26 @@ exports.createAssignment = async (req, res) => {
         }
         const organisationId = req.user.organisationId;
 
-        const [vehicle, driver] = await Promise.all([
-            Vehicle.findOne({ _id: vehicleId, organisationId }),
-            Vehicle.findOne({ _id: driverId, organisationId }),
-        ]);
+        console.log('createAssignment body:', {
+            organisationId: req.user.organisationId,
+            vehicleId,
+            driverId,
+        });
+
+        const vehicle = await Vehicle.findOne({ _id: vehicleId, organisationId });
+        console.log('Found the vehicle', vehicle);
 
         if (!vehicle) {
             return res.status(404).json({ message: 'Vehicle not found' });
         }
+
+        let driver = await Driver.findOne({ _id: driverId, organisationId });
+        console.log('Found the driver:', driver);
+
         if (!driver) {
             return res.status(404).json({ message: 'Driver not found' });
         }
+
         const assignment = await VehicleDriver.create({
             organisationId,
             vehicleId,
