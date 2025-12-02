@@ -61,7 +61,7 @@ exports.createAssignment = async (req, res) => {
 exports.getDriverForVehicle = async (req, res) => {
     try {
         const { vehicleId } = req.params;
-        const { organisationId } = req.user.organisationId;
+        const organisationId = req.user.organisationId;
         
         const assignments = await VehicleDriver.find({
             organisationId,
@@ -83,7 +83,7 @@ exports.getDriverForVehicle = async (req, res) => {
 exports.getVehicleForDriver = async (req, res) => {
     try {
         const { driverId } = req.params;
-        const { organisationId } = req.user.organisationId;
+        const organisationId = req.user.organisationId;
 
         const assignments = await VehicleDriver.find({
             organisationId,
@@ -107,7 +107,7 @@ exports.archiveAssignment = async (req, res) => {
 
         const assignment = await VehicleDriver.findOneAndUpdate(
             { _id: id, organisationId },
-            { isActive: true },
+            { isActive: false },
             { new: true },
         );
         if (!assignment) {
@@ -128,7 +128,7 @@ exports.unArchiveAssignment = async (req, res) => {
 
         const assignment = await VehicleDriver.findOneAndUpdate(
             { _id: id, organisationId },
-            { isActive: false },
+            { isActive: true },
             { new: true },
         );
         if (!assignment) {

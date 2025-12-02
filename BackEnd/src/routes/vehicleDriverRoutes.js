@@ -10,6 +10,6 @@ router.post('/', VehicleDriverController.createAssignment);
 router.get('/vehicle/:vehicleId', VehicleDriverController.getDriverForVehicle);
 router.get('/driver/:driverId', VehicleDriverController.getVehicleForDriver);
 router.delete('/:id', VehicleDriverController.archiveAssignment);
-router.post('/:id/unarchive', VehicleDriverController.unArchiveAssignment);
+router.patch('/:id/unarchive', VehicleDriverController.unArchiveAssignment);
 
 module.exports = router;
