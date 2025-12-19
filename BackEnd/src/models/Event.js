@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 const EventSchema = new mongoose.Schema(
     {
         organisationId: {
@@ -6,9 +8,9 @@ const EventSchema = new mongoose.Schema(
             required: true,
         },
         trackId: {
-            type: mongoose.Schema.types.ObjectId,
+            type: mongoose.Schema.Types.ObjectId,
             ref: 'Track',
-            required: true,
+            required: false, // Change this once testing is complete to true
         },
         name: { type: String, required: true },
         type: { type: String, required: true },
@@ -20,3 +22,5 @@ const EventSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+module.exports = mongoose.model('Event', EventSchema);
