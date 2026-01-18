@@ -23,8 +23,11 @@ const vehicleDriverRoutes = require('./routes/vehicleDriverRoutes');
 console.log("Uploading event routes");
 const eventRoutes = require('./routes/eventRoutes');
 
-console.log("Uploading event routes");
+console.log("Uploading vehicle event routes");
 const eventVehicleRoutes = require('./routes/eventVehicleRoutes');
+
+console.log("Uploading track routes");
+const trackRoutes = require('./routes/trackRoutes');
 
 const app = express();
 
@@ -38,7 +41,8 @@ app.use('/vehicles', vehicleRoutes);
 app.use('/drivers', driverRoutes);
 app.use('/vehicle-drivers', vehicleDriverRoutes);
 app.use('/events', eventRoutes);
-app.use('/event-vehicle', eventVehicleRoutes);
+app.use('/event-vehicles', eventVehicleRoutes);
+app.use('/tracks', trackRoutes)
 
 app.get('/', (req, res) => {
     res.json({ message: 'Pitlane Mini API' });

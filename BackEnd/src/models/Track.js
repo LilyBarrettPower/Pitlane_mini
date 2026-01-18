@@ -10,6 +10,7 @@ const TrackSchema = new mongoose.Schema(
         name: { type: String, required: true, trim: true },
         distanceKms: { type: Number, defaul: null },
         country: { type: String, required: true, trim: true },
+        city: {type: String, trim: true},
         notes: { type: String, default: '' },
         isActive: { type: Boolean, default: true },
     },
