@@ -1,6 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
-const EventVehicleController = require('../controllers/EventVehicleController');
+const EventVehicleController = require('../controllers/eventVehicleController');
 
 const router = express.Router();
 

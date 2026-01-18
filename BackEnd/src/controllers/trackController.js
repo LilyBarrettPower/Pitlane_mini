@@ -77,7 +77,7 @@ exports.getTrackById = async (req, res) => {
     }
 }
 
-// Update event 
+// Update track
 
 exports.updateTrack = async (req, res) => {
     try {
@@ -102,7 +102,7 @@ exports.updateTrack = async (req, res) => {
 };
 
 
-// Archive / delete event 
+// Archive / delete track
 
 exports.archiveTrack = async (req, res) => {
     try {
@@ -125,7 +125,7 @@ exports.archiveTrack = async (req, res) => {
 };
 
 
-// Unarchive an event 
+// Unarchive an track
 
 exports.unarchiveTrack = async (req, res) => {
     try {
