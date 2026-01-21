@@ -13,11 +13,14 @@ const TyreSchema = new mongoose.Schema(
             required: true,
         },
         brand: { type: String, required: true, trim: true },
-        spec: { type: String, required: true, trim: true },
+        spec: { type: String, trim: true },
         fiaSerial: { type: String, trim: true, unique: true, sparse: true},
         condition: { type: String, enum: ["New", "Used"], required: true }, // Should make it so that when this is "New" km total initially is 0
         heatCycles: { type: Number, default: 0, min: 0 },
         kmTotal: { type: Number, default: 0, min: 0 },
+        notes: {
+            type: String, default: ''
+        },
         isActive: {
             type: Boolean,
             default: true,
