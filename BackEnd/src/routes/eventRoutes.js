@@ -11,6 +11,6 @@ router.get('/', eventController.getEvents);
 router.get('/:id', eventController.getEventById);
 router.patch('/:id', eventController.updateEvent);
 router.delete('/:id', eventController.archiveEvent);
-router.patch('/:id/unarchive', eventController.unarchiveEvent)
+router.patch('/:id/unarchive', eventController.unarchiveEvent);
 
 module.exports = router;

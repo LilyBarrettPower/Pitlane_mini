@@ -2,7 +2,7 @@ const Issue = require('../models/Issue');
 
 // POST - create an issue
 
-exports.createIssure = async (req, res) => {
+exports.createIssue = async (req, res) => {
     try {
 
         const organisationId = req.user.organisationId;
