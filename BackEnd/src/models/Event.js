@@ -10,7 +10,7 @@ const EventSchema = new mongoose.Schema(
         trackId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Track',
-            required: false, // Change this once testing is complete to true
+            required: true, 
         },
         name: { type: String, required: true },
         type: { type: String, required: true },
