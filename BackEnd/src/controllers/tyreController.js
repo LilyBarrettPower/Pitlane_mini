@@ -71,10 +71,7 @@ exports.getTyres = async (req, res) => {
 };
 
 
-
-//  HAVE GOT UP TO HERE UPDATING FOR TYRES 
-
-// GET event by ID:
+// GET tyre by ID:
 
 exports.getTyreById = async (req, res) => {
     try {

@@ -32,6 +32,9 @@ const trackRoutes = require('./routes/trackRoutes');
 console.log("Uploading issue routes");
 const issueRoutes = require('./routes/issueRoutes');
 
+console.log("Uploading tyre routes");
+const tyreRoutes = require('./routes/tyreRoutes');
+
 const app = express();
 
 app.use(cors());
@@ -47,6 +50,7 @@ app.use('/events', eventRoutes);
 app.use('/event-vehicles', eventVehicleRoutes);
 app.use('/tracks', trackRoutes)
 app.use('/issues', issueRoutes);
+app.use('/tyres', tyreRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'Pitlane Mini API' });
