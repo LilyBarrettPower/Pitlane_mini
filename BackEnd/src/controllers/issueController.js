@@ -7,7 +7,7 @@ exports.createIssue = async (req, res) => {
 
         const organisationId = req.user.organisationId;
 
-        const { eventVehicleId, area, symptoms, severity, cause, fix, status } = req.body;
+        const { eventVehicleId, area, symptoms, severity, cause, fix, status, notes } = req.body;
         if (!eventVehicleId || !area || !symptoms|| !severity) {
             return res.status(400).json({ message: 'EventVehicleId, area, symptoms and severity are required' });
         }
@@ -116,7 +116,7 @@ exports.archiveIssue = async (req, res) => {
         if (!issue) {
             return res.status(404).json({ message: 'Issue Not Found' });
         }
-        res.json({ message: 'Issue Archived', event });
+        res.json({ message: 'Issue Archived', issue });
     } catch (err) {
         console.error('Archive issue error', err);
         res.status(500).json({ message: 'Server Error' });
@@ -139,7 +139,7 @@ exports.unarchiveIssue = async (req, res) => {
         if (!issue) {
             return res.status(404).json({ message: 'Issue Not Found' });
         }
-        res.json({ message: 'Issue Unarchived', event });
+        res.json({ message: 'Issue Unarchived', issue });
     } catch (err) {
         console.error('Unarchive issue error', err);
         res.status(500).json({ message: 'Server Error' });

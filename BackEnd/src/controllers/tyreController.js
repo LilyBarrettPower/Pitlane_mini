@@ -8,7 +8,7 @@ exports.createTyre = async (req, res) => {
 
         const organisationId = req.user.organisationId;
 
-        const { vehicleId, brand, spec, fiaSerial, condition, heatCycles, kmTotal } = req.body;
+        const { vehicleId, brand, spec, currentSet, size, position, fiaSerial, condition, heatCycles, kmTotal, notes } = req.body;
         if (!vehicleId || !brand || !condition ) {
             return res.status(400).json({ message: 'VehicleId, brand and condition are required' });
         }
@@ -24,6 +24,9 @@ exports.createTyre = async (req, res) => {
             vehicleId,
             brand,
             spec,
+            currentSet, 
+            size,
+            position,
             fiaSerial: fiaSerial || '',
             condition, 
             heatCycles: heatCycles ?? 0,
@@ -133,7 +136,7 @@ exports.archiveTyre = async (req, res) => {
         if (!tyre) {
             return res.status(404).json({ message: 'Tyre Not Found' });
         }
-        res.json({ message: 'Tyre Archived', event });
+        res.json({ message: 'Tyre Archived', tyre });
     } catch (err) {
         console.error('Archive tyre error', err);
         res.status(500).json({ message: 'Server Error' });
@@ -156,7 +159,7 @@ exports.unarchiveTyre = async (req, res) => {
         if (!tyre) {
             return res.status(404).json({ message: 'Tyre Not Found' });
         }
-        res.json({ message: 'Tyre Unarchived', event });
+        res.json({ message: 'Tyre Unarchived', tyre });
     } catch (err) {
         console.error('Unarchive tyre error', err);
         res.status(500).json({ message: 'Server Error' });
