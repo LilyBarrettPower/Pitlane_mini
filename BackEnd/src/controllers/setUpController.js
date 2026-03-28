@@ -49,4 +49,139 @@ exports.createSetUp = async(req, res) => {
         console.error('Create Setup Error', err);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
+
+// Get setups
+
+exports.getSetUps = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+
+        const filter = {
+            organisationId,
+            isActive: true,
+        };
+
+        const setups = await SetUp.find(filter).sort({ createdAt: -1 });
+        res.json({ setups });
+    } catch (err) {
+        console.error('getSetups error', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+// Get setups for vehicle 
+exports.getSetUps = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+        const { vehicleId } = req.query;
+
+        const filter = {
+            organisationId,
+            isActive: true,
+        };
+
+        if (vehicleId) filter.vehicleId = vehicleId;
+
+        const setups = await SetUp.find(filter).sort({ createdAt: -1 });
+        res.json({ setups });
+    } catch (err) {
+        console.error('getSetups error', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+// Get setup by ID 
+
+exports.getSetUpById = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+        const { id } = req.params;
+
+        const setup = await SetUp.findOne({
+            _id: id,
+            organisationId
+        });
+
+        if (!setup) {
+            return res.status(404).json({ message: 'SetUp not found' });
+        }
+
+        res.json({ setup});
+    } catch (err) {
+        console.error('get SetUpById error', err);
+        res.status(500).json({ message: 'Server error' })
+    }
+};
+
+// Update Set Up
+
+exports.updateSetUp = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organisationId = req.user.organisationId;
+
+        const setup = await SetUp.findOneAndUpdate(
+            { _id: id, organisationId, isActive: true },
+            req.body,
+            { new: true }
+        );
+
+        if (!setup) {
+            return res.status(404).json({ message: 'SetUp Not Found' });
+        }
+        res.json({ setup });
+    } catch (err) {
+        console.error('Update SetUp error', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// Archive set up
+
+
+exports.archiveSetUp = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organisationId = req.user.organisationId;
+
+        const setup = await SetUp.findOneAndUpdate(
+            { _id: id, organisationId },
+            { isActive: false },
+            { new: true }
+        );
+        if (!setup) {
+            return res.status(404).json({ message: 'SetUp Not Found' });
+        }
+        res.json({ message: 'SetUp Archived', setup });
+    } catch (err) {
+        console.error('Archive setup error', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// Un archive setup
+
+exports.unarchiveSetUp = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organisationId = req.user.organisationId;
+
+        const setup = await SetUp.findOneAndUpdate(
+            { _id: id, organisationId },
+            { isActive: true },
+            { new: true }
+        );
+        if (!setup) {
+            return res.status(404).json({ message: 'SetUp Not Found' });
+        }
+        res.json({ message: 'SetUp Unarchived', setup });
+    } catch (err) {
+        console.error('Unarchive setup error', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+
