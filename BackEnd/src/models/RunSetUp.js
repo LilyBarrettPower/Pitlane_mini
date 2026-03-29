@@ -25,7 +25,7 @@ const RunSetUpSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-EventVehicleSchema.index(
+RunSetUpSchema.index(
     { organisationId: 1, runId: 1, setUpId: 1 },
     { unique: true }
 );
