@@ -1,46 +1,45 @@
-const EventVehicle = require('../models/EventVehicle');
-const Vehicle = require('../models/Vehicle');
-const Event = require('../models/Event');
+const RunSetUp = require('../models/RunSetUp');
+const Run = require('../models/Run');
+const SetUp = require('../models/SetUp');
 
+// Create Run Set Up
 
-// Create a vehicle driver:
 
 exports.createAssignment = async (req, res) => {
     try {
-        const { vehicleId, eventId, type} = req.body;
+        const { runId, setUpId} = req.body;
 
-        if (!vehicleId || !eventId) {
+        if (!runId || !setUpId) {
             return res
                 .status(400)
-                .json({ message: 'VehicleId and EventId are required' });
+                .json({ message: 'RunId and setUpId are required' });
         }
         const organisationId = req.user.organisationId;
 
         console.log('createAssignment body:', {
             organisationId: req.user.organisationId,
-            vehicleId,
-            eventId,
+            runId,
+            setUpId,
         });
 
-        const vehicle = await Vehicle.findOne({ _id: vehicleId, organisationId });
-        console.log('Found the vehicle', vehicle);
+        const run = await Run.findOne({ _id: runId, organisationId });
+        console.log('Found the run', run);
 
-        if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
+        if (!run) {
+            return res.status(404).json({ message: 'Run not found' });
         }
 
-        let event = await Event.findOne({ _id: eventId, organisationId });
-        console.log('Found the event:', event);
+        let setUp = await SetUp.findOne({ _id: setUpId, organisationId });
+        console.log('Found the setUp:', setUp);
 
-        if (!event) {
-            return res.status(404).json({ message: 'Event not found' });
+        if (!setUp) {
+            return res.status(404).json({ message: 'SetUp not found' });
         }
 
-        const assignment = await EventVehicle.create({
+        const assignment = await RunSetUp.create({
             organisationId,
-            vehicleId,
-            eventId,
-            type: type || '', 
+            runId,
+            setUpId,
         });
 
         res.status(201).json({ assignment });
@@ -49,54 +48,53 @@ exports.createAssignment = async (req, res) => {
         if (err.code == 11000) {
             return res
                 .status(409)
-                .json({ message: 'This event is already assigned to this vehicle' });
+                .json({ message: 'This setup has already been assigned to this run' });
         }
 
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-// Get a list of vehicles for events
+// Get a list of setup for a run
 
-exports.getVehicleForEvent = async (req, res) => {
+exports.getSetUpForRun = async (req, res) => {
     try {
-        const { eventId } = req.params;
+        const { runId } = req.params;
         const organisationId = req.user.organisationId;
 
-        const assignments = await EventVehicle.find({
+        const assignments = await RunSetUp.find({
             organisationId,
-            eventId,
+            runId,
             isActive: true,
         })
-            .populate('vehicleId')
+            .populate('setUpId')
             .sort({ createdAt: 1 });
 
         res.json({ assignments });
     } catch (err) {
-        console.error('Get vehicle for event error', err);
+        console.error('Get Setup for run error', err);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
+// Get a list of runs where a setup was used
 
-// GET a list of events for each vehicle
-
-exports.getEventForVehicle = async (req, res) => {
+exports.getRunsForSetUp = async (req, res) => {
     try {
-        const { vehicleId } = req.params;
+        const { setUpId } = req.params;
         const organisationId = req.user.organisationId;
 
-        const assignments = await EventVehicle.find({
+        const assignments = await RunSetUp.find({
             organisationId,
-            vehicleId,
+            setUpId,
             isActive: true,
         })
-            .populate('eventId')
+            .populate('runId')
             .sort({ createdAt: 1 });
 
         res.json({ assignments });
     } catch (err) {
-        console.error('Get Events for vehicle error', err);
+        console.error('Get Runs for setUp error', err);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -106,7 +104,7 @@ exports.archiveAssignment = async (req, res) => {
         const { id } = req.params;
         const organisationId = req.user.organisationId;
 
-        const assignment = await EventVehicle.findOneAndUpdate(
+        const assignment = await RunSetUp.findOneAndUpdate(
             { _id: id, organisationId },
             { isActive: false },
             { new: true },
@@ -127,7 +125,7 @@ exports.unArchiveAssignment = async (req, res) => {
         const { id } = req.params;
         const organisationId = req.user.organisationId;
 
-        const assignment = await EventVehicle.findOneAndUpdate(
+        const assignment = await RunSetUp.findOneAndUpdate(
             { _id: id, organisationId },
             { isActive: true },
             { new: true },
