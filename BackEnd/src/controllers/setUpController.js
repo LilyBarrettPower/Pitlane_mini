@@ -56,26 +56,7 @@ exports.createSetUp = async(req, res) => {
 exports.getSetUps = async (req, res) => {
     try {
         const organisationId = req.user.organisationId;
-
-        const filter = {
-            organisationId,
-            isActive: true,
-        };
-
-        const setups = await SetUp.find(filter).sort({ createdAt: -1 });
-        res.json({ setups });
-    } catch (err) {
-        console.error('getSetups error', err);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-
-// Get setups for vehicle 
-exports.getSetUps = async (req, res) => {
-    try {
-        const organisationId = req.user.organisationId;
-        const { vehicleId } = req.query;
+        const { vehicleId, version } = req.query;
 
         const filter = {
             organisationId,
@@ -83,11 +64,12 @@ exports.getSetUps = async (req, res) => {
         };
 
         if (vehicleId) filter.vehicleId = vehicleId;
+        if (version) filter.version = version;
 
         const setups = await SetUp.find(filter).sort({ createdAt: -1 });
         res.json({ setups });
     } catch (err) {
-        console.error('getSetups error', err);
+        console.error('getSetUps error', err);
         res.status(500).json({ message: 'Server error' });
     }
 };
