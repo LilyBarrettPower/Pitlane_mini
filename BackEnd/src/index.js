@@ -50,6 +50,13 @@ const runSetUpRoutes = require('./routes/runSetUpRoutes');
 console.log("Uploading checklist base template routes");
 const checklistBaseTemplateRoutes = require('./routes/checklistBaseTemplateRoutes');
 
+console.log("Uploading checklist template routes");
+const checklistTemplateRoutes = require('./routes/checklistTemplateRoutes');
+
+console.log("Uploading checklist instance routes");
+const checklistInstanceRoutes = require('./routes/checklistInstanceRoutes');
+
+
 const app = express();
 
 app.use(cors());
@@ -71,6 +78,8 @@ app.use('/runs', runRoutes);
 app.use('/setups', setUpRoutes);
 app.use('/run-setups', runSetUpRoutes);
 app.use('/checklist-base-templates', checklistBaseTemplateRoutes);
+app.use('/checklist-templates', checklistTemplateRoutes);
+app.use('/checklist-instance', checklistInstanceRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'Pitlane Mini API' });
