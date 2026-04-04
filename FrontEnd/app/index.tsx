@@ -1,5 +1,6 @@
 import { Link } from 'expo-router';
-import { SafeAreaView, Text, View, Pressable, StyleSheet } from 'react-native';
+import { Text, View, Pressable, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { globalStyles } from '../constants/styles';
 import { colors, typography } from '../constants/theme';
 
@@ -9,7 +10,7 @@ export default function LandingPage() {
       <View style={[styles.content]}>
         <Text style={[styles.title]}>Pitlane Mini</Text>
 
-        <Text style={styles.subtitle}>
+        <Text style={styles.subTitle}>
           Trackside management for vehicles, runs, tyres, setups, issues, and checklists.
         </Text>
 
@@ -45,7 +46,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
   },
-  subtitle: {
+  subTitle: {
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
