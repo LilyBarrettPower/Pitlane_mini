@@ -2,15 +2,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {useAuth} from '../context/AuthContext';
 import {router} from 'expo-router';
+import {useEffect} from 'react';
 
 
 export default function DashboardPage() {
   const {user, organisation, logout} = useAuth();
+  const {token} = useAuth();
+
+
+  // For development purposes only:
+    useEffect(() => {
+    console.log('DASHBOARD LOADED');
+    console.log('TOKEN:', token);
+    console.log('USER:', user);
+    console.log('ORG:', organisation);
+  }, [token, user, organisation]);
 
   async function handleLogout() {
     await logout();
     router.replace('/');
   }
+
 
   return (
     <SafeAreaView style={styles.container}>
