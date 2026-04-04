@@ -10,6 +10,7 @@ import{
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {apiFetch} from '../assets/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -17,6 +18,8 @@ export default function LoginPage() {
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+
+    const {login} = useAuth();
 
     async function handleLogin() {
         try {
@@ -31,13 +34,11 @@ export default function LoginPage() {
                 }),
             });
 
-            console.log('Login success:', data);
+            await login(data);
 
             // View which user is logged in, for dev purposes
-            const user = data.user;
-            const organisation = data.organisation;
             setSuccessMessage(
-                `Logged in as ${user.email}, (${user.role})\nOrganisation: ${organisation.name}`
+                `Logged in as ${data.user.email}, (${data.user.role})\nOrganisation: ${data.organisation.name}`
             );
 
             // Later we will store the token properly
@@ -90,7 +91,7 @@ export default function LoginPage() {
                         <Text style={styles.errorText}>{errorMessage}</Text>
                     ): null}
                     
-                
+                     {/* This is for development purposes, can remove later*/}
                     {successMessage ? (
                         <Text style={styles.successText}>{successMessage}</Text>
                     ) : null}

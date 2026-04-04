@@ -1,12 +1,27 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {useAuth} from '../context/AuthContext';
+import {router} from 'expo-router';
+
 
 export default function DashboardPage() {
+  const {user, organisation, logout} = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/');
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.text}>Login worked.</Text>
+        <Text style={styles.text}>User: {user?.name}</Text>
+        <Text style={styles.text}>Organisation: {organisation?.name}</Text>
+
+        <Pressable style={styles.button} onPress={handleLogout}>
+          <Text style={styles.buttonText}>Logout</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -31,5 +46,17 @@ const styles = StyleSheet.create({
   text: {
     color: '#d1d5db',
     fontSize: 16,
+  },
+  button: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
