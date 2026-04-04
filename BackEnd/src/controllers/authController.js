@@ -78,7 +78,7 @@ exports.login = async (req, res) => {
                 .json({ message: 'Email and password are required' });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase(), isActive: true });
+        const user = await User.findOne({ email: email.toLowerCase(), isActive: true }).populate('organisationId', 'name');
         if (!user) {
             return res
                 .status(401)
@@ -98,11 +98,14 @@ exports.login = async (req, res) => {
             token,
             user: {
                 id: user._id,
-                organisationId: user.organisationId,
                 email: user.email,
                 name: user.name,
                 role: user.role,
             },
+            organisation:{
+                id: user.organisationId._id,
+                name: user.organisationId.name,
+            }
         });
     } catch (err) {
         console.error('login error:', err);

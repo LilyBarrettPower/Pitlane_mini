@@ -16,6 +16,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     async function handleLogin() {
         try {
@@ -31,9 +32,22 @@ export default function LoginPage() {
             });
 
             console.log('Login success:', data);
+
+            // View which user is logged in, for dev purposes
+            const user = data.user;
+            const organisation = data.organisation;
+            setSuccessMessage(
+                `Logged in as ${user.email}, (${user.role})\nOrganisation: ${organisation.name}`
+            );
+
             // Later we will store the token properly
             // For now it just navigates to the dashboard when login succeeds
+            // OPTIONAL: delay before redirect so you can see it - you can remove the time out later
+            setTimeout(() => {
             router.replace('/dashboard');
+            }, 1500);
+
+
         } catch (error) {
             const message = 
                 error instanceof Error ? error.message : 'Login Failed';
@@ -75,6 +89,11 @@ export default function LoginPage() {
                     {errorMessage ? (
                         <Text style={styles.errorText}>{errorMessage}</Text>
                     ): null}
+                    
+                
+                    {successMessage ? (
+                        <Text style={styles.successText}>{successMessage}</Text>
+                    ) : null}
 
                     <Pressable
                         style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -155,4 +174,8 @@ const styles = StyleSheet.create({
     color: '#f87171',
     fontSize: 14,
   },
+  successText: {
+    color: '#34d399',
+    fontSize: 14,
+  }
 });
