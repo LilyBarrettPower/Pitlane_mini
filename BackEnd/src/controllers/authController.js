@@ -18,6 +18,21 @@ function createToken(user) {
     );
 }
 
+// Maybe change the above to this:
+// function createToken(user) {
+//     return jwt.sign(
+//         {
+//             userId: user._id.toString(),
+//             organisationId: user.organisationId._id
+//                 ? user.organisationId._id.toString()
+//                 : user.organisationId.toString(),
+//             role: user.role,
+//         },
+//         process.env.JWT_SECRET,
+//         { expiresIn: '1hr' }
+//     );
+// }
+
 // POST to register a new organisation:
 exports.registerOrganisation = async (req, res) => {
     try {
@@ -129,5 +144,57 @@ exports.getMe = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+exports.createUser = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+        const currentUserRole = req.user.role;
+
+        if (currentUserRole !== 'admin') {
+            return res.status(403).json({message: "Only admins can create users"});
+        }
+
+        const {email, password, name, role} = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required",
+            });
+        }
+
+        const existingUser = await User.findOne({
+            email: email.toLowerCase(),
+        });
+
+        if (existingUser) {
+            return res.status(400).json({
+                message: 'User with that email already exists',
+            });
+        }
+
+        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+        const user = await User.create({
+            organisationId, 
+            email: email.toLowerCase(),
+            passwordHash,
+            name: name || '',
+            role: role || 'viewer',
+        });
+
+        res.status(201).json({
+            user:{
+                id: user._id,
+                organisationId: user.organisationId,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            },
+        });
+    } catch (err) {
+        console.error('Create User Error', err);
+        res.status(500).json({message: 'Server error'});
+    }
+}
 
 
