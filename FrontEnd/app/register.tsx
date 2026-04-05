@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {router} from 'expo-router';
 import {
     ActivityIndicator, 
@@ -13,7 +13,7 @@ import { apiFetch } from '../assets/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
-    const {login} = useAuth();
+    const {login, token, isLoading: authLoading} = useAuth();
 
     const [orgName, setOrgName] = useState('');
     const [name, setName] = useState('');
@@ -23,6 +23,14 @@ export default function RegisterPage() {
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!authLoading && token) {
+            router.replace('/dashboard');
+        }
+    }, [token, authLoading]);
+
+    if (authLoading) return null;
 
     async function handleRegister() {
         try {

@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {router} from 'expo-router';
 import{
     ActivityIndicator, 
@@ -19,7 +19,15 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
-    const {login} = useAuth();
+    const {login, token, isLoading: authLoading} = useAuth();
+
+    useEffect(() => {
+        if (!authLoading && token) {
+            router.replace('/dashboard');
+        }
+    }, [token, authLoading]);
+
+    if (authLoading) return null;
 
     async function handleLogin() {
         try {

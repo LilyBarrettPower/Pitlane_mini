@@ -1,10 +1,24 @@
 import { Link } from 'expo-router';
 import { Text, View, Pressable, StyleSheet } from 'react-native';
+import {useEffect} from 'react';
+import {router} from 'expo-router';
+import {useAuth} from '../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { globalStyles } from '../constants/styles';
 import { colors, typography } from '../constants/theme';
 
 export default function LandingPage() {
+  const {token, isLoading} = useAuth();
+
+  useEffect(() => {
+    if(!isLoading && token) {
+      router.replace('/dashboard');
+    }
+  }, [token, isLoading]);
+
+  if (isLoading) return null;
+
+  
   return (
     <SafeAreaView style={globalStyles.container}>
       <View style={[styles.content]}>
