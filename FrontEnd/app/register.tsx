@@ -72,8 +72,6 @@ export default function RegisterPage() {
                         <TextInput
                             value={orgName}
                             onChangeText={setOrgName}
-                            placeholder="Power Performance"
-                            placeholderTextColor="#9ca3af"
                             style={styles.input}
                             />
                     </View>
@@ -82,8 +80,6 @@ export default function RegisterPage() {
                         <TextInput
                             value={name}
                             onChangeText={setName}
-                            placeholder="Lily"
-                            placeholderTextColor="#9ca3af"
                             style={styles.input}
                             />
                     </View>
@@ -92,8 +88,6 @@ export default function RegisterPage() {
                         <TextInput
                             value={email}
                             onChangeText={setEmail}
-                            placeholder="you@example.com"
-                            placeholderTextColor="#9ca3af"
                             autoCapitalize="none"
                             keyboardType="email-address"
                             style={styles.input}

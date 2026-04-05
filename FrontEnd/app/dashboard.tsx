@@ -6,8 +6,7 @@ import {useEffect} from 'react';
 
 
 export default function DashboardPage() {
-  const {user, organisation, logout} = useAuth();
-  const {token} = useAuth();
+  const {user, organisation, logout, token, isLoading} = useAuth();
 
 
   // For development purposes only:
@@ -18,11 +17,32 @@ export default function DashboardPage() {
     console.log('ORG:', organisation);
   }, [token, user, organisation]);
 
+
+  useEffect(() => {
+    if (!isLoading && !token) {
+      router.replace('/');
+    }
+  }, [token, isLoading]);
+
+
   async function handleLogout() {
     await logout();
     router.replace('/');
   }
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.text}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!token) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
