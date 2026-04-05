@@ -26,7 +26,7 @@ export default function RegisterPage() {
 
     useEffect(() => {
         if (!authLoading && token) {
-            router.replace('/dashboard');
+            router.replace('/(tabs)/dashboard');
         }
     }, [token, authLoading]);
 

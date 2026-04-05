@@ -1,6 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import {useAuth} from '../context/AuthContext';
+import {useAuth} from '../../context/AuthContext';
 import {router} from 'expo-router';
 import {useEffect} from 'react';
 
@@ -25,10 +25,10 @@ export default function DashboardPage() {
   }, [token, isLoading]);
 
 
-  async function handleLogout() {
-    await logout();
-    router.replace('/');
-  }
+  // async function handleLogout() {
+  //   await logout();
+  //   router.replace('/');
+  // }
 
   if (isLoading) {
     return (
@@ -51,9 +51,9 @@ export default function DashboardPage() {
         <Text style={styles.text}>User: {user?.name}</Text>
         <Text style={styles.text}>Organisation: {organisation?.name}</Text>
 
-        <Pressable style={styles.button} onPress={handleLogout}>
+        {/* <Pressable style={styles.button} onPress={handleLogout}>
           <Text style={styles.buttonText}>Logout</Text>
-        </Pressable>
+        </Pressable> */}
       </View>
     </SafeAreaView>
   );

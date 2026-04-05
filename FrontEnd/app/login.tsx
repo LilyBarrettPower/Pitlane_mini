@@ -23,7 +23,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!authLoading && token) {
-            router.replace('/dashboard');
+            router.replace('/(tabs)/dashboard');
         }
     }, [token, authLoading]);
 
@@ -48,13 +48,6 @@ export default function LoginPage() {
             setSuccessMessage(
                 `Logged in as ${data.user.email}, (${data.user.role})\nOrganisation: ${data.organisation.name}`
             );
-
-            // Later we will store the token properly
-            // For now it just navigates to the dashboard when login succeeds
-            // OPTIONAL: delay before redirect so you can see it - you can remove the time out later
-            setTimeout(() => {
-            router.replace('/dashboard');
-            }, 1500);
 
 
         } catch (error) {
