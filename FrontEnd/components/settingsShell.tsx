@@ -21,7 +21,7 @@ export default function SettingsShell({ title, children }: Props) {
 
         <Pressable
           style={[styles.navButton, isSettingsHome && styles.navButtonActive]}
-          onPress={() => router.replace('/(tabs)/settings')}
+          onPress={() => router.replace('/settings')}
         >
           <Text style={[styles.navButtonText, isSettingsHome && styles.navButtonTextActive]}>
             Overview
@@ -30,7 +30,7 @@ export default function SettingsShell({ title, children }: Props) {
 
         <Pressable
           style={[styles.navButton, isUsers && styles.navButtonActive]}
-          onPress={() => router.replace('/(tabs)/settings/users')}
+          onPress={() => router.replace('/settings/users')}
         >
           <Text style={[styles.navButtonText, isUsers && styles.navButtonTextActive]}>
             Users
@@ -39,7 +39,7 @@ export default function SettingsShell({ title, children }: Props) {
 
         <Pressable
           style={[styles.navButton, isOrganisation && styles.navButtonActive]}
-          onPress={() => router.replace('/(tabs)/settings/organisation')}
+          onPress={() => router.replace('/settings/organisation')}
         >
           <Text style={[styles.navButtonText, isOrganisation && styles.navButtonTextActive]}>
             Organisation Settings

@@ -10,7 +10,9 @@ function createToken(user) {
     return jwt.sign(
         {
             userId: user._id.toString(),
-            organisationId: user.organisationId.toString(),
+            organisationId: user.organisationId_id && user.organisationId._id
+            ? user.organisationId._id.toString()
+            : user.organisationId.toString(),
             role: user.role,
         },
         process.env.JWT_SECRET,
@@ -145,6 +147,8 @@ exports.getMe = async (req, res) => {
     }
 };
 
+// Create new user 
+
 exports.createUser = async (req, res) => {
     try {
         const organisationId = req.user.organisationId;
@@ -161,6 +165,15 @@ exports.createUser = async (req, res) => {
                 message: "Email and password are required",
             });
         }
+
+        const allowedRoles = ['admin', 'engineer', 'mechanic', 'viewer'];
+
+        if (role && !allowedRoles.includes(role)) {
+            return res.status(400).json({
+                message: 'Invalid role',
+            });
+        }
+
 
         const existingUser = await User.findOne({
             email: email.toLowerCase(),
