@@ -18,6 +18,7 @@ const SALT_ROUNDS = 10;
 //     );
 // }
 
+
 function createToken(user) {
     return jwt.sign(
         {
@@ -149,7 +150,9 @@ exports.getMe = async (req, res) => {
 
 exports.createUser = async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
+        const currentUserRole = req.user.role;
+
+        if (currentUserRole !== 'admin') {
             return res.status(403).json({
                 message: 'Only admins can create users',
             });
@@ -163,6 +166,14 @@ exports.createUser = async (req, res) => {
             });
         }
 
+        const allowedRoles = ['admin', 'engineer', 'mechanic', 'viewer'];
+
+        if (role && !allowedRoles.includes(role)) {
+            return res.status(400).json({
+                message: 'Invalid role',
+            });
+        }
+
         const existingUser = await User.findOne({
             email: email.toLowerCase(),
         });
@@ -173,6 +184,7 @@ exports.createUser = async (req, res) => {
             });
         }
 
+        // Handle either plain ObjectId string or populated object in token
         const organisationId =
             req.user.organisationId && req.user.organisationId._id
                 ? req.user.organisationId._id
@@ -214,3 +226,27 @@ exports.createUser = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+// Return all users for the logged in organisation 
+
+exports.getUsers = async (req, res) => {
+    try {
+        const organisationId =
+            req.user.organisationId && req.user.organisationId._id
+                ? req.user.organisationId._id
+                : req.user.organisationId;
+
+        const users = await User.find({
+            organisationId,
+            isActive: true,
+        })
+            .select('-passwordHash')
+            .sort({ createdAt: -1 });
+
+        res.json({ users });
+    } catch (err) {
+        console.error('getUsers error', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
