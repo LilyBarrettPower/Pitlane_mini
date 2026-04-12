@@ -6,34 +6,32 @@ const User = require('../models/User');
 
 const SALT_ROUNDS = 10;
 
-function createToken(user) {
-    return jwt.sign(
-        {
-            userId: user._id.toString(),
-            organisationId: user.organisationId_id && user.organisationId._id
-            ? user.organisationId._id.toString()
-            : user.organisationId.toString(),
-            role: user.role,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '1hr' }
-    );
-}
-
-// Maybe change the above to this:
 // function createToken(user) {
 //     return jwt.sign(
 //         {
 //             userId: user._id.toString(),
-//             organisationId: user.organisationId._id
-//                 ? user.organisationId._id.toString()
-//                 : user.organisationId.toString(),
+//             organisationId: user.organisationId.toString(),
 //             role: user.role,
 //         },
 //         process.env.JWT_SECRET,
 //         { expiresIn: '1hr' }
 //     );
 // }
+
+function createToken(user) {
+    return jwt.sign(
+        {
+            userId: user._id.toString(),
+            organisationId:
+                user.organisationId && user.organisationId._id
+                    ? user.organisationId._id.toString()
+                    : user.organisationId.toString(),
+            role: user.role,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1hr' }
+    );
+}
 
 // POST to register a new organisation:
 exports.registerOrganisation = async (req, res) => {
@@ -151,29 +149,19 @@ exports.getMe = async (req, res) => {
 
 exports.createUser = async (req, res) => {
     try {
-        const organisationId = req.user.organisationId;
-        const currentUserRole = req.user.role;
-
-        if (currentUserRole !== 'admin') {
-            return res.status(403).json({message: "Only admins can create users"});
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({
+                message: 'Only admins can create users',
+            });
         }
 
-        const {email, password, name, role} = req.body;
+        const { name, email, password, role } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({
-                message: "Email and password are required",
+                message: 'Email and password are required',
             });
         }
-
-        const allowedRoles = ['admin', 'engineer', 'mechanic', 'viewer'];
-
-        if (role && !allowedRoles.includes(role)) {
-            return res.status(400).json({
-                message: 'Invalid role',
-            });
-        }
-
 
         const existingUser = await User.findOne({
             email: email.toLowerCase(),
@@ -181,14 +169,27 @@ exports.createUser = async (req, res) => {
 
         if (existingUser) {
             return res.status(400).json({
-                message: 'User with that email already exists',
+                message: 'User with this email already exists',
+            });
+        }
+
+        const organisationId =
+            req.user.organisationId && req.user.organisationId._id
+                ? req.user.organisationId._id
+                : req.user.organisationId;
+
+        const organisation = await Organisation.findById(organisationId);
+
+        if (!organisation) {
+            return res.status(404).json({
+                message: 'Organisation not found',
             });
         }
 
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
         const user = await User.create({
-            organisationId, 
+            organisationId: organisation._id,
             email: email.toLowerCase(),
             passwordHash,
             name: name || '',
@@ -196,18 +197,20 @@ exports.createUser = async (req, res) => {
         });
 
         res.status(201).json({
-            user:{
+            user: {
                 id: user._id,
                 organisationId: user.organisationId,
                 email: user.email,
                 name: user.name,
                 role: user.role,
             },
+            organisation: {
+                id: organisation._id,
+                name: organisation.name,
+            },
         });
     } catch (err) {
-        console.error('Create User Error', err);
-        res.status(500).json({message: 'Server error'});
+        console.error('createUser error', err);
+        res.status(500).json({ message: 'Server error' });
     }
-}
-
-
+};
