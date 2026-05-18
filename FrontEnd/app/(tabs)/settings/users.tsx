@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput 
 import SettingsShell from '../../../components/settingsShell';
 import { useAuth } from '../../../context/AuthContext';
 import {apiFetch} from '../../../assets/api';
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 
 export default function UsersPage() {
   const { user, organisation, token } = useAuth();
@@ -19,6 +19,38 @@ export default function UsersPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const [users, setUsers] = useState<
+    {id?: string; _id?: string; name?: string; email: string; role: string} []
+    >([]);
+    
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+
+   async function fetchUsers() {
+    try {
+      setIsUsersLoading(false);
+
+      const data = await apiFetch('/auth/users', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUsers(data.users || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load users';
+      setErrorMessage(message);
+    } finally {
+      setIsUsersLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (token) {
+      fetchUsers();
+    }
+  }, [token]);
 
   async function handleCreateUser() {
     try {
@@ -41,6 +73,9 @@ export default function UsersPage() {
 
         setSuccessMessage(`Created user: ${data.user.email}`);
 
+        await fetchUsers();
+        // I believe this here is where my error of a white screen after creating a user is coming from
+
         setName('');
         setEmail('');
         setPassword('');
@@ -59,6 +94,8 @@ export default function UsersPage() {
     }
   }
 
+ 
+
   return (
     <SettingsShell title="Users">
       <View style={styles.section}>
@@ -66,19 +103,28 @@ export default function UsersPage() {
         <Text style={styles.text}>{organisation?.name}</Text>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Users</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Users</Text>
 
-        <View style={styles.userCard}>
-          <Text style={styles.userName}>{user?.name || user?.email}</Text>
-          <Text style={styles.userMeta}>{user?.email}</Text>
-          <Text style={styles.userMeta}>Role: {user?.role}</Text>
-        </View>
-
-        <Text style={styles.text}>
-          User list from backend will go here next.
-        </Text>
-      </View>
+            {isUsersLoading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : users.length === 0 ? (
+              <Text style={styles.text}>No users found.</Text>
+            ) : (
+              users.map((listedUser) => (
+                <View
+                  key={listedUser.id || listedUser._id || listedUser.email}
+                  style={styles.userCard}
+                >
+                  <Text style={styles.userName}>
+                    {listedUser.name || listedUser.email}
+                  </Text>
+                  <Text style={styles.userMeta}>{listedUser.email}</Text>
+                  <Text style={styles.userMeta}>Role: {listedUser.role}</Text>
+                </View>
+              ))
+            )}
+          </View>
 
       {isAdmin ? (
         <View style={styles.section}>
