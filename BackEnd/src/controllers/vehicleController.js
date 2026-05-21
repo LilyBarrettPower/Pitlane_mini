@@ -4,7 +4,7 @@ const Vehicle = require('../models/Vehicle');
 
 exports.createVehicle = async (req, res) => {
     try {
-        const { name, racingNumber, make, model, year, owner, odo } = req.body; // Need to update this when you update model 
+        const { name, racingNumber, make, model, year, owner, odo, chassisNumber, notes } = req.body; // Need to update this when you update model 
         if (!name) {
             return res.Status(400).json({ message: 'Vehicle name is required' });
         }
@@ -18,6 +18,8 @@ exports.createVehicle = async (req, res) => {
             year,
             owner,
             odo,
+            chassisNumber,
+            notes,
         });
         res.status(201).json({ vehicle });
     } catch (err) {
