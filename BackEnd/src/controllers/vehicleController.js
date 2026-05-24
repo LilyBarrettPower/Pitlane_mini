@@ -64,23 +64,66 @@ exports.getVehicleById = async (req, res) => {
 
 // PATCH vehicle (update a vehicle based on their id)
 
+// exports.updateVehicle = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const vehicle = await Vehicle.findOneAndUpdate(
+//             { _id: id, organisationId: req.user.organisationId },
+//             req.body,
+//             { new: true } // whats this do?
+//         );
+
+//         if (!vehicle) {
+//             return res.status(404).json({ message: 'Vehicle not found' });
+//         }
+
+//         res.json({ vehicle });
+//     } catch (err) {
+//         console.error('UpdateVehicle Error', err);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// };
+
 exports.updateVehicle = async (req, res) => {
     try {
-        const { id } = req.params;
-        const vehicle = await Vehicle.findOneAndUpdate(
-            { _id: id, organisationId: req.user.organisationId },
-            req.body,
-            { new: true } // whats this do?
-        );
+        const {id} = req.params;
+        const organisationId = req.user.organisationId;
 
-        if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
+        const existingVehicle = await Vehicle.findOne({
+            _id: id,
+            organisationId,
+            isActive: true, // Maybe get rid of this?
+        });
+
+        if (!existingVehicle) {
+            return res.status(404).json({message: "Vehicle not found"});
         }
 
-        res.json({ vehicle });
+        const updateData = {...req.body};
+
+        if (
+            req.body.owner &&
+            existingVehicle.owner &&
+            req.body.owner !== existingVehicle.owner
+        ) {
+            updateData.$push = {
+                ownerHistory: {
+                    owner: existingVehicle.owner,
+                    changedAt: new Date(),
+                },
+            };
+        }
+
+        const vehicle = await Vehicle.findOneAndUpdate(
+            {_id: id, organisationId, isActive: true},
+            updateData,
+            {new: true, runValidators: true}
+        );
+
+        res.json({vehicle});
     } catch (err) {
-        console.error('UpdateVehicle Error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Update Vehicle Error", err);
+        res.status(500).json({message: "Server error"});
     }
 };
 

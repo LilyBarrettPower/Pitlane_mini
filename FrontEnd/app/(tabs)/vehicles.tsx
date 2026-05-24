@@ -38,6 +38,8 @@ export default function VehiclesPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    // Add editing vehicle state to switch between create & edit modals
+    const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
     // Create the use states for the vehicle so you are able to create it 
     const [name, setName] = useState("");
@@ -76,17 +78,12 @@ export default function VehiclesPage() {
         if (token) fetchVehicles();
     }, [token]);
 
-    async function handleCreateVehicle() {
+    async function handleSaveVehicle() {
         try {
             setIsLoading(true);
             setErrorMessage("");
 
-            await apiFetch("/vehicles", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
+            const payload = {
                     name, 
                     make, 
                     model, 
@@ -96,9 +93,23 @@ export default function VehiclesPage() {
                     racingNumber,
                     chassisNumber,
                     notes,
-                }),
-            });
+            }
 
+            if (editingVehicle) {
+                await apiFetch(`/vehicles/${editingVehicle._id}`, {
+                    method: "PATCH",
+                    headers: {Authorization: `Bearer ${token}`},
+                    body: JSON.stringify(payload),
+                });
+            } else {
+                await apiFetch("/vehicles", {
+                    method: "POST",
+                    headers: {Authorization: `Bearer ${token}`},
+                    body: JSON.stringify(payload),
+                });
+            }
+
+            setEditingVehicle(null);
             setName("");
             setMake("");
             setModel("");
@@ -125,7 +136,21 @@ export default function VehiclesPage() {
                 <View style={styles.headerRow}>
                     <Text style={styles.title}>Vehicles</Text>
 
-                    <Pressable style={styles.button} onPress={() => setShowCreateModal(true)}>
+                    <Pressable style={styles.button} 
+                        onPress={() => {
+                            setEditingVehicle(null);
+                            setName("");
+                            setMake("");
+                            setModel("");
+                            setYear("");
+                            setOwner("");
+                            setOdo("");
+                            setRacingNumber("");
+                            setChassisNumber("");
+                            setNotes("");
+                            setShowCreateModal(true);
+                        }}
+                    >
                         <Text style={styles.buttonText}>Add Vehicle</Text>
                     </Pressable>
                 </View>
@@ -153,7 +178,21 @@ export default function VehiclesPage() {
                             <Text style={styles.cardText}>Notes: {vehicle.notes || "-"}</Text>
 
                             <View style={styles.actionRow}>
-                                <Pressable style={styles.smallButton}>
+                                <Pressable style={styles.smallButton}
+                                    onPress={() => {
+                                        setEditingVehicle(vehicle);
+                                        setName(vehicle.name || "");
+                                        setMake(vehicle.make || "");
+                                        setModel(vehicle.model || "");
+                                        setYear(vehicle.year ? String(vehicle.year) : ""); // Not sure if these are right...
+                                        setOwner(vehicle.owner || "");
+                                        setOdo(vehicle.odo ? String(vehicle.odo) : "");
+                                        setRacingNumber(vehicle.racingNumber || "");
+                                        setChassisNumber(vehicle.chassisNumber || "");
+                                        setNotes(vehicle.notes || "");
+                                        setShowCreateModal(true);
+                                    }}
+                                    >
                                     <Text style={styles.smallButtonText}>Edit</Text>
                                 </Pressable>
                                 <Pressable style={styles.deleteButton}>
@@ -182,7 +221,9 @@ export default function VehiclesPage() {
             <Modal visible={showCreateModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
-                        <Text style={styles.modalTitle}>Create Vehicle</Text>
+                        <Text style={styles.modalTitle}>
+                            {editingVehicle ? "Edit Vehicle" : "Create Vehicle"}
+                        </Text>
 
                         <TextInput style={styles.input} placeholder="Name" placeholderTextColor="9ca3af" value={name} onChangeText={setName}/>
                         <TextInput style={styles.input} placeholder="Make" placeholderTextColor="9ca3af" value={make} onChangeText={setMake}/>
@@ -199,8 +240,10 @@ export default function VehiclesPage() {
                                 <Text style={styles.buttonText}>Cancel</Text>
                             </Pressable>
 
-                            <Pressable style={styles.button} onPress={handleCreateVehicle}>
-                                <Text style={styles.buttonText}>Create</Text>
+                            <Pressable style={styles.button} onPress={handleSaveVehicle}>
+                                <Text style={styles.buttonText}>
+                                    {editingVehicle ? "Save Changes" : "Create Vehicle"}
+                                </Text>
                             </Pressable>
                         </View>
                     </View>

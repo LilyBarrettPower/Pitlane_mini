@@ -19,6 +19,12 @@ const VehicleSchema = new mongoose.Schema(
         model: { type: String },
         year: { type: Number },
         owner: { type: String },
+        ownerHistory: [
+            {
+                owner: String,
+                changedAt: {type: Date, default: Date.now},
+            }
+        ],
         odo: {type: Number},
         chassisNumber: {type: String},
         notes: {type: String},
