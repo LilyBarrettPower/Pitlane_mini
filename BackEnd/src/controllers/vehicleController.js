@@ -129,23 +129,51 @@ exports.updateVehicle = async (req, res) => {
 
 // DELETE Vehicle 
 
-exports.deleteVehicle = async (req, res) => {
+// exports.deleteVehicle = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+
+//         const vehicle = await Vehicle.findOneAndUpdate(
+//             { _id: id, organisationId: req.user.organisationId },
+//             { isActive: false },
+//             { new: true },
+//         );
+
+//         if (!vehicle) {
+//             return res.status(404).json({ message: 'Vehicle not found' });
+//         }
+//         res.json({ message: 'Vehicle archived', vehicle });
+//     } catch (err) {
+//         console.error('Delete Vehicle error'.err);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// };
+
+exports.deleteVehicle = async(req,res) => {
     try {
-        const { id } = req.params;
+        if (req.user.role !== "admin") {
+            return res.status(403).json({
+                message: "Only admins can delete vehicles",
+            });
+        }
+
+        const {id} = req.params;
+        const organisationId = req.user.organisationId;
 
         const vehicle = await Vehicle.findOneAndUpdate(
-            { _id: id, organisationId: req.user.organisationId },
-            { isActive: false },
-            { new: true },
+            {_id: id, organisationId},
+            {isActive: false},
+            {new: true}
         );
 
-        if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
+        if(!vehicle) {
+            return res.status(404).json({message: "Vehicle not found"});
         }
-        res.json({ message: 'Vehicle archived', vehicle });
+
+        res.json({message: "Vehicle deleted", vehicle});
     } catch (err) {
-        console.error('Delete Vehicle error'.err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("archiveVehicle error", err);
+        res.status(500).json({message: "Server error"});
     }
 };
 

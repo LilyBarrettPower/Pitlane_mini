@@ -31,7 +31,7 @@ type Vehicle = {
 export default function VehiclesPage() {
 
     //  Make sure there is a valid token to access this page 
-    const {token} = useAuth();
+    const {user, token} = useAuth();
     // Check there is a front end message for when token has expired...
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -40,6 +40,10 @@ export default function VehiclesPage() {
     const [errorMessage, setErrorMessage] = useState("");
     // Add editing vehicle state to switch between create & edit modals
     const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+    // Add delete vehicle state 
+    const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+    // Need to know if logged in user is an admin to initialise delete vehicle
+    const isAdmin = user?.role == "admin";
 
     // Create the use states for the vehicle so you are able to create it 
     const [name, setName] = useState("");
@@ -130,6 +134,29 @@ export default function VehiclesPage() {
         }
     }
 
+    async function handleDeleteVehicle() {
+        if (!vehicleToDelete) return;
+
+        try {
+            setIsLoading(true);
+            setErrorMessage("");
+
+            await apiFetch(`/vehicle/${vehicleToDelete._id}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            setVehicleToDelete(null);
+            await fetchVehicles();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to delete vehicle");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.content}>
@@ -195,9 +222,14 @@ export default function VehiclesPage() {
                                     >
                                     <Text style={styles.smallButtonText}>Edit</Text>
                                 </Pressable>
-                                <Pressable style={styles.deleteButton}>
+                                {isAdmin ? (
+                                <Pressable style={styles.deleteButton}
+                                    onPress={() => setVehicleToDelete(vehicle)}
+                                    >
                                     <Text style={styles.smallButtonText}>Delete</Text>
                                 </Pressable>
+                                ): null}
+
                             </View>
 
                             <View style={styles.linkGrid}>
@@ -249,6 +281,41 @@ export default function VehiclesPage() {
                     </View>
                 </View>
             </Modal>
+            {/* Delete Vehicle Warning Modal */}
+            
+            <Modal  
+                visible={!!vehicleToDelete}
+                transparent
+                animationType = "fade"
+                onRequestClose={() => setVehicleToDelete(null)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <Text style={styles.modalTitle}>Delete Vehicle?</Text>
+                        <Text style={styles.text}>
+                            Are you use you want to delete{" "}
+                            {vehicleToDelete?.name || vehicleToDelete?.racingNumber || "this vehicle"}?
+                        </Text>
+                        <View style={styles.modalActions}>
+                            <Pressable 
+                                style={styles.cancelButton}
+                                onPress={() => setVehicleToDelete(null)}
+                                disabled={isLoading}
+                            >
+                                <Text style={styles.buttonText}>Cancel</Text>
+                            </Pressable>
+                            <Pressable 
+                                style={[styles.deleteButton, isLoading && styles.buttonDisabled]}
+                                onPress={handleDeleteVehicle}
+                                disabled={isLoading}
+                            >
+                                <Text style={styles.smallButtonText}>Yes, Delete</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
         </SafeAreaView>
     );
 }
@@ -353,7 +420,7 @@ const styles = StyleSheet.create({
     modalCard: {
         width: "100%",
         maxWidth: 520,
-        backgroundColor: "#1f2937",
+        backgroundColor: "#10151c",
         borderRadius: 16, 
         padding: 20, 
         gap: 12,
@@ -383,5 +450,8 @@ const styles = StyleSheet.create({
         paddingVertical: 12, 
         paddingHorizontal: 16,
         borderRadius: 10,
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
 });

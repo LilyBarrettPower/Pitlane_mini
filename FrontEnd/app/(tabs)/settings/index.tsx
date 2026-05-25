@@ -25,7 +25,7 @@ export default function SettingsPage() {
 }
 
 const styles = StyleSheet.create({
-      button: {
+    button: {
     backgroundColor: '#2563eb',
     paddingVertical: 14,
     borderRadius: 10,

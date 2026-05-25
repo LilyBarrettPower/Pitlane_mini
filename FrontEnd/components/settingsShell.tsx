@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: 220,
-    backgroundColor: '#1f2937',
+    backgroundColor: '#10151c',
     padding: 16,
     borderRightWidth: 1,
     borderRightColor: '#374151',

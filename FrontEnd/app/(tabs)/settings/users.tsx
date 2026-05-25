@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, ScrollView } from 'react-native';
 import SettingsShell from '../../../components/settingsShell';
 import { useAuth } from '../../../context/AuthContext';
 import {apiFetch} from '../../../assets/api';
 import {useState, useEffect} from 'react';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function UsersPage() {
   const { user, organisation, token } = useAuth();
@@ -97,156 +98,169 @@ export default function UsersPage() {
  
 
   return (
-    <SettingsShell title="Users">
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Organisation</Text>
-        <Text style={styles.text}>{organisation?.name}</Text>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
+      <SettingsShell title="Users">
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionTitle}>{organisation?.name}</Text>
 
+          {isAdmin ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Users</Text>
-
-            {isUsersLoading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : users.length === 0 ? (
-              <Text style={styles.text}>No users found.</Text>
-            ) : (
-              users.map((listedUser) => (
-                <View
-                  key={listedUser.id || listedUser._id || listedUser.email}
-                  style={styles.userCard}
-                >
-                  <Text style={styles.userName}>
-                    {listedUser.name || listedUser.email}
-                  </Text>
-                  <Text style={styles.userMeta}>{listedUser.email}</Text>
-                  <Text style={styles.userMeta}>Role: {listedUser.role}</Text>
-                </View>
-              ))
-            )}
+            <Text style={styles.sectionTitle}>Create User</Text>
+            <Pressable 
+              style={styles.button}
+              onPress={() => setShowCreateModal(true)}
+              >
+              <Text style={styles.buttonText}>Add New User</Text>
+            </Pressable>
           </View>
-
-      {isAdmin ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Create User</Text>
-          <Pressable 
-            style={styles.button}
-            onPress={() => setShowCreateModal(true)}
-            >
-            <Text style={styles.buttonText}>Add New User</Text>
-          </Pressable>
+        ) : (
+          <View style={styles.section}>
+            <Text style={styles.helper}>
+              Only admins can create users.
+            </Text>
+          </View>
+        )}
+        
         </View>
-      ) : (
-        <View style={styles.section}>
-          <Text style={styles.helper}>
-            Only admins can create users.
-          </Text>
-        </View>
-      )}
 
-      <Modal 
-        visible={showCreateModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCreateModal(false)}
-        >
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalCard}>
-                    <Text style={styles.modalTitle}>Create User</Text>
-                    <View style={styles.form}>
-                        <View>
-                            <Text style={styles.label}>Name</Text>
-                            <TextInput  
-                                value={name}
-                                onChangeText={setName}
-                                style={styles.input}
-                                />
-                        </View>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Users</Text>
 
-                        <View>
-                            <Text style={styles.label}>Email</Text>
-                            <TextInput
-                                value={email}
-                                onChangeText={setEmail}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                                style={styles.input}
-                            />
-
-                        </View>
-
-                        <View>
-                            <Text style={styles.label}>Password</Text>
-                            <TextInput
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry
-                                style={styles.input}
-                            />
-                        </View>
-
-                        <View>
-                            <Text style={styles.label}>Role</Text>
-                            <View style={styles.roleRow}>
-                                {(['admin', 'engineer', 'mechanic', 'viewer'] as const).map((roleOption)=> (
-                                    <Pressable
-                                        key={roleOption}
-                                        style={[
-                                            styles.roleButton,
-                                            role == roleOption && styles.roleButtonActive,
-                                        ]}
-                                        onPress={() => setRole(roleOption)}
-                                        >
-                                            <Text 
-                                                style={[
-                                                    styles.roleButtonText,
-                                                    role === roleOption && styles.roleButtonTextActive,
-                                                ]}
-                                                >
-                                                    {roleOption}
-                                                </Text>
-                                        </Pressable>
-                                ))}
-                            </View>
-                        </View>
-                        {errorMessage ? (
-                            <Text style={styles.errorText}>{errorMessage}</Text>
-                        ) : null}
-
-                        {successMessage ? (
-                            <Text style={styles.successText}>{successMessage}</Text>
-                        ) : null}
-
-                        <View style={styles.modalActions}>
-                            <Pressable  
-                                style={styles.cancelButton}
-                                onPress={() => setShowCreateModal(false)}
-                                disabled={isLoading}
-                            > 
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </Pressable>
-
-                            <Pressable
-                                style={[styles.button, isLoading && styles.buttonDisabled]}
-                                onPress={handleCreateUser}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <ActivityIndicator color='#ffffff'/>
-                                ) : (
-                                    <Text style={styles.buttonText}>Create User</Text>
-                                )}
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
+              {isUsersLoading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : users.length === 0 ? (
+                <Text style={styles.text}>No users found.</Text>
+              ) : (
+                users.map((listedUser) => (
+                  <View
+                    key={listedUser.id || listedUser._id || listedUser.email}
+                    style={styles.userCard}
+                  >
+                    <Text style={styles.userName}>
+                      {listedUser.name || listedUser.email}
+                    </Text>
+                    <Text style={styles.userMeta}>{listedUser.email}</Text>
+                    <Text style={styles.userMeta}>Role: {listedUser.role}</Text>
+                  </View>
+                ))
+              )}
             </View>
-        </Modal>
-    </SettingsShell>
+
+        <Modal 
+          visible={showCreateModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowCreateModal(false)}
+          >
+              <View style={styles.modalOverlay}>
+                  <View style={styles.modalCard}>
+                      <Text style={styles.modalTitle}>Create User</Text>
+                      <View style={styles.form}>
+                          <View>
+                              <Text style={styles.label}>Name</Text>
+                              <TextInput  
+                                  value={name}
+                                  onChangeText={setName}
+                                  style={styles.input}
+                                  />
+                          </View>
+
+                          <View>
+                              <Text style={styles.label}>Email</Text>
+                              <TextInput
+                                  value={email}
+                                  onChangeText={setEmail}
+                                  autoCapitalize="none"
+                                  keyboardType="email-address"
+                                  style={styles.input}
+                              />
+
+                          </View>
+
+                          <View>
+                              <Text style={styles.label}>Password</Text>
+                              <TextInput
+                                  value={password}
+                                  onChangeText={setPassword}
+                                  secureTextEntry
+                                  style={styles.input}
+                              />
+                          </View>
+
+                          <View>
+                              <Text style={styles.label}>Role</Text>
+                              <View style={styles.roleRow}>
+                                  {(['admin', 'engineer', 'mechanic', 'viewer'] as const).map((roleOption)=> (
+                                      <Pressable
+                                          key={roleOption}
+                                          style={[
+                                              styles.roleButton,
+                                              role == roleOption && styles.roleButtonActive,
+                                          ]}
+                                          onPress={() => setRole(roleOption)}
+                                          >
+                                              <Text 
+                                                  style={[
+                                                      styles.roleButtonText,
+                                                      role === roleOption && styles.roleButtonTextActive,
+                                                  ]}
+                                                  >
+                                                      {roleOption}
+                                                  </Text>
+                                          </Pressable>
+                                  ))}
+                              </View>
+                          </View>
+                          {errorMessage ? (
+                              <Text style={styles.errorText}>{errorMessage}</Text>
+                          ) : null}
+
+                          {successMessage ? (
+                              <Text style={styles.successText}>{successMessage}</Text>
+                          ) : null}
+
+                          <View style={styles.modalActions}>
+                              <Pressable  
+                                  style={styles.cancelButton}
+                                  onPress={() => setShowCreateModal(false)}
+                                  disabled={isLoading}
+                              > 
+                                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                              </Pressable>
+
+                              <Pressable
+                                  style={[styles.button, isLoading && styles.buttonDisabled]}
+                                  onPress={handleCreateUser}
+                                  disabled={isLoading}
+                              >
+                                  {isLoading ? (
+                                      <ActivityIndicator color='#ffffff'/>
+                                  ) : (
+                                      <Text style={styles.buttonText}>Create User</Text>
+                                  )}
+                              </Pressable>
+                          </View>
+                      </View>
+                  </View>
+              </View>
+          </Modal>
+      </SettingsShell>
+    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#111827",
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   section: {
     marginBottom: 24,
   },
@@ -309,7 +323,7 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 520,
-    backgroundColor: '#1f2937',
+    backgroundColor: "#10151c",
     borderRadius: 16,
     padding: 20, 
     borderWidth: 1,
