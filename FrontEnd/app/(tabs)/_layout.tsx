@@ -61,6 +61,13 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen 
+        name="vehicles/[id]"
+        options={{
+          href: null,
+        }}
+        />
     </Tabs>
   );
 }
