@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import {router} from "expo-router";
 import { 
     StyleSheet, 
     Text, 
@@ -190,7 +191,16 @@ export default function VehiclesPage() {
                     <Text style={styles.text}>No Vehicles Yet</Text>
                 ) : (
                     vehicles.map((vehicle) => (
-                        <View key={vehicle._id} style={styles.card}>
+                        <Pressable 
+                            key={vehicle._id} 
+                            style={styles.card}
+                              onPress={() =>
+                                router.push({
+                                pathname: '/vehicles/[id]',
+                                params: { id: vehicle._id },
+                                })
+                            }
+                        >
                             <Text style={styles.cardTitle}>
                                 {vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""}
                                 {vehicle.name || `${vehicle.make || ""} ${vehicle.model || ""}`}
@@ -206,7 +216,8 @@ export default function VehiclesPage() {
 
                             <View style={styles.actionRow}>
                                 <Pressable style={styles.smallButton}
-                                    onPress={() => {
+                                    onPress={(e) => {
+                                        e.stopPropagation?.();
                                         setEditingVehicle(vehicle);
                                         setName(vehicle.name || "");
                                         setMake(vehicle.make || "");
@@ -224,7 +235,10 @@ export default function VehiclesPage() {
                                 </Pressable>
                                 {isAdmin ? (
                                 <Pressable style={styles.deleteButton}
-                                    onPress={() => setVehicleToDelete(vehicle)}
+                                    onPress={(e) => {
+                                        e.stopPropagation?.();
+                                        setVehicleToDelete(vehicle);
+                                    }}
                                     >
                                     <Text style={styles.smallButtonText}>Delete</Text>
                                 </Pressable>
@@ -245,7 +259,7 @@ export default function VehiclesPage() {
                                     </Pressable>
                                 ))}
                             </View>
-                        </View>
+                        </Pressable>
                     ))
                 )}
             </ScrollView>
