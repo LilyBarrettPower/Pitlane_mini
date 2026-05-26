@@ -141,7 +141,7 @@ export default function VehiclesPage() {
             setIsLoading(true);
             setErrorMessage("");
 
-            await apiFetch(`/vehicle/${vehicleToDelete._id}`, {
+            await apiFetch(`/vehicles/${vehicleToDelete._id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,
