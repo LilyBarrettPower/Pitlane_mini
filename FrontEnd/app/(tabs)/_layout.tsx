@@ -51,6 +51,16 @@ export default function TabsLayout() {
           ),
         }}
         />
+      
+      <Tabs.Screen
+        name="drivers"
+        options={{
+          title: 'Drivers',
+          tabBarIcon: ({color, size}) => (
+            <Ionicons name="id-card" size={size} color={color}/>
+          ),
+        }}
+        />
 
       <Tabs.Screen
         name="settings"

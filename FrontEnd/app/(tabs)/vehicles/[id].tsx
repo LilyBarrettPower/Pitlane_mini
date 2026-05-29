@@ -3,7 +3,7 @@ import {useEffect, useState } from 'react';
 import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import {apiFetch} from '../../../assets/api';
-import { useAuth } from '../../..//context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 
 type Vehicle = {
     _id: string;
@@ -71,11 +71,6 @@ export default function VehicleDetailPage() {
     }
   }
 
-  useEffect(() => {
-    if (id && token) {
-        fetchVehicle();
-    }
-  }, [id, token]);
 
   async function fetchVehicleDrivers() {
   const data = await apiFetch(`/vehicle-drivers/vehicle/${id}`, {
@@ -87,6 +82,10 @@ export default function VehicleDetailPage() {
 
   setVehicleDrivers(data.assignments || []);
 }
+
+// Fetch all drivers 
+
+
 
 useEffect(() => {
   if (id && token) {
@@ -170,10 +169,14 @@ useEffect(() => {
                 </View>
             ))
           )}
+          
+          {/* Should be able to remove drivers from a vehicle here  */}
 
           <Pressable style={styles.button} onPress={() => setShowAssignedDriverModal(true)}>
             <Text style={styles.buttonText}>Assign Driver</Text>
           </Pressable>
+          {/* Fetch drivers here to populate a drop down list  */}
+
         </View>
       </ScrollView>
     </SafeAreaView>
