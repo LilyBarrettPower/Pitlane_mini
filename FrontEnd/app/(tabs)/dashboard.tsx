@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {useAuth} from '../../context/AuthContext';
 import {router} from 'expo-router';
 import {useEffect} from 'react';
+import { globalStyles } from '../../constants/styles';
 
 
 export default function DashboardPage() {
@@ -32,9 +33,9 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.text}>Loading...</Text>
+      <SafeAreaView style={globalStyles.container}>
+        <View style={globalStyles.content}>
+          <Text style={globalStyles.text}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -45,11 +46,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={globalStyles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.text}>User: {user?.name}</Text>
-        <Text style={styles.text}>Organisation: {organisation?.name}</Text>
+        <Text style={globalStyles.title}>Dashboard</Text>
+        <Text style={globalStyles.text}>User: {user?.name}</Text>
+        <Text style={globalStyles.text}>Organisation: {organisation?.name}</Text>
 
         {/* <Pressable style={styles.button} onPress={handleLogout}>
           <Text style={styles.buttonText}>Logout</Text>
@@ -60,35 +61,9 @@ export default function DashboardPage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111827',
-  },
   content: {
     flex: 1,
     justifyContent: 'center',
     padding: 24,
-  },
-  title: {
-    color: '#ffffff',
-    fontSize: 30,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  text: {
-    color: '#d1d5db',
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

@@ -4,6 +4,7 @@ import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import {apiFetch} from '../../../assets/api';
 import { useAuth } from '../../../context/AuthContext';
+import { globalStyles } from '../../../constants/styles';
 
 type Vehicle = {
     _id: string;
@@ -96,7 +97,7 @@ useEffect(() => {
 
   if (isLoading) {
     return (
-     <SafeAreaView style={styles.container}>
+     <SafeAreaView style={globalStyles.container}>
         <ActivityIndicator color="#ffffff"/>
      </SafeAreaView>   
     );
@@ -104,77 +105,78 @@ useEffect(() => {
 
   if (errorMessage) {
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.errorText}>{errorMessage}</Text>
-            </View> 
-        </SafeAreaView>
+      <SafeAreaView style={globalStyles.container}>
+        <View style={styles.content}>
+          <Text style={globalStyles.errorText}>{errorMessage}</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (!vehicle) {
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.text}>No vehicle found</Text>
-            </View>
-        </SafeAreaView>
+      <SafeAreaView style={globalStyles.container}>
+        <View style={styles.content}>
+          <Text style={globalStyles.text}>No vehicle found</Text>
+        </View>
+      </SafeAreaView>
     )
   }
-  
+
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={globalStyles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>
-            {vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""}
-            {vehicle.name}
+        <Text style={globalStyles.title}>
+          {vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""}
+          {vehicle.name}
         </Text>
-        <View style={styles.card}>
-            <Text style={[styles.row, styles.text]}>Make: {vehicle.make || "-"}</Text>
-            <Text style={[styles.row, styles.text]}>Model: {vehicle.model || ""}</Text>
-          <Text style={[styles.row, styles.text]}>Year: {vehicle.year || ""}</Text>
-          <Text style={[styles.row, styles.text]}>Owner: {vehicle.owner || ""}</Text>
-          <Text style={[styles.row, styles.text]}>Odo: {vehicle.odo || ""}</Text>
-          <Text style={[styles.row, styles.text]}>Chassis Number: {vehicle.chassisNumber || ""}</Text>
-          <Text style={[styles.row, styles.text]}>Notes: {vehicle.notes || ""}</Text>
+        <View style={globalStyles.card}>
+          <Text style={[styles.row, globalStyles.text]}>Make: {vehicle.make || "-"}</Text>
+          <Text style={[styles.row, globalStyles.text]}>Model: {vehicle.model || ""}</Text>
+          <Text style={[styles.row, globalStyles.text]}>Year: {vehicle.year || ""}</Text>
+          <Text style={[styles.row, globalStyles.text]}>Owner: {vehicle.owner || ""}</Text>
+          <Text style={[styles.row, globalStyles.text]}>Odo: {vehicle.odo || ""}</Text>
+          <Text style={[styles.row, globalStyles.text]}>Chassis Number: {vehicle.chassisNumber || ""}</Text>
+          <Text style={[styles.row, globalStyles.text]}>Notes: {vehicle.notes || ""}</Text>
 
-          <Text style={styles.sectionTitle}>Ownership History</Text>
+          <Text style={globalStyles.subTitle}>Ownership History</Text>
 
           {vehicle.ownerHistory && vehicle.ownerHistory.length > 0 ? (
             vehicle.ownerHistory.map((entry, index) => (
               <View key={index} style={styles.historyRow}>
-                <Text style={[styles.row, styles.text]}>
+                <Text style={[styles.row, globalStyles.text]}>
                   {entry.owner}
                 </Text>
-                <Text style={styles.subText}>
+                <Text style={globalStyles.subText}>
                   {new Date(entry.changedAt).toLocaleDateString()}
                 </Text>
               </View>
             ))
           ) : (
-            <Text style={styles.text}>No previous owners</Text>
+            <Text style={globalStyles.text}>No previous owners</Text>
           )}
         </View>
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Drivers</Text>
+        <View style={globalStyles.card}>
+          <Text style={globalStyles.sectionTitle}>Drivers</Text>
           {vehicleDrivers.length === 0 ? (
-            <Text style={styles.text}>No assigned drivers</Text>
+            <Text style={globalStyles.text}>No assigned drivers</Text>
           ) : (
             vehicleDrivers.map((item) => (
               <View key={item._id} style={styles.driverRow}>
-                <Text style={[styles.row, styles.text]}>{item.driverId?.name}</Text>
-                <Text style={styles.subText}>{item.driverId?.experience}</Text>
+                <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
+                <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
                 {/* Add more driver details here? */}
-                </View>
+              </View>
             ))
           )}
-          
-          {/* Should be able to remove drivers from a vehicle here  */}
 
-          <Pressable style={styles.button} onPress={() => setShowAssignedDriverModal(true)}>
-            <Text style={styles.buttonText}>Assign Driver</Text>
-          </Pressable>
+          {/* Should be able to remove drivers from a vehicle here  */}
+          <View style={styles.actionRow}>
+            <Pressable style={[globalStyles.buttonPrimary, styles.buttonGap]} onPress={() => setShowAssignedDriverModal(true)}>
+              <Text style={globalStyles.buttonPrimaryText}>Assign Driver</Text>
+            </Pressable>
+          </View>
           {/* Fetch drivers here to populate a drop down list  */}
 
         </View>
@@ -184,60 +186,34 @@ useEffect(() => {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827' },
-  content: { padding: 24 },
-  title: { color: '#fff', fontSize: 28, fontWeight: '700', marginBottom: 18 },
-  text: { color: '#ffffff', marginTop: 12, fontSize: 16 },
-  card: {
-    backgroundColor: "#1f2937",
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#374151",
-    marginBottom: 10,
+  content: {
+    padding: 24,
+    gap: 16,
   },
   row: {
     color: "#d1d15db",
     fontSize: 16,
     marginBottom: 8,
   },
-  errorText: {
-    color: "#f87171",
-    fontSize: 16,
+  historyRow: {
+    marginBottom: 2,
+    paddingBottom: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
   },
-  sectionTitle: {
-  color: '#ffffff',
-  fontSize: 18,
-  fontWeight: '700',
-  marginTop: 15,
-},
-historyRow: {
-  marginBottom: 2,
-  paddingBottom: 2,
-  borderBottomWidth: 1,
-  borderBottomColor: '#374151',
-},
-subText: {
-  color: '#ffffff',
-  fontSize: 13,
-},
-button: {
-  backgroundColor: "#2563eb",
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderRadius: 10,
-  alignSelf: "flex-start",
-  marginTop: 12,
-},
-buttonText: {
-  color: "#ffffff",
-  fontWeight: "700",
-},
-driverRow: {
-  marginBottom: 10,
-  paddingBottom: 8,
-  borderBottomWidth:1,
-  borderBottomColor: "#374151",
-},
+  driverRow: {
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#374151",
+  },
+  buttonGap: {
+    marginTop: 20,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
 
 });
