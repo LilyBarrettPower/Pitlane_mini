@@ -149,6 +149,28 @@ async function handleAssignDriver() {
   }
 }
 
+async function handleRemoveDriverAssignment(assignmentId: string) {
+  try {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    await apiFetch(`/vehicle-drivers/${assignmentId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    await fetchVehicleDrivers();
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error ? error.message : "Failed to remove driver"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+}
+
   if (isLoading) {
     return (
      <SafeAreaView style={globalStyles.container}>
@@ -218,9 +240,18 @@ async function handleAssignDriver() {
           ) : (
             vehicleDrivers.map((item) => (
               <View key={item._id} style={styles.driverRow}>
+                <View>
                 <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
                 <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
                 {/* Add more driver details here? */}
+              </View>
+
+              <Pressable 
+                style={globalStyles.buttonDanger}
+                onPress={() => handleRemoveDriverAssignment(item._id)}
+                >
+                  <Text style={globalStyles.buttonPrimaryText}>Remove</Text>
+                </Pressable>
               </View>
             ))
           )}
@@ -336,6 +367,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#374151",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
   },
   buttonGap: {
     marginTop: 20,
