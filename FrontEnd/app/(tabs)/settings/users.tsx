@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import {apiFetch} from '../../../assets/api';
 import {useState, useEffect} from 'react';
 import { SafeAreaView } from "react-native-safe-area-context";
+import { globalStyles } from '../../../constants/styles';
 
 export default function UsersPage() {
   const { user, organisation, token } = useAuth();
@@ -98,20 +99,20 @@ export default function UsersPage() {
  
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={globalStyles.container}>
       <ScrollView>
       <SettingsShell title="Users">
         <View style={styles.headerRow}>
-          <Text style={styles.sectionTitle}>{organisation?.name}</Text>
+          <Text style={globalStyles.sectionTitle}>{organisation?.name}</Text>
 
           {isAdmin ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Create User</Text>
+            <Text style={globalStyles.sectionTitle}>Create User</Text>
             <Pressable 
-              style={styles.button}
+              style={[globalStyles.buttonPrimary, styles.gap]}
               onPress={() => setShowCreateModal(true)}
               >
-              <Text style={styles.buttonText}>Add New User</Text>
+              <Text style={globalStyles.buttonPrimaryText}>Add New User</Text>
             </Pressable>
           </View>
         ) : (
@@ -125,12 +126,12 @@ export default function UsersPage() {
         </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Users</Text>
+              <Text style={[globalStyles.sectionTitle, styles.gapBottom]}>Users</Text>
 
               {isUsersLoading ? (
                 <ActivityIndicator color="#ffffff" />
               ) : users.length === 0 ? (
-                <Text style={styles.text}>No users found.</Text>
+                <Text style={globalStyles.text}>No users found.</Text>
               ) : (
                 users.map((listedUser) => (
                   <View
@@ -153,43 +154,43 @@ export default function UsersPage() {
           animationType="fade"
           onRequestClose={() => setShowCreateModal(false)}
           >
-              <View style={styles.modalOverlay}>
-                  <View style={styles.modalCard}>
-                      <Text style={styles.modalTitle}>Create User</Text>
-                      <View style={styles.form}>
+              <View style={globalStyles.modalOverlay}>
+                  <View style={globalStyles.modalCard}>
+                      <Text style={globalStyles.modalTitle}>Create User</Text>
+                      <View style={globalStyles.form}>
                           <View>
-                              <Text style={styles.label}>Name</Text>
+                              <Text style={globalStyles.label}>Name</Text>
                               <TextInput  
                                   value={name}
                                   onChangeText={setName}
-                                  style={styles.input}
+                                  style={globalStyles.input}
                                   />
                           </View>
 
                           <View>
-                              <Text style={styles.label}>Email</Text>
+                              <Text style={globalStyles.label}>Email</Text>
                               <TextInput
                                   value={email}
                                   onChangeText={setEmail}
                                   autoCapitalize="none"
                                   keyboardType="email-address"
-                                  style={styles.input}
+                                  style={globalStyles.input}
                               />
 
                           </View>
 
                           <View>
-                              <Text style={styles.label}>Password</Text>
+                              <Text style={globalStyles.label}>Password</Text>
                               <TextInput
                                   value={password}
                                   onChangeText={setPassword}
                                   secureTextEntry
-                                  style={styles.input}
+                                  style={globalStyles.input}
                               />
                           </View>
 
                           <View>
-                              <Text style={styles.label}>Role</Text>
+                              <Text style={globalStyles.label}>Role</Text>
                               <View style={styles.roleRow}>
                                   {(['admin', 'engineer', 'mechanic', 'viewer'] as const).map((roleOption)=> (
                                       <Pressable
@@ -213,31 +214,31 @@ export default function UsersPage() {
                               </View>
                           </View>
                           {errorMessage ? (
-                              <Text style={styles.errorText}>{errorMessage}</Text>
+                              <Text style={globalStyles.errorText}>{errorMessage}</Text>
                           ) : null}
 
                           {successMessage ? (
-                              <Text style={styles.successText}>{successMessage}</Text>
+                              <Text style={globalStyles.successText}>{successMessage}</Text>
                           ) : null}
 
                           <View style={styles.modalActions}>
                               <Pressable  
-                                  style={styles.cancelButton}
+                                  style={globalStyles.buttonDanger}
                                   onPress={() => setShowCreateModal(false)}
                                   disabled={isLoading}
                               > 
-                                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                                  <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
                               </Pressable>
 
                               <Pressable
-                                  style={[styles.button, isLoading && styles.buttonDisabled]}
+                                  style={[globalStyles.buttonPrimary, isLoading && styles.buttonDisabled]}
                                   onPress={handleCreateUser}
                                   disabled={isLoading}
                               >
                                   {isLoading ? (
                                       <ActivityIndicator color='#ffffff'/>
                                   ) : (
-                                      <Text style={styles.buttonText}>Create User</Text>
+                                      <Text style={globalStyles.buttonPrimaryText}>Create User</Text>
                                   )}
                               </Pressable>
                           </View>
@@ -252,10 +253,6 @@ export default function UsersPage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#111827",
-  },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -263,16 +260,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
-  },
-  sectionTitle: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  text: {
-    color: '#d1d5db',
-    fontSize: 15,
   },
   helper: {
     color: '#9ca3af',
@@ -298,61 +285,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 2,
   },
-  button: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    alignSelf: 'flex-start',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
   buttonDisabled: {
     opacity: 0.7,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rbga(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 520,
-    backgroundColor: "#10151c",
-    borderRadius: 16,
-    padding: 20, 
-    borderWidth: 1,
-    borderColor: '#374151',
-  },
-  modalTitle: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 18,
-  },
-  form: {
-    gap: 16,
-  },
-  label: {
-    color: '#ffffff',
-    marginBottom: 8, 
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  input: {
-    backgroundColor: '#111827',
-    color: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
   },
   roleRow: {
     flexDirection: 'row',
@@ -385,24 +319,10 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 8,
   },
-  cancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#374151',
-    alignItems: 'center',
+  gap : {
+    marginTop: 20,
   },
-  cancelButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  errorText: {
-    color: '#f87171',
-    fontSize: 14,
-  },
-  successText: {
-    color: '#34d399',
-    fontSize: 14,
+  gapBottom: {
+    marginBottom: 20,
   },
 });

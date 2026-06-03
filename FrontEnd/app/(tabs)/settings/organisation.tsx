@@ -1,6 +1,7 @@
 import { Text } from 'react-native';
 import SettingsShell from '../../../components/settingsShell';
 import { useAuth } from '../../../context/AuthContext';
+import { globalStyles } from '../../../constants/styles';
 
 export default function OrganisationSettingsPage() {
   const { organisation } = useAuth();
