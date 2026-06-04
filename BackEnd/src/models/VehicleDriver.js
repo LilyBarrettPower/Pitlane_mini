@@ -32,7 +32,9 @@ const VehicleDriverSchema = new mongoose.Schema(
 
 VehicleDriverSchema.index(
     { organisationId: 1, vehicleId: 1, driverId: 1 },
-    { unique: true }
+    { unique: true,
+        partialFilterExpression: {isActive: true},
+     }
 );
 
 module.exports = mongoose.model('VehicleDriver', VehicleDriverSchema);

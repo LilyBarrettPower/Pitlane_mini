@@ -36,6 +36,29 @@ exports.createAssignment = async (req, res) => {
             return res.status(404).json({ message: 'Driver not found' });
         }
 
+        const existingAssignment = await VehicleDriver.findOne({
+            organisationId,
+            vehicleId,
+            driverId,
+        });
+
+        if (existingAssignment) {
+            if (existingAssignment.isActive) {
+                return res.status(409).json({
+                    message: "This driver is already assigned to this vehicle",
+                });
+            }
+
+            existingAssignment.isActive = true;
+            existingAssignment.role = role || existingAssignment.role || "";
+            await existingAssignment.save();
+
+            return res.status(200).json({
+                message: "Assignment reactivated",
+                assignment: existingAssignment,
+            });
+        }
+
         const assignment = await VehicleDriver.create({
             organisationId,
             vehicleId,
