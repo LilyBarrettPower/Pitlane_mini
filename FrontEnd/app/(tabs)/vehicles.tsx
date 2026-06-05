@@ -308,7 +308,7 @@ export default function VehiclesPage() {
                     <View style={globalStyles.modalCard}>
                         <Text style={globalStyles.modalTitle}>Delete Vehicle?</Text>
                         <Text style={globalStyles.text}>
-                            Are you use you want to delete{" "}
+                            Are you sure you want to delete{" "}
                             {vehicleToDelete?.name || vehicleToDelete?.racingNumber || "this vehicle"}?
                         </Text>
                         <View style={styles.modalActions}>

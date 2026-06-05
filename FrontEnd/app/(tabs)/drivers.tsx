@@ -42,6 +42,9 @@ export default function DriversPage() {
     const [phoneNumber, setPhoneNumber] = useState("")
     const [notes, setNotes] = useState("")
 
+    // Add delete vehicle state 
+    const [driverToDelete, setDriverToDelete] = useState<Driver| null>(null);
+
     async function fetchDrivers() {
         try {
             setIsLoading(true);
@@ -144,6 +147,7 @@ export default function DriversPage() {
                 },
             });
 
+            setDriverToDelete(null);
             await fetchDrivers();
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : "Failed to delete driver");
@@ -183,7 +187,7 @@ export default function DriversPage() {
                                     <Text style={globalStyles.smallButtonText}>Edit</Text>
                                 </Pressable>
 
-                                <Pressable style={globalStyles.buttonDanger} onPress={() => handleDeleteDriver(driver)}>
+                                <Pressable style={globalStyles.buttonDanger} onPress={() => setDriverToDelete(driver)}>
                                     <Text style={globalStyles.smallButtonText}>Delete</Text>
                                 </Pressable>
                             </View>
@@ -253,6 +257,45 @@ export default function DriversPage() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Delete Driver Warning Modal */}
+            <Modal
+                visible={!!driverToDelete}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setDriverToDelete(null)}
+            >
+                <View style={globalStyles.modalOverlay}>
+                    <View style={globalStyles.modalCard}>
+                        <Text style={globalStyles.modalTitle}>Delete Driver?</Text>
+                        <Text style={globalStyles.text}>
+                            Are you sure you want to delete{" "}
+                            {driverToDelete?.name || driverToDelete?.experience || "this driver"}?
+                        </Text>
+                        <View style={styles.modalActions}>
+                            <Pressable
+                                style={globalStyles.buttonPrimary}
+                                onPress={() => setDriverToDelete(null)}
+                                disabled={isLoading}
+                            >
+                                <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                            </Pressable>
+                            <Pressable
+                                style={[globalStyles.buttonDanger, isLoading && globalStyles.buttonDisabled]}
+                                onPress={() => {
+                                    if (driverToDelete) {
+                                        handleDeleteDriver(driverToDelete);
+                                    }
+                                }}
+                                disabled={isLoading}
+                            >
+                                <Text style={globalStyles.smallButtonText}>Yes, Delete</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
 
         </SafeAreaView>
     );
