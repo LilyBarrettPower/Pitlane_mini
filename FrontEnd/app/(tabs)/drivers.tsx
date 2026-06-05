@@ -18,8 +18,8 @@ type Driver = {
     _id: string;
     name: string;
     experience: string;
-    // email: string;
-    // phone: string;
+    email: string;
+    phoneNumber: string;
     notes: string;
     isActive: boolean;
 };
@@ -38,8 +38,8 @@ export default function DriversPage() {
 
     const [name, setName] = useState("")
     const [experience, setExperience] = useState("")
-    // const [email, setEmail] = useState("")
-    // const [phone, setPhone] = useState("")
+    const [email, setEmail] = useState("")
+    const [phoneNumber, setPhoneNumber] = useState("")
     const [notes, setNotes] = useState("")
 
     async function fetchDrivers() {
@@ -69,8 +69,8 @@ export default function DriversPage() {
         setEditingDriver(null);
         setName("");
         setExperience("");
-        // setEmail("");
-        // setPhone("");
+        setEmail("");
+        setPhoneNumber("");
         setNotes("");
         setShowModal(true);
     }
@@ -79,8 +79,8 @@ export default function DriversPage() {
         setEditingDriver(driver);
         setName(driver.name || "");
         setExperience(driver.experience || "");
-        // setEmail(driver.email || "");
-        // setPhone(driver.phone || "");
+        setEmail(driver.email || "");
+        setPhoneNumber(driver.phoneNumber || "");
         setNotes(driver.notes || "");
         setShowModal(true);
     }
@@ -93,8 +93,8 @@ export default function DriversPage() {
             const payload = {
                 name, 
                 experience,
-                // email, 
-                // phone,
+                email, 
+                phoneNumber,
                 notes,
             };
 
@@ -120,8 +120,8 @@ export default function DriversPage() {
             setEditingDriver(null);
             setName("");
             setExperience("");
-            // setEmail("");
-            // setPhone("");
+            setEmail("");
+            setPhoneNumber("");
             setNotes("");
 
             await fetchDrivers();
@@ -174,8 +174,8 @@ export default function DriversPage() {
                         <View key={driver._id} style={globalStyles.card}>
                             <Text style={globalStyles.cardTitle}>{driver.name}</Text>
                             <Text style={globalStyles.cardText}>Experience: {driver.experience || '-'}</Text>
-                            {/* <Text style={styles.cardText}>Email: {driver.email}</Text> */}
-                            {/* <Text style={styles.cardText}>Phone: {driver.phone}</Text> */}
+                            <Text style={globalStyles.cardText}>Email: {driver.email}</Text> 
+                            <Text style={globalStyles.cardText}>Phone: {driver.phoneNumber}</Text> 
                             <Text style={globalStyles.cardText}>Notes: {driver.notes || '-'}</Text>
 
                             <View style={styles.actionRow}>
@@ -215,8 +215,8 @@ export default function DriversPage() {
                             onChangeText={setExperience}
                         />
 
-                        {/* <TextInput
-                            style={styles.input}
+                        <TextInput
+                            style={globalStyles.input}
                             placeholder="Email"
                             placeholderTextColor="#9ca3af"
                             value={email}
@@ -224,12 +224,12 @@ export default function DriversPage() {
                         />
 
                          <TextInput
-                            style={styles.input}
+                            style={globalStyles.input}
                             placeholder="Phone"
                             placeholderTextColor="#9ca3af"
-                            value={phone}
-                            onChangeText={setPhone}
-                        /> */}
+                            value={phoneNumber}
+                            onChangeText={setPhoneNumber}
+                        /> 
 
                         <TextInput
                             style={globalStyles.input}

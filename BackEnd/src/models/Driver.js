@@ -17,6 +17,14 @@ const DriverSchema = new mongoose.Schema(
             default: '',
             trim: true
         },
+        email: {
+            type: String,
+            default: "",
+        },
+        phoneNumber: {
+            type: String,
+            default: "",
+        },
         notes: { type: String },
         isActive: { type: Boolean, default: true },
     },

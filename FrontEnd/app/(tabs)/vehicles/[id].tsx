@@ -27,8 +27,8 @@ type Driver = {
   _id: string;
   name: string;
   experience?: string;
-  // email?: string;
-  // phone?: string; 
+  email?: string;
+  phoneNumber?: string; 
   notes?: string;
 };
 
@@ -243,6 +243,8 @@ async function handleRemoveDriverAssignment(assignmentId: string) {
                 <View>
                 <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
                 <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
+                <Text style={globalStyles.subText}>{item.driverId?.email}</Text>
+                <Text style={globalStyles.subText}>{item.driverId?.phoneNumber}</Text>
                 {/* Add more driver details here? */}
               </View>
 
@@ -256,13 +258,11 @@ async function handleRemoveDriverAssignment(assignmentId: string) {
             ))
           )}
 
-          {/* Should be able to remove drivers from a vehicle here  */}
           <View style={styles.actionRow}>
             <Pressable style={[globalStyles.buttonPrimary, styles.buttonGap]} onPress={() => setShowAssignedDriverModal(true)}>
               <Text style={globalStyles.buttonPrimaryText}>Assign Driver</Text>
             </Pressable>
           </View>
-          {/* Fetch drivers here to populate a drop down list  */}
 
         </View>
 

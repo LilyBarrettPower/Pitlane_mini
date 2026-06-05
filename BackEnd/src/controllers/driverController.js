@@ -4,7 +4,7 @@ const Driver = require('../models/Driver');
 
 exports.createDriver = async (req, res) => {
     try {
-        const { name, experience, notes } = req.body;
+        const { name, experience, notes, email, phoneNumber } = req.body;
         
         if (!name) {
             return res.status(400).json({ message: 'Driver name is required' });
@@ -13,6 +13,8 @@ exports.createDriver = async (req, res) => {
         const driver = await Driver.create({
             organisationId: req.user.organisationId,
             name,
+            email: email || "",
+            phoneNumber: phoneNumber || "",
             experience: experience || '',
             notes: notes || '',
         });
