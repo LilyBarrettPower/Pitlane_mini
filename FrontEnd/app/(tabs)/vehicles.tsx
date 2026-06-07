@@ -30,6 +30,7 @@ type Vehicle = {
 };
 
 
+
 export default function VehiclesPage() {
 
     //  Make sure there is a valid token to access this page 

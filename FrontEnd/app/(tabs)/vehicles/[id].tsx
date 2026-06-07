@@ -38,6 +38,14 @@ type VehicleDriver = {
   driverId: Driver;
 };
 
+// Need to add more of the setup options
+type SetUp = {
+    _id: string;
+    vehicleId: string;
+    version: string;
+    notes?: string;
+};
+
 
 export default function VehicleDetailPage() {
   const { id } = useLocalSearchParams< { id: string}>();
@@ -53,6 +61,7 @@ export default function VehicleDetailPage() {
   const [assignErrorMessage, setAssignErrorMessage] = useState("");
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
 
+  const [setups, setSetups] = useState<SetUp[]>([]);
 
   async function fetchVehicle() {
     try {
@@ -106,6 +115,17 @@ async function fetchDrivers() {
   }
 }
 
+async function fetchSetups() {
+  const data = await apiFetch(`/setups?vehicleId=${id}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  setSetups(data.setups || []);
+} 
+
 
 
 useEffect(() => {
@@ -113,6 +133,7 @@ useEffect(() => {
     fetchVehicle();
     fetchVehicleDrivers();
     fetchDrivers();
+    fetchSetups();
   }
 }, [id, token]);
 
@@ -165,6 +186,28 @@ async function handleRemoveDriverAssignment(assignmentId: string) {
   } catch (error) {
     setErrorMessage(
       error instanceof Error ? error.message : "Failed to remove driver"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+}
+
+async function handleRemoveSetup(setupId: string) {
+  try {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    await apiFetch(`/setups/${setupId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    await fetchSetups();
+  } catch (error) {
+    setErrorMessage(
+      error instanceof Error ? error.message : "Failed to remove setup"
     );
   } finally {
     setIsLoading(false);
@@ -264,6 +307,44 @@ async function handleRemoveDriverAssignment(assignmentId: string) {
             </Pressable>
           </View>
 
+        </View>
+        <View style={globalStyles.card}>
+          <Text style={globalStyles.sectionTitle}>Setups</Text>
+
+          {setups.length === 0 ? (
+            <Text style={globalStyles.text}>No setups assigned to this vehicle</Text>
+          ) : (
+            setups.map((setup) => (
+              <View key={setup._id} style={styles.driverRow}>
+                <View>
+                  <Text style={[styles.row, globalStyles.text]}>
+                    Version: {setup.version}
+                  </Text>
+                  <Text style={globalStyles.subText}>
+                    Events used at: Coming later
+                  </Text>
+                </View>
+
+                <Pressable 
+                  style={globalStyles.buttonDanger}
+                  onPress={() => handleRemoveSetup(setup._id)}
+                  >
+                    <Text style={globalStyles.buttonPrimaryText}>Remove</Text>
+                  </Pressable>
+                </View>
+            ))
+          )}
+
+          <View style={styles.actionRow}>
+            <Pressable 
+              style={[globalStyles.buttonPrimary, styles.buttonGap]}
+              onPress={() => {
+
+              }}
+              >
+                <Text style={globalStyles.buttonPrimaryText}>Assign Setup</Text>
+              </Pressable>
+          </View>
         </View>
 
         <Modal 
