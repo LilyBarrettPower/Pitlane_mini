@@ -87,6 +87,13 @@ exports.updateDriver = async (req, res) => {
 // DELETE - Archive a driver 
 exports.deleteDriver = async (req, res) => {
     try {
+
+         if (req.user.role !== "admin") {
+            return res.status(403).json({
+                message: "Only admins can delete drivers",
+            });
+        }
+        
         const { id } = req.params;
         const driver = await Driver.findByIdAndUpdate({
             _id: id,

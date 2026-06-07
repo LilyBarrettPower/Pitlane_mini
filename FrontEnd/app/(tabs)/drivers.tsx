@@ -27,7 +27,7 @@ type Driver = {
 
 export default function DriversPage() {
 
-    const {token} = useAuth();
+    const {user, token} = useAuth();
 
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -44,6 +44,8 @@ export default function DriversPage() {
 
     // Add delete vehicle state 
     const [driverToDelete, setDriverToDelete] = useState<Driver| null>(null);
+
+    const isAdmin = user?.role == "admin";
 
     async function fetchDrivers() {
         try {
@@ -186,10 +188,13 @@ export default function DriversPage() {
                                 <Pressable style={globalStyles.smallButton} onPress={() => openEditModal(driver)}>
                                     <Text style={globalStyles.smallButtonText}>Edit</Text>
                                 </Pressable>
+                                {/* Make it so that only admins can delete drivers */}
+                                {isAdmin ? (
+                                    <Pressable style={globalStyles.buttonDanger} onPress={() => setDriverToDelete(driver)}>
+                                        <Text style={globalStyles.smallButtonText}>Delete</Text>
+                                    </Pressable>
+                                ) : null}
 
-                                <Pressable style={globalStyles.buttonDanger} onPress={() => setDriverToDelete(driver)}>
-                                    <Text style={globalStyles.smallButtonText}>Delete</Text>
-                                </Pressable>
                             </View>
                         </View>
                     ))
