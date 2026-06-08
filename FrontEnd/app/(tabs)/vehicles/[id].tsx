@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import {useEffect, useState } from 'react';
-import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal } from 'react-native';
+import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import {apiFetch} from '../../../assets/api';
 import { useAuth } from '../../../context/AuthContext';
@@ -38,12 +38,22 @@ type VehicleDriver = {
   driverId: Driver;
 };
 
-// Need to add more of the setup options
+
 type SetUp = {
-    _id: string;
-    vehicleId: string;
-    version: string;
-    notes?: string;
+  _id: string;
+  vehicleId: string;
+  version: string;
+  springNm?: { front?: number; rear?: number };
+  arbPos?: { front?: number; rear?: number };
+  rideHeight?: { front?: number; rear?: number };
+  camber?: { front?: string; rear?: string };
+  toe?: { front?: string; rear?: string };
+  packers?: { front?: string; rear?: string };
+  diffPreload?: number;
+  brakeBias?: string;
+  wingHole?: string;
+  splitter?: string;
+  notes?: string;
 };
 
 
@@ -62,6 +72,26 @@ export default function VehicleDetailPage() {
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
 
   const [setups, setSetups] = useState<SetUp[]>([]);
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [setupVersion, setSetupVersion] = useState('');
+  const [springFront, setSpringFront] = useState('');
+  const [springRear, setSpringRear] = useState('');
+  const [arbFront, setArbFront] = useState('');
+  const [arbRear, setArbRear] = useState('');
+  const [rideHeightFront, setRideHeightFront] = useState('');
+  const [rideHeightRear, setRideHeightRear] = useState('');
+  const [camberFront, setCamberFront] = useState('');
+  const [camberRear, setCamberRear] = useState('');
+  const [toeFront, setToeFront] = useState('');
+  const [toeRear, setToeRear] = useState('');
+  const [packersFront, setPackersFront] = useState('');
+  const [packersRear, setPackersRear] = useState('');
+  const [diffPreload, setDiffPreload] = useState('');
+  const [brakeBias, setBrakeBias] = useState('');
+  const [wingHole, setWingHole] = useState('');
+  const [splitter, setSplitter] = useState('');
+  const [setupNotes, setSetupNotes] = useState('');
+  const [isSavingSetup, setIsSavingSetup] = useState(false);
 
   async function fetchVehicle() {
     try {
@@ -158,69 +188,158 @@ async function handleAssignDriver() {
       }),
     });
 
-    setSelectedDriverId("");
-    setShowAssignedDriverModal(false);
-    await fetchVehicleDrivers();
-  } catch (error) {
-    setAssignErrorMessage(
-      error instanceof Error ? error.message : "Failed to assign driver"
-    );
-  } finally {
-    setIsAssigningDriver(false);
+      setSelectedDriverId("");
+      setShowAssignedDriverModal(false);
+      await fetchVehicleDrivers();
+    } catch (error) {
+      setAssignErrorMessage(
+        error instanceof Error ? error.message : "Failed to assign driver"
+      );
+    } finally {
+      setIsAssigningDriver(false);
+    }
   }
-}
 
-async function handleRemoveDriverAssignment(assignmentId: string) {
-  try {
-    setIsLoading(true);
-    setErrorMessage("");
+  async function handleRemoveDriverAssignment(assignmentId: string) {
+    try {
+      setIsLoading(true);
+      setErrorMessage("");
 
-    await apiFetch(`/vehicle-drivers/${assignmentId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      await apiFetch(`/vehicle-drivers/${assignmentId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    await fetchVehicleDrivers();
-  } catch (error) {
-    setErrorMessage(
-      error instanceof Error ? error.message : "Failed to remove driver"
-    );
-  } finally {
-    setIsLoading(false);
+      await fetchVehicleDrivers();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to remove driver"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }
-}
 
-async function handleRemoveSetup(setupId: string) {
-  try {
-    setIsLoading(true);
-    setErrorMessage("");
+  async function handleRemoveSetup(setupId: string) {
+    try {
+      setIsLoading(true);
+      setErrorMessage("");
 
-    await apiFetch(`/setups/${setupId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      await apiFetch(`/setups/${setupId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    await fetchSetups();
-  } catch (error) {
-    setErrorMessage(
-      error instanceof Error ? error.message : "Failed to remove setup"
-    );
-  } finally {
-    setIsLoading(false);
+      await fetchSetups();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to remove setup"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   }
-}
+
+  async function handleCreateSetup() {
+    if (!setupVersion) {
+      setErrorMessage("Setup version is required");
+      return;
+    }
+
+    try {
+      setIsSavingSetup(true);
+      setErrorMessage("");
+
+      await apiFetch("/setups", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vehicleId: id,
+          version: setupVersion,
+
+          springNm: {
+            front: springFront ? Number(springFront) : undefined,
+            rear: springRear ? Number(springRear) : undefined,
+          },
+
+          arbPos: {
+            front: arbFront ? Number(arbFront) : undefined,
+            rear: arbRear ? Number(arbRear) : undefined,
+          },
+
+          rideHeight: {
+            front: rideHeightFront ? Number(rideHeightFront) : undefined,
+            rear: rideHeightRear ? Number(rideHeightRear) : undefined,
+          },
+
+          camber: {
+            front: camberFront,
+            rear: camberRear,
+          },
+
+          toe: {
+            front: toeFront,
+            rear: toeRear,
+          },
+
+          packers: {
+            front: packersFront,
+            rear: packersRear,
+          },
+
+          diffPreload: diffPreload ? Number(diffPreload) : undefined,
+          brakeBias,
+          wingHole,
+          splitter,
+          notes: setupNotes,
+        }),
+      });
+
+      setSetupVersion('');
+      setSpringFront('');
+      setSpringRear('');
+      setArbFront('');
+      setArbRear('');
+      setRideHeightFront('');
+      setRideHeightRear('');
+      setCamberFront('');
+      setCamberRear('');
+      setToeFront('');
+      setToeRear('');
+      setPackersFront('');
+      setPackersRear('');
+      setDiffPreload('');
+      setBrakeBias('');
+      setWingHole('');
+      setSplitter('');
+      setSetupNotes('');
+      setShowSetupModal(false);
+
+      await fetchSetups();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to create setup"
+      );
+    } finally {
+      setIsSavingSetup(false);
+    }
+  }
 
   if (isLoading) {
     return (
-     <SafeAreaView style={globalStyles.container}>
-        <ActivityIndicator color="#ffffff"/>
-     </SafeAreaView>   
+      <SafeAreaView style={globalStyles.container}>
+        <ActivityIndicator color="#ffffff" />
+      </SafeAreaView>
     );
   }
+
+
 
   if (errorMessage) {
     return (
@@ -288,7 +407,6 @@ async function handleRemoveSetup(setupId: string) {
                 <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
                 <Text style={globalStyles.subText}>{item.driverId?.email}</Text>
                 <Text style={globalStyles.subText}>{item.driverId?.phoneNumber}</Text>
-                {/* Add more driver details here? */}
               </View>
 
               <Pressable 
@@ -338,11 +456,9 @@ async function handleRemoveSetup(setupId: string) {
           <View style={styles.actionRow}>
             <Pressable 
               style={[globalStyles.buttonPrimary, styles.buttonGap]}
-              onPress={() => {
-
-              }}
+              onPress={() => setShowSetupModal(true)}
               >
-                <Text style={globalStyles.buttonPrimaryText}>Assign Setup</Text>
+                <Text style={globalStyles.buttonPrimaryText}>Create  Setup</Text>
               </Pressable>
           </View>
         </View>
@@ -353,75 +469,245 @@ async function handleRemoveSetup(setupId: string) {
           animationType="fade"
           onRequestClose={() => setShowAssignedDriverModal(false)}
           >
+          <View style={globalStyles.modalOverlay}>
+            <View style={globalStyles.modalCard}>
+              <Text style={globalStyles.title}>Assign Driver</Text>
+
+              {assignErrorMessage ? (
+                <Text style={globalStyles.errorText}>{assignErrorMessage}</Text>
+              ) : null}
+
+              {drivers.length === 0 ? (
+                <Text style={globalStyles.text}>No drivers available. Create driver first</Text>
+              ) : (
+                <View style={styles.driverSelectList}>
+                  {drivers.map((driver) => {
+                    const alreadyAssigned = vehicleDrivers.some(
+                      (assignment) => assignment.driverId?._id === driver._id
+                    );
+
+                    return (
+                      <Pressable
+                        key={driver._id}
+                        disabled={alreadyAssigned}
+                        style={[
+                          styles.driverSelectItem,
+                          selectedDriverId === driver._id && styles.driverSelectItemActive,
+                          alreadyAssigned && styles.driverSelectItemDisabled,
+                        ]}
+                        onPress={() => setSelectedDriverId(driver._id)}
+                      >
+                        <Text style={globalStyles.text}>{driver.name}</Text>
+                        <Text style={globalStyles.subText}>
+                          {alreadyAssigned ? "Already assigned" : driver.experience || "-"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={globalStyles.buttonDanger}
+                  onPress={() => {
+                    setSelectedDriverId("");
+                    setAssignErrorMessage("");
+                    setShowAssignedDriverModal(false);
+                  }}
+                  disabled={isAssigningDriver}
+                >
+                  <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    globalStyles.buttonPrimary,
+                    isAssigningDriver && globalStyles.buttonDisabled,
+                  ]}
+                  onPress={handleAssignDriver}
+                  disabled={isAssigningDriver || drivers.length === 0}
+                >
+                  {isAssigningDriver ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={globalStyles.buttonPrimaryText}>Assign</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+        <Modal
+          visible={showSetupModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowSetupModal(false)}
+        >
+          <ScrollView>
             <View style={globalStyles.modalOverlay}>
               <View style={globalStyles.modalCard}>
-                <Text style={globalStyles.title}>Assign Driver</Text>
+                <Text style={globalStyles.modalTitle}>Create Setup</Text>
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Version"
+                  placeholderTextColor="#9ca3af"
+                  value={setupVersion}
+                  onChangeText={setSetupVersion}
+                />
 
-                {assignErrorMessage ? (
-                  <Text style={globalStyles.errorText}>{assignErrorMessage}</Text>
-                ) : null}
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Spring Front nm"
+                  placeholderTextColor="#9ca3af"
+                  value={springFront}
+                  onChangeText={setSpringFront}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Spring Rear nm"
+                  placeholderTextColor="#9ca3af"
+                  value={springRear}
+                  onChangeText={setSpringRear}
+                />
 
-                {drivers.length === 0 ? (
-                  <Text style={globalStyles.text}>No drivers available. Create driver first</Text>
-                ) : (
-                  <View style={styles.driverSelectList}>
-                    {drivers.map((driver) => {
-                      const alreadyAssigned = vehicleDrivers.some(
-                        (assignment) => assignment.driverId?._id === driver._id
-                      );
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="ARB Front"
+                  placeholderTextColor="#9ca3af"
+                  value={arbFront}
+                  onChangeText={setArbFront}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="ARB Rear"
+                  placeholderTextColor="#9ca3af"
+                  value={arbRear}
+                  onChangeText={setArbRear}
+                />
 
-                      return (
-                        <Pressable 
-                          key={driver._id}
-                          disabled={alreadyAssigned}
-                          style={[
-                            styles.driverSelectItem,
-                            selectedDriverId === driver._id && styles.driverSelectItemActive,
-                            alreadyAssigned && styles.driverSelectItemDisabled,
-                          ]}
-                          onPress={() => setSelectedDriverId(driver._id)}
-                          >
-                            <Text style={globalStyles.text}>{driver.name}</Text>
-                            <Text style={globalStyles.subText}>
-                              {alreadyAssigned ? "Already assigned" : driver.experience || "-"}
-                            </Text>
-                          </Pressable>
-                      );
-                    })}
-                    </View>
-                )}
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Ride Height Front"
+                  placeholderTextColor="#9ca3af"
+                  value={rideHeightFront}
+                  onChangeText={setRideHeightFront}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Ride Height Rear"
+                  placeholderTextColor="#9ca3af"
+                  value={rideHeightRear}
+                  onChangeText={setRideHeightRear}
+                />
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Camber Front"
+                  placeholderTextColor="#9ca3af"
+                  value={camberFront}
+                  onChangeText={setCamberFront}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Camber Rear"
+                  placeholderTextColor="#9ca3af"
+                  value={camberRear}
+                  onChangeText={setCamberRear}
+                />
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Toe Front"
+                  placeholderTextColor="#9ca3af"
+                  value={toeFront}
+                  onChangeText={setToeFront}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Toe Rear"
+                  placeholderTextColor="#9ca3af"
+                  value={toeRear}
+                  onChangeText={setToeRear}
+                />
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Packers Front"
+                  placeholderTextColor="#9ca3af"
+                  value={packersFront}
+                  onChangeText={setPackersFront}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Packers Rear"
+                  placeholderTextColor="#9ca3af"
+                  value={packersRear}
+                  onChangeText={setPackersRear}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Diff Preload"
+                  placeholderTextColor="#9ca3af"
+                  value={diffPreload}
+                  onChangeText={setDiffPreload}
+                />
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Brake Bias"
+                  placeholderTextColor="#9ca3af"
+                  value={brakeBias}
+                  onChangeText={setBrakeBias}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Wing Hole"
+                  placeholderTextColor="#9ca3af"
+                  value={wingHole}
+                  onChangeText={setWingHole}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Splitter"
+                  placeholderTextColor="#9ca3af"
+                  value={splitter}
+                  onChangeText={setSplitter}
+                />
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Notes"
+                  placeholderTextColor="#9ca3af"
+                  value={setupNotes}
+                  onChangeText={setSetupNotes}
+                />
 
                 <View style={styles.actionRow}>
-                  <Pressable 
+                  <Pressable
                     style={globalStyles.buttonDanger}
                     onPress={() => {
-                      setSelectedDriverId("");
-                      setAssignErrorMessage("");
-                      setShowAssignedDriverModal(false);
+                      setShowSetupModal(false);
                     }}
-                    disabled={isAssigningDriver}
-                    >
-                      <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                    </Pressable>
+                  >
+                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[globalStyles.buttonPrimary, isSavingSetup && globalStyles.buttonDisabled]}
+                    onPress={handleCreateSetup}
+                    disabled={isSavingSetup}
+                  >
+                    {isSavingSetup ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <Text style={globalStyles.buttonPrimaryText}>Create Setup</Text>
+                    )}
+                  </Pressable>
 
-                    <Pressable 
-                      style={[
-                        globalStyles.buttonPrimary,
-                        isAssigningDriver && globalStyles.buttonDisabled,
-                      ]}
-                      onPress={handleAssignDriver}
-                      disabled={isAssigningDriver || drivers.length === 0}
-                      >
-                        {isAssigningDriver ? (
-                          <ActivityIndicator color="#ffffff"/>
-                        ) : (
-                          <Text style={globalStyles.buttonPrimaryText}>Assign</Text>
-                        )}
-                      </Pressable>
                 </View>
               </View>
             </View>
-          </Modal>
+          </ScrollView>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
