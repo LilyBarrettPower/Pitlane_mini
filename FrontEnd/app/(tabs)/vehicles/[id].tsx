@@ -1,26 +1,26 @@
 import { useLocalSearchParams } from 'expo-router';
-import {useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
-import {apiFetch} from '../../../assets/api';
+import { apiFetch } from '../../../assets/api';
 import { useAuth } from '../../../context/AuthContext';
 import { globalStyles } from '../../../constants/styles';
 
 type Vehicle = {
-    _id: string;
-    name: string;
-    racingNumber?: string;
-    make?: string;
-    model?: string;
-    year?: number;
-    owner?: string;
-    odo?: number;
-    chassisNumber?: string;
-    notes?: string;
-    ownerHistory?: {
+  _id: string;
+  name: string;
+  racingNumber?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  owner?: string;
+  odo?: number;
+  chassisNumber?: string;
+  notes?: string;
+  ownerHistory?: {
     owner: string;
     changedAt: string;
-    }[];
+  }[];
 };
 
 type Driver = {
@@ -28,7 +28,7 @@ type Driver = {
   name: string;
   experience?: string;
   email?: string;
-  phoneNumber?: string; 
+  phoneNumber?: string;
   notes?: string;
 };
 
@@ -58,8 +58,8 @@ type SetUp = {
 
 
 export default function VehicleDetailPage() {
-  const { id } = useLocalSearchParams< { id: string}>();
-  const {token} = useAuth();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { token } = useAuth();
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -93,100 +93,102 @@ export default function VehicleDetailPage() {
   const [setupNotes, setSetupNotes] = useState('');
   const [isSavingSetup, setIsSavingSetup] = useState(false);
 
+  const [editingSetup, setEditingSetup] = useState<SetUp | null>(null);
+
   async function fetchVehicle() {
     try {
-        setIsLoading(true);
-        setErrorMessage("");
+      setIsLoading(true);
+      setErrorMessage("");
 
-        const data = await apiFetch(`/vehicles/${id}`, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        setVehicle(data.vehicle);
+      const data = await apiFetch(`/vehicles/${id}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setVehicle(data.vehicle);
     } catch (error) {
-        setErrorMessage(
-            error instanceof Error ? error.message : "Failed to load vehicle"
-        );
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to load vehicle"
+      );
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }
 
 
   async function fetchVehicleDrivers() {
-  const data = await apiFetch(`/vehicle-drivers/vehicle/${id}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  setVehicleDrivers(data.assignments || []);
-}
-
-// Fetch all drivers 
-
-async function fetchDrivers() {
-  try {
-    const data = await apiFetch("/drivers", {
+    const data = await apiFetch(`/vehicle-drivers/vehicle/${id}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    setDrivers(data.drivers || []); 
-  } catch (error) {
-    setAssignErrorMessage(
-      error instanceof Error ? error.message : "Failed to load drivers"
-    );
-  }
-}
-
-async function fetchSetups() {
-  const data = await apiFetch(`/setups?vehicleId=${id}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  setSetups(data.setups || []);
-} 
-
-
-
-useEffect(() => {
-  if (id && token) {
-    fetchVehicle();
-    fetchVehicleDrivers();
-    fetchDrivers();
-    fetchSetups();
-  }
-}, [id, token]);
-
-async function handleAssignDriver() {
-  if (!selectedDriverId) {
-    setAssignErrorMessage("Please select a driver");
-    return;
+    setVehicleDrivers(data.assignments || []);
   }
 
-  try {
-    setIsAssigningDriver(true);
-    setAssignErrorMessage("");
+  // Fetch all drivers 
 
-    await apiFetch("/vehicle-drivers", {
-      method: "POST",
+  async function fetchDrivers() {
+    try {
+      const data = await apiFetch("/drivers", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setDrivers(data.drivers || []);
+    } catch (error) {
+      setAssignErrorMessage(
+        error instanceof Error ? error.message : "Failed to load drivers"
+      );
+    }
+  }
+
+  async function fetchSetups() {
+    const data = await apiFetch(`/setups?vehicleId=${id}`, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        vehicleId: id,
-        driverId: selectedDriverId,
-      }),
     });
+
+    setSetups(data.setups || []);
+  }
+
+
+
+  useEffect(() => {
+    if (id && token) {
+      fetchVehicle();
+      fetchVehicleDrivers();
+      fetchDrivers();
+      fetchSetups();
+    }
+  }, [id, token]);
+
+  async function handleAssignDriver() {
+    if (!selectedDriverId) {
+      setAssignErrorMessage("Please select a driver");
+      return;
+    }
+
+    try {
+      setIsAssigningDriver(true);
+      setAssignErrorMessage("");
+
+      await apiFetch("/vehicle-drivers", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vehicleId: id,
+          driverId: selectedDriverId,
+        }),
+      });
 
       setSelectedDriverId("");
       setShowAssignedDriverModal(false);
@@ -244,83 +246,76 @@ async function handleAssignDriver() {
     }
   }
 
-  async function handleCreateSetup() {
+  async function handleSaveSetup(saveAsNewVersion = false) {
     if (!setupVersion) {
       setErrorMessage("Setup version is required");
       return;
     }
 
+    const payload = {
+      vehicleId: id,
+      version: setupVersion,
+
+      springNm: {
+        front: springFront ? Number(springFront) : undefined,
+        rear: springRear ? Number(springRear) : undefined,
+      },
+
+      arbPos: {
+        front: arbFront ? Number(arbFront) : undefined,
+        rear: arbRear ? Number(arbRear) : undefined,
+      },
+
+      rideHeight: {
+        front: rideHeightFront ? Number(rideHeightFront) : undefined,
+        rear: rideHeightRear ? Number(rideHeightRear) : undefined,
+      },
+
+      camber: {
+        front: camberFront,
+        rear: camberRear,
+      },
+
+      toe: {
+        front: toeFront,
+        rear: toeRear,
+      },
+
+      packers: {
+        front: packersFront,
+        rear: packersRear,
+      },
+
+      diffPreload: diffPreload ? Number(diffPreload) : undefined,
+      brakeBias,
+      wingHole,
+      splitter,
+      notes: setupNotes,
+    };
+
     try {
       setIsSavingSetup(true);
       setErrorMessage("");
 
-      await apiFetch("/setups", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          vehicleId: id,
-          version: setupVersion,
-
-          springNm: {
-            front: springFront ? Number(springFront) : undefined,
-            rear: springRear ? Number(springRear) : undefined,
+      if (editingSetup && !saveAsNewVersion) {
+        await apiFetch(`/setups/${editingSetup._id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-
-          arbPos: {
-            front: arbFront ? Number(arbFront) : undefined,
-            rear: arbRear ? Number(arbRear) : undefined,
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await apiFetch("/setups", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-
-          rideHeight: {
-            front: rideHeightFront ? Number(rideHeightFront) : undefined,
-            rear: rideHeightRear ? Number(rideHeightRear) : undefined,
-          },
-
-          camber: {
-            front: camberFront,
-            rear: camberRear,
-          },
-
-          toe: {
-            front: toeFront,
-            rear: toeRear,
-          },
-
-          packers: {
-            front: packersFront,
-            rear: packersRear,
-          },
-
-          diffPreload: diffPreload ? Number(diffPreload) : undefined,
-          brakeBias,
-          wingHole,
-          splitter,
-          notes: setupNotes,
-        }),
-      });
-
-      setSetupVersion('');
-      setSpringFront('');
-      setSpringRear('');
-      setArbFront('');
-      setArbRear('');
-      setRideHeightFront('');
-      setRideHeightRear('');
-      setCamberFront('');
-      setCamberRear('');
-      setToeFront('');
-      setToeRear('');
-      setPackersFront('');
-      setPackersRear('');
-      setDiffPreload('');
-      setBrakeBias('');
-      setWingHole('');
-      setSplitter('');
-      setSetupNotes('');
+          body: JSON.stringify(payload),
+        });
+      }
+      clearSetupForm();
       setShowSetupModal(false);
-
       await fetchSetups();
     } catch (error) {
       setErrorMessage(
@@ -329,6 +324,53 @@ async function handleAssignDriver() {
     } finally {
       setIsSavingSetup(false);
     }
+  }
+
+  function clearSetupForm() {
+    setEditingSetup(null);
+    setSetupVersion('');
+    setSpringFront('');
+    setSpringRear('');
+    setArbFront('');
+    setArbRear('');
+    setRideHeightFront('');
+    setRideHeightRear('');
+    setCamberFront('');
+    setCamberRear('');
+    setToeFront('');
+    setToeRear('');
+    setPackersFront('');
+    setPackersRear('');
+    setDiffPreload('');
+    setBrakeBias('');
+    setWingHole('');
+    setSplitter('');
+    setSetupNotes('');
+  }
+
+  function openEditSetupModal(setup: SetUp) {
+    setEditingSetup(setup);
+
+    setSetupVersion(setup.version || '');
+    setSpringFront(setup.springNm?.front ? String(setup.springNm.front) : '');
+    setSpringRear(setup.springNm?.rear ? String(setup.springNm.rear) : '');
+    setArbFront(setup.arbPos?.front ? String(setup.arbPos.front) : '');
+    setArbRear(setup.arbPos?.rear ? String(setup.arbPos.rear) : '');
+    setRideHeightFront(setup.rideHeight?.front ? String(setup.rideHeight.front) : '');
+    setRideHeightRear(setup.rideHeight?.rear ? String(setup.rideHeight.rear) : '');
+    setCamberFront(setup.camber?.front || '');
+    setCamberRear(setup.camber?.rear || '');
+    setToeFront(setup.toe?.front || '');
+    setToeRear(setup.toe?.rear || '');
+    setPackersFront(setup.packers?.front || '');
+    setPackersRear(setup.packers?.rear || '');
+    setDiffPreload(setup.diffPreload ? String(setup.diffPreload) : '');
+    setBrakeBias(setup.brakeBias || '');
+    setWingHole(setup.wingHole || '');
+    setSplitter(setup.splitter || '');
+    setSetupNotes(setup.notes || '');
+
+    setShowSetupModal(true);
   }
 
   if (isLoading) {
@@ -403,15 +445,15 @@ async function handleAssignDriver() {
             vehicleDrivers.map((item) => (
               <View key={item._id} style={styles.driverRow}>
                 <View>
-                <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
-                <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
-                <Text style={globalStyles.subText}>{item.driverId?.email}</Text>
-                <Text style={globalStyles.subText}>{item.driverId?.phoneNumber}</Text>
-              </View>
+                  <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
+                  <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
+                  <Text style={globalStyles.subText}>{item.driverId?.email}</Text>
+                  <Text style={globalStyles.subText}>{item.driverId?.phoneNumber}</Text>
+                </View>
 
-              <Pressable 
-                style={globalStyles.buttonDanger}
-                onPress={() => handleRemoveDriverAssignment(item._id)}
+                <Pressable
+                  style={globalStyles.buttonDanger}
+                  onPress={() => handleRemoveDriverAssignment(item._id)}
                 >
                   <Text style={globalStyles.buttonPrimaryText}>Remove</Text>
                 </Pressable>
@@ -443,32 +485,43 @@ async function handleAssignDriver() {
                   </Text>
                 </View>
 
-                <Pressable 
-                  style={globalStyles.buttonDanger}
+                <View style={styles.setupButtonRow}>
+                <Pressable
+                  style={globalStyles.smallButton}
+                  onPress={() => openEditSetupModal(setup)}
+                >
+                  <Text style={globalStyles.smallButtonText}>Edit</Text>
+                </Pressable>
+                <Pressable
+                  style={[globalStyles.buttonDanger, globalStyles.smallButton]}
                   onPress={() => handleRemoveSetup(setup._id)}
-                  >
-                    <Text style={globalStyles.buttonPrimaryText}>Remove</Text>
-                  </Pressable>
+                >
+                  <Text style={globalStyles.smallButtonText}>Remove</Text>
+                </Pressable>
                 </View>
+              </View>
             ))
           )}
 
           <View style={styles.actionRow}>
-            <Pressable 
-              style={[globalStyles.buttonPrimary, styles.buttonGap]}
-              onPress={() => setShowSetupModal(true)}
-              >
-                <Text style={globalStyles.buttonPrimaryText}>Create  Setup</Text>
-              </Pressable>
+            <Pressable
+              style={[globalStyles.smallButton, styles.buttonGap]}
+              onPress={() => {
+                clearSetupForm();
+                setShowSetupModal(true);
+              }}
+            >
+              <Text style={globalStyles.smallButtonText}>Create  Setup</Text>
+            </Pressable>
           </View>
         </View>
 
-        <Modal 
+        <Modal
           visible={showAssignedDriverModal}
           transparent
           animationType="fade"
           onRequestClose={() => setShowAssignedDriverModal(false)}
-          >
+        >
           <View style={globalStyles.modalOverlay}>
             <View style={globalStyles.modalCard}>
               <Text style={globalStyles.title}>Assign Driver</Text>
@@ -547,7 +600,10 @@ async function handleAssignDriver() {
           <ScrollView>
             <View style={globalStyles.modalOverlay}>
               <View style={globalStyles.modalCard}>
-                <Text style={globalStyles.modalTitle}>Create Setup</Text>
+                <Text style={globalStyles.modalTitle}>
+                  {editingSetup ? "Edit Setup" : "Create Setup"}
+                </Text>
+                
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Version"
@@ -686,22 +742,38 @@ async function handleAssignDriver() {
                   <Pressable
                     style={globalStyles.buttonDanger}
                     onPress={() => {
+                      clearSetupForm();
                       setShowSetupModal(false);
                     }}
                   >
                     <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
                   </Pressable>
-                  <Pressable
-                    style={[globalStyles.buttonPrimary, isSavingSetup && globalStyles.buttonDisabled]}
-                    onPress={handleCreateSetup}
-                    disabled={isSavingSetup}
-                  >
-                    {isSavingSetup ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
+                  {editingSetup ? (
+                    <>
+                      <Pressable
+                        style={[globalStyles.buttonPrimary, isSavingSetup && globalStyles.buttonDisabled]}
+                        onPress={() => handleSaveSetup(false)}
+                        disabled={isSavingSetup}
+                      >
+                        <Text style={globalStyles.buttonPrimaryText}>Save Changes</Text>
+                      </Pressable>
+                      <Pressable
+                        style={[globalStyles.buttonSecondary, isSavingSetup && globalStyles.buttonDisabled]}
+                        onPress={() => handleSaveSetup(true)}
+                        disabled={isSavingSetup}
+                      >
+                        <Text style={globalStyles.buttonPrimaryText}>Save as new version</Text>
+                      </Pressable>
+                    </>
+                  ) : (
+                    <Pressable
+                      style={[globalStyles.buttonPrimary, isSavingSetup && globalStyles.buttonDisabled]}
+                      onPress={() => handleSaveSetup(false)}
+                      disabled={isSavingSetup}
+                    >
                       <Text style={globalStyles.buttonPrimaryText}>Create Setup</Text>
-                    )}
-                  </Pressable>
+                    </Pressable>
+                  )}
 
                 </View>
               </View>
@@ -764,5 +836,10 @@ const styles = StyleSheet.create({
   },
   driverSelectItemDisabled: {
     opacity: 0.45,
+  },
+  setupButtonRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
   },
 });
