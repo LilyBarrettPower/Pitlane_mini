@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput } from 'react-native';
+import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput, SectionList } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from '../../../assets/api';
 import { useAuth } from '../../../context/AuthContext';
@@ -603,7 +603,7 @@ export default function VehicleDetailPage() {
                 <Text style={globalStyles.modalTitle}>
                   {editingSetup ? "Edit Setup" : "Create Setup"}
                 </Text>
-                
+                <Text style={globalStyles.label}>Version</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Version"
@@ -611,7 +611,8 @@ export default function VehicleDetailPage() {
                   value={setupVersion}
                   onChangeText={setSetupVersion}
                 />
-
+                <Text style={globalStyles.sectionTitle}>Springs</Text>
+                <Text style={globalStyles.label}>Front Spring (nm)</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Spring Front nm"
@@ -619,6 +620,7 @@ export default function VehicleDetailPage() {
                   value={springFront}
                   onChangeText={setSpringFront}
                 />
+                <Text style={globalStyles.label}>Rear Spring (nm)</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Spring Rear nm"
@@ -626,7 +628,8 @@ export default function VehicleDetailPage() {
                   value={springRear}
                   onChangeText={setSpringRear}
                 />
-
+                <Text style={globalStyles.sectionTitle}>ARB</Text>
+                <Text style={globalStyles.label}>ARB Front</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="ARB Front"
@@ -634,6 +637,7 @@ export default function VehicleDetailPage() {
                   value={arbFront}
                   onChangeText={setArbFront}
                 />
+                <Text style={globalStyles.label}>ARB Rear</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="ARB Rear"
@@ -641,7 +645,8 @@ export default function VehicleDetailPage() {
                   value={arbRear}
                   onChangeText={setArbRear}
                 />
-
+                <Text style={globalStyles.sectionTitle}>Ride Height</Text>
+                <Text style={globalStyles.label}>Ride Height Front</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Ride Height Front"
@@ -649,6 +654,7 @@ export default function VehicleDetailPage() {
                   value={rideHeightFront}
                   onChangeText={setRideHeightFront}
                 />
+                <Text style={globalStyles.label}>Ride Height Rear</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Ride Height Rear"
@@ -656,7 +662,8 @@ export default function VehicleDetailPage() {
                   value={rideHeightRear}
                   onChangeText={setRideHeightRear}
                 />
-
+                <Text style={globalStyles.sectionTitle}>Camber</Text>
+                <Text style={globalStyles.label}>Camber Front</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Camber Front"
@@ -664,6 +671,7 @@ export default function VehicleDetailPage() {
                   value={camberFront}
                   onChangeText={setCamberFront}
                 />
+                <Text style={globalStyles.label}>Camber Rear</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Camber Rear"
@@ -671,7 +679,8 @@ export default function VehicleDetailPage() {
                   value={camberRear}
                   onChangeText={setCamberRear}
                 />
-
+                <Text style={globalStyles.sectionTitle}>Toe</Text>
+                <Text style={globalStyles.label}>Toe Front</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Toe Front"
@@ -679,6 +688,7 @@ export default function VehicleDetailPage() {
                   value={toeFront}
                   onChangeText={setToeFront}
                 />
+                <Text style={globalStyles.label}>Toe Rear</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Toe Rear"
@@ -686,7 +696,8 @@ export default function VehicleDetailPage() {
                   value={toeRear}
                   onChangeText={setToeRear}
                 />
-
+                <Text style={globalStyles.sectionTitle}>Packers</Text>
+                <Text style={globalStyles.label}>Packers Front</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Packers Front"
@@ -694,6 +705,7 @@ export default function VehicleDetailPage() {
                   value={packersFront}
                   onChangeText={setPackersFront}
                 />
+                <Text style={globalStyles.label}>Packers Rear</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Packers Rear"
@@ -701,6 +713,7 @@ export default function VehicleDetailPage() {
                   value={packersRear}
                   onChangeText={setPackersRear}
                 />
+                <Text style={globalStyles.label}>Diff Preload</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Diff Preload"
@@ -708,7 +721,7 @@ export default function VehicleDetailPage() {
                   value={diffPreload}
                   onChangeText={setDiffPreload}
                 />
-
+                <Text style={globalStyles.label}>Brake Bias</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Brake Bias"
@@ -716,6 +729,7 @@ export default function VehicleDetailPage() {
                   value={brakeBias}
                   onChangeText={setBrakeBias}
                 />
+                <Text style={globalStyles.label}>Wing Hole</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Wing Hole"
@@ -723,6 +737,7 @@ export default function VehicleDetailPage() {
                   value={wingHole}
                   onChangeText={setWingHole}
                 />
+                <Text style={globalStyles.label}>Splitter</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Splitter"
@@ -730,6 +745,7 @@ export default function VehicleDetailPage() {
                   value={splitter}
                   onChangeText={setSplitter}
                 />
+                <Text style={globalStyles.label}>Notes</Text>
                 <TextInput
                   style={globalStyles.input}
                   placeholder="Notes"
