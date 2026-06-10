@@ -7,7 +7,7 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    View,
+    View
 } from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import { globalStyles } from '../../constants/styles';
@@ -207,7 +207,7 @@ export default function DriversPage() {
                         <Text style={globalStyles.modalTitle}>
                             {editingDriver ? 'Edit Driver' : 'Create Driver'}
                         </Text>
-
+                        <Text style={globalStyles.label}>Name</Text>
                         <TextInput
                             style={globalStyles.input}
                             placeholder="Name"
@@ -215,7 +215,7 @@ export default function DriversPage() {
                             value={name}
                             onChangeText={setName}
                         />
-
+                        <Text style={globalStyles.label}>Experience</Text>
                         <TextInput
                             style={globalStyles.input}
                             placeholder="Experience"
@@ -223,7 +223,7 @@ export default function DriversPage() {
                             value={experience}
                             onChangeText={setExperience}
                         />
-
+                        <Text style={globalStyles.label}>Email</Text>
                         <TextInput
                             style={globalStyles.input}
                             placeholder="Email"
@@ -231,7 +231,7 @@ export default function DriversPage() {
                             value={email}
                             onChangeText={setEmail}
                         />
-
+                        <Text style={globalStyles.label}>Phone Number</Text>
                          <TextInput
                             style={globalStyles.input}
                             placeholder="Phone"
@@ -239,7 +239,7 @@ export default function DriversPage() {
                             value={phoneNumber}
                             onChangeText={setPhoneNumber}
                         /> 
-
+                        <Text style={globalStyles.label}>Notes</Text>
                         <TextInput
                             style={globalStyles.input}
                             placeholder="Notes"

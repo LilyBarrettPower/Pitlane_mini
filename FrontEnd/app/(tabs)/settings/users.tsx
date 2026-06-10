@@ -162,6 +162,7 @@ export default function UsersPage() {
                               <Text style={globalStyles.label}>Name</Text>
                               <TextInput  
                                   value={name}
+                                  placeholder='Name'
                                   onChangeText={setName}
                                   style={globalStyles.input}
                                   />
@@ -171,6 +172,7 @@ export default function UsersPage() {
                               <Text style={globalStyles.label}>Email</Text>
                               <TextInput
                                   value={email}
+                                  placeholder='Email'
                                   onChangeText={setEmail}
                                   autoCapitalize="none"
                                   keyboardType="email-address"
@@ -183,6 +185,7 @@ export default function UsersPage() {
                               <Text style={globalStyles.label}>Password</Text>
                               <TextInput
                                   value={password}
+                                  placeholder='Password'
                                   onChangeText={setPassword}
                                   secureTextEntry
                                   style={globalStyles.input}

@@ -267,20 +267,30 @@ export default function VehiclesPage() {
             </ScrollView>
 
             <Modal visible={showCreateModal} transparent animationType="fade">
+                <ScrollView>
                 <View style={globalStyles.modalOverlay}>
+                                            
                     <View style={globalStyles.modalCard}>
                         <Text style={globalStyles.modalTitle}>
                             {editingVehicle ? "Edit Vehicle" : "Create Vehicle"}
                         </Text>
-
+                        <Text style={globalStyles.label}>Name</Text>
                         <TextInput style={globalStyles.input} placeholder="Name" placeholderTextColor="9ca3af" value={name} onChangeText={setName}/>
+                        <Text style={globalStyles.label}>Make</Text>
                         <TextInput style={globalStyles.input} placeholder="Make" placeholderTextColor="9ca3af" value={make} onChangeText={setMake}/>
+                        <Text style={globalStyles.label}>Model</Text>
                         <TextInput style={globalStyles.input} placeholder="Model" placeholderTextColor="9ca3af" value={model} onChangeText={setModel}/>
+                        <Text style={globalStyles.label}>Year</Text>
                         <TextInput style={globalStyles.input} placeholder="Year" placeholderTextColor="9ca3af" value={year} onChangeText={setYear}/>
+                        <Text style={globalStyles.label}>Owner</Text>
                         <TextInput style={globalStyles.input} placeholder="Owner" placeholderTextColor="9ca3af" value={owner} onChangeText={setOwner}/>
+                        <Text style={globalStyles.label}>Odometer</Text>
                         <TextInput style={globalStyles.input} placeholder="ODO" placeholderTextColor="9ca3af" value={odo} onChangeText={setOdo}/>
+                        <Text style={globalStyles.label}>Race Number</Text>
                         <TextInput style={globalStyles.input} placeholder="Race Number" placeholderTextColor="9ca3af" value={racingNumber} onChangeText={setRacingNumber}/>
+                        <Text style={globalStyles.label}>Chassis Number</Text>
                         <TextInput style={globalStyles.input} placeholder="Chassis Number" placeholderTextColor="9ca3af" value={chassisNumber} onChangeText={setChassisNumber}/>
+                        <Text style={globalStyles.label}>Notes</Text>
                         <TextInput style={globalStyles.input} placeholder="Notes" placeholderTextColor="9ca3af" value={notes} onChangeText={setNotes}/>
 
                         <View style={styles.modalActions}>
@@ -294,8 +304,12 @@ export default function VehiclesPage() {
                                 </Text>
                             </Pressable>
                         </View>
+                        
                     </View>
+                    
+                
                 </View>
+                </ScrollView>
             </Modal>
             {/* Delete Vehicle Warning Modal */}
             

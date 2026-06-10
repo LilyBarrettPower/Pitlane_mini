@@ -452,10 +452,10 @@ export default function VehicleDetailPage() {
                 </View>
 
                 <Pressable
-                  style={globalStyles.buttonDanger}
+                  style={globalStyles.buttonDangerSmall}
                   onPress={() => handleRemoveDriverAssignment(item._id)}
                 >
-                  <Text style={globalStyles.buttonPrimaryText}>Remove</Text>
+                  <Text style={globalStyles.smallButtonText}>Remove</Text>
                 </Pressable>
               </View>
             ))
@@ -493,7 +493,7 @@ export default function VehicleDetailPage() {
                   <Text style={globalStyles.smallButtonText}>Edit</Text>
                 </Pressable>
                 <Pressable
-                  style={[globalStyles.buttonDanger, globalStyles.smallButton]}
+                  style={globalStyles.buttonDangerSmall}
                   onPress={() => handleRemoveSetup(setup._id)}
                 >
                   <Text style={globalStyles.smallButtonText}>Remove</Text>
@@ -505,13 +505,13 @@ export default function VehicleDetailPage() {
 
           <View style={styles.actionRow}>
             <Pressable
-              style={[globalStyles.smallButton, styles.buttonGap]}
+              style={[globalStyles.buttonPrimary, styles.buttonGap]}
               onPress={() => {
                 clearSetupForm();
                 setShowSetupModal(true);
               }}
             >
-              <Text style={globalStyles.smallButtonText}>Create  Setup</Text>
+              <Text style={globalStyles.buttonPrimaryText}>Create Setup</Text>
             </Pressable>
           </View>
         </View>

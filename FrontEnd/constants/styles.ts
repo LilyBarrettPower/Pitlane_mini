@@ -59,9 +59,16 @@ export const globalStyles = StyleSheet.create({
 
   buttonDanger: {
     backgroundColor: colors.danger,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: spacing.radiusMd,
+    alignItems: 'center',
+  },
+    buttonDangerSmall: {
+    backgroundColor: colors.danger,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
     alignItems: 'center',
   },
 
@@ -74,6 +81,7 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
+    alignItems: 'center',
   },
 
   smallButtonText: {
