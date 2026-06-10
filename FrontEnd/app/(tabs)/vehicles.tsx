@@ -1,19 +1,19 @@
-import {useEffect, useState} from "react";
-import {router} from "expo-router";
-import { 
-    StyleSheet, 
-    Text, 
+import { useEffect, useState } from "react";
+import { router } from "expo-router";
+import {
+    StyleSheet,
+    Text,
     View,
     ActivityIndicator,
     Modal,
     Pressable,
     ScrollView,
     TextInput,
- } from "react-native";
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { globalStyles } from '../../constants/styles';
 import { apiFetch } from "../../assets/api";
-import {useAuth} from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 // What does this actually do? Create a template for the vehicle?
 type Vehicle = {
@@ -34,7 +34,7 @@ type Vehicle = {
 export default function VehiclesPage() {
 
     //  Make sure there is a valid token to access this page 
-    const {user, token} = useAuth();
+    const { user, token } = useAuth();
     // Check there is a front end message for when token has expired...
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -52,7 +52,7 @@ export default function VehiclesPage() {
     const [name, setName] = useState("");
     const [make, setMake] = useState("");
     const [model, setModel] = useState("");
-    const [year, setYear] = useState(""); 
+    const [year, setYear] = useState("");
     const [owner, setOwner] = useState(""); // Here it would be good to see previous owners saved too 
     const [odo, setOdo] = useState("");
     const [racingNumber, setRacingNumber] = useState("");
@@ -91,27 +91,27 @@ export default function VehiclesPage() {
             setErrorMessage("");
 
             const payload = {
-                    name, 
-                    make, 
-                    model, 
-                    year: year ? Number(year) : undefined, // Convert to number on create
-                    owner,
-                    odo: odo ? Number(odo) : undefined, // convert to number on create
-                    racingNumber,
-                    chassisNumber,
-                    notes,
+                name,
+                make,
+                model,
+                year: year ? Number(year) : undefined, // Convert to number on create
+                owner,
+                odo: odo ? Number(odo) : undefined, // convert to number on create
+                racingNumber,
+                chassisNumber,
+                notes,
             }
 
             if (editingVehicle) {
                 await apiFetch(`/vehicles/${editingVehicle._id}`, {
                     method: "PATCH",
-                    headers: {Authorization: `Bearer ${token}`},
+                    headers: { Authorization: `Bearer ${token}` },
                     body: JSON.stringify(payload),
                 });
             } else {
                 await apiFetch("/vehicles", {
                     method: "POST",
-                    headers: {Authorization: `Bearer ${token}`},
+                    headers: { Authorization: `Bearer ${token}` },
                     body: JSON.stringify(payload),
                 });
             }
@@ -131,7 +131,7 @@ export default function VehiclesPage() {
             // Re fetch vehicles after creation to update
             await fetchVehicles();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message: "Failed to create vehicle. Please try again");
+            setErrorMessage(error instanceof Error ? error.message : "Failed to create vehicle. Please try again");
         } finally {
             setIsLoading(false)
         }
@@ -166,7 +166,7 @@ export default function VehiclesPage() {
                 <View style={styles.headerRow}>
                     <Text style={globalStyles.title}>Vehicles</Text>
 
-                    <Pressable style={globalStyles.buttonPrimary} 
+                    <Pressable style={globalStyles.buttonPrimary}
                         onPress={() => {
                             setEditingVehicle(null);
                             setName("");
@@ -188,18 +188,18 @@ export default function VehiclesPage() {
                 {errorMessage ? <Text style={globalStyles.errorText}>{errorMessage}</Text> : null}
 
                 {isLoading ? (
-                    <ActivityIndicator color="#ffffff"/>
+                    <ActivityIndicator color="#ffffff" />
                 ) : vehicles.length === 0 ? (
                     <Text style={globalStyles.text}>No Vehicles Yet</Text>
                 ) : (
                     vehicles.map((vehicle) => (
-                        <Pressable 
-                            key={vehicle._id} 
+                        <Pressable
+                            key={vehicle._id}
                             style={globalStyles.card}
-                              onPress={() =>
+                            onPress={() =>
                                 router.push({
-                                pathname: '/vehicles/[id]',
-                                params: { id: vehicle._id },
+                                    pathname: '/vehicles/[id]',
+                                    params: { id: vehicle._id },
                                 })
                             }
                         >
@@ -232,19 +232,19 @@ export default function VehiclesPage() {
                                         setNotes(vehicle.notes || "");
                                         setShowCreateModal(true);
                                     }}
-                                    >
+                                >
                                     <Text style={globalStyles.smallButtonText}>Edit</Text>
                                 </Pressable>
                                 {isAdmin ? (
-                                <Pressable style={globalStyles.buttonDanger}
-                                    onPress={(e) => {
-                                        e.stopPropagation?.();
-                                        setVehicleToDelete(vehicle);
-                                    }}
+                                    <Pressable style={globalStyles.buttonDanger}
+                                        onPress={(e) => {
+                                            e.stopPropagation?.();
+                                            setVehicleToDelete(vehicle);
+                                        }}
                                     >
-                                    <Text style={globalStyles.smallButtonText}>Delete</Text>
-                                </Pressable>
-                                ): null}
+                                        <Text style={globalStyles.smallButtonText}>Delete</Text>
+                                    </Pressable>
+                                ) : null}
 
                             </View>
 
@@ -268,55 +268,55 @@ export default function VehiclesPage() {
 
             <Modal visible={showCreateModal} transparent animationType="fade">
                 <ScrollView>
-                <View style={globalStyles.modalOverlay}>
-                                            
-                    <View style={globalStyles.modalCard}>
-                        <Text style={globalStyles.modalTitle}>
-                            {editingVehicle ? "Edit Vehicle" : "Create Vehicle"}
-                        </Text>
-                        <Text style={globalStyles.label}>Name</Text>
-                        <TextInput style={globalStyles.input} placeholder="Name" placeholderTextColor="9ca3af" value={name} onChangeText={setName}/>
-                        <Text style={globalStyles.label}>Make</Text>
-                        <TextInput style={globalStyles.input} placeholder="Make" placeholderTextColor="9ca3af" value={make} onChangeText={setMake}/>
-                        <Text style={globalStyles.label}>Model</Text>
-                        <TextInput style={globalStyles.input} placeholder="Model" placeholderTextColor="9ca3af" value={model} onChangeText={setModel}/>
-                        <Text style={globalStyles.label}>Year</Text>
-                        <TextInput style={globalStyles.input} placeholder="Year" placeholderTextColor="9ca3af" value={year} onChangeText={setYear}/>
-                        <Text style={globalStyles.label}>Owner</Text>
-                        <TextInput style={globalStyles.input} placeholder="Owner" placeholderTextColor="9ca3af" value={owner} onChangeText={setOwner}/>
-                        <Text style={globalStyles.label}>Odometer</Text>
-                        <TextInput style={globalStyles.input} placeholder="ODO" placeholderTextColor="9ca3af" value={odo} onChangeText={setOdo}/>
-                        <Text style={globalStyles.label}>Race Number</Text>
-                        <TextInput style={globalStyles.input} placeholder="Race Number" placeholderTextColor="9ca3af" value={racingNumber} onChangeText={setRacingNumber}/>
-                        <Text style={globalStyles.label}>Chassis Number</Text>
-                        <TextInput style={globalStyles.input} placeholder="Chassis Number" placeholderTextColor="9ca3af" value={chassisNumber} onChangeText={setChassisNumber}/>
-                        <Text style={globalStyles.label}>Notes</Text>
-                        <TextInput style={globalStyles.input} placeholder="Notes" placeholderTextColor="9ca3af" value={notes} onChangeText={setNotes}/>
+                    <View style={globalStyles.modalOverlay}>
 
-                        <View style={styles.modalActions}>
-                            <Pressable style={globalStyles.buttonDanger} onPress={() => setShowCreateModal(false)}>
-                                <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                            </Pressable>
+                        <View style={globalStyles.modalCard}>
+                            <Text style={globalStyles.modalTitle}>
+                                {editingVehicle ? "Edit Vehicle" : "Create Vehicle"}
+                            </Text>
+                            <Text style={globalStyles.label}>Name</Text>
+                            <TextInput style={globalStyles.input} placeholder="Name" placeholderTextColor="9ca3af" value={name} onChangeText={setName} />
+                            <Text style={globalStyles.label}>Make</Text>
+                            <TextInput style={globalStyles.input} placeholder="Make" placeholderTextColor="9ca3af" value={make} onChangeText={setMake} />
+                            <Text style={globalStyles.label}>Model</Text>
+                            <TextInput style={globalStyles.input} placeholder="Model" placeholderTextColor="9ca3af" value={model} onChangeText={setModel} />
+                            <Text style={globalStyles.label}>Year</Text>
+                            <TextInput style={globalStyles.input} placeholder="Year" placeholderTextColor="9ca3af" value={year} onChangeText={setYear} />
+                            <Text style={globalStyles.label}>Owner</Text>
+                            <TextInput style={globalStyles.input} placeholder="Owner" placeholderTextColor="9ca3af" value={owner} onChangeText={setOwner} />
+                            <Text style={globalStyles.label}>Odometer</Text>
+                            <TextInput style={globalStyles.input} placeholder="ODO" placeholderTextColor="9ca3af" value={odo} onChangeText={setOdo} />
+                            <Text style={globalStyles.label}>Race Number</Text>
+                            <TextInput style={globalStyles.input} placeholder="Race Number" placeholderTextColor="9ca3af" value={racingNumber} onChangeText={setRacingNumber} />
+                            <Text style={globalStyles.label}>Chassis Number</Text>
+                            <TextInput style={globalStyles.input} placeholder="Chassis Number" placeholderTextColor="9ca3af" value={chassisNumber} onChangeText={setChassisNumber} />
+                            <Text style={globalStyles.label}>Notes</Text>
+                            <TextInput style={globalStyles.input} placeholder="Notes" placeholderTextColor="9ca3af" value={notes} onChangeText={setNotes} />
 
-                            <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveVehicle}>
-                                <Text style={globalStyles.buttonPrimaryText}>
-                                    {editingVehicle ? "Save Changes" : "Create Vehicle"}
-                                </Text>
-                            </Pressable>
+                            <View style={styles.modalActions}>
+                                <Pressable style={globalStyles.buttonDanger} onPress={() => setShowCreateModal(false)}>
+                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                                </Pressable>
+
+                                <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveVehicle}>
+                                    <Text style={globalStyles.buttonPrimaryText}>
+                                        {editingVehicle ? "Save Changes" : "Create Vehicle"}
+                                    </Text>
+                                </Pressable>
+                            </View>
+
                         </View>
-                        
+
+
                     </View>
-                    
-                
-                </View>
                 </ScrollView>
             </Modal>
             {/* Delete Vehicle Warning Modal */}
-            
-            <Modal  
+
+            <Modal
                 visible={!!vehicleToDelete}
                 transparent
-                animationType = "fade"
+                animationType="fade"
                 onRequestClose={() => setVehicleToDelete(null)}
             >
                 <View style={globalStyles.modalOverlay}>
@@ -327,14 +327,14 @@ export default function VehiclesPage() {
                             {vehicleToDelete?.name || vehicleToDelete?.racingNumber || "this vehicle"}?
                         </Text>
                         <View style={styles.modalActions}>
-                            <Pressable 
+                            <Pressable
                                 style={globalStyles.buttonPrimary}
                                 onPress={() => setVehicleToDelete(null)}
                                 disabled={isLoading}
                             >
                                 <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
                             </Pressable>
-                            <Pressable 
+                            <Pressable
                                 style={[globalStyles.buttonDanger, isLoading && globalStyles.buttonDisabled]}
                                 onPress={handleDeleteVehicle}
                                 disabled={isLoading}

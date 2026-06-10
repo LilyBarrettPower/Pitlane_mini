@@ -252,9 +252,15 @@ export default function VehicleDetailPage() {
       return;
     }
 
+    let finalVersion = setupVersion;
+
+    if (editingSetup && saveAsNewVersion && setupVersion === editingSetup.version) {
+      finalVersion = getNextSetupVersionName(editingSetup.version);
+    }
+
     const payload = {
       vehicleId: id,
-      version: setupVersion,
+      version: finalVersion,
 
       springNm: {
         front: springFront ? Number(springFront) : undefined,
@@ -346,6 +352,30 @@ export default function VehicleDetailPage() {
     setWingHole('');
     setSplitter('');
     setSetupNotes('');
+  }
+
+  // for the names/ version for the setup:
+  function getNextSetupVersionName(originalVersion: string) {
+    const baseName = originalVersion.replace(/\.\d+$/, "");
+
+    const matchingVersions = setups
+      .map((setup) => setup.version)
+      .filter((version) => {
+        return version === baseName || version.startsWith(`${baseName}.`);
+      });
+
+      let highestNumber = 1;
+
+      matchingVersions.forEach((version) => {
+        const match = version.match(/\.(\d+)$/);
+      
+        if (match) {
+          const number = Number(match[1]);
+          if (number > highestNumber) highestNumber = number;
+        }
+      });
+
+      return `${baseName}.${highestNumber + 1}`;
   }
 
   function openEditSetupModal(setup: SetUp) {
