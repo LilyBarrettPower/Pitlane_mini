@@ -72,12 +72,21 @@ export default function TabsLayout() {
         }}
       />
 
+{/* Hidden Routes: */}
       <Tabs.Screen 
-        name="vehicles/[id]"
+        name="vehicles/[id]/index"
         options={{
           href: null,
         }}
         />
+
+        <Tabs.Screen  
+          name="vehicles/[id]/setups/[setupId]"
+          options={{ 
+            href: null,
+          }}
+          />
+
     </Tabs>
   );
 }

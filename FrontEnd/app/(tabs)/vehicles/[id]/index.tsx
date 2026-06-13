@@ -1,10 +1,11 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput, SectionList } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiFetch } from '../../../assets/api';
-import { useAuth } from '../../../context/AuthContext';
-import { globalStyles } from '../../../constants/styles';
+import { apiFetch } from '../../../../assets/api';
+import { useAuth } from '../../../../context/AuthContext';
+import { globalStyles } from '../../../../constants/styles';
+
 
 type Vehicle = {
   _id: string;
@@ -46,6 +47,7 @@ type SetUp = {
   springNm?: { front?: number; rear?: number };
   arbPos?: { front?: number; rear?: number };
   rideHeight?: { front?: number; rear?: number };
+
   camber?: { front?: string; rear?: string };
   toe?: { front?: string; rear?: string };
   packers?: { front?: string; rear?: string };
@@ -498,6 +500,7 @@ export default function VehicleDetailPage() {
           </View>
 
         </View>
+        
         <View style={globalStyles.card}>
           <Text style={globalStyles.sectionTitle}>Setups</Text>
 
@@ -505,7 +508,18 @@ export default function VehicleDetailPage() {
             <Text style={globalStyles.text}>No setups assigned to this vehicle</Text>
           ) : (
             setups.map((setup) => (
-              <View key={setup._id} style={styles.driverRow}>
+              <Pressable 
+                key={setup._id} 
+                style={styles.driverRow}
+                onPress={() => 
+                    router.push({
+                        pathname: "/vehicles/[id]/setups/[setupId]",
+                        params: {
+                            id,
+                            setupId: setup._id,
+                        },
+                    })
+                }>
                 <View>
                   <Text style={[styles.row, globalStyles.text]}>
                     Version: {setup.version}
@@ -518,18 +532,24 @@ export default function VehicleDetailPage() {
                 <View style={styles.setupButtonRow}>
                 <Pressable
                   style={globalStyles.smallButton}
-                  onPress={() => openEditSetupModal(setup)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    openEditSetupModal(setup)
+                  }} 
                 >
                   <Text style={globalStyles.smallButtonText}>Edit</Text>
                 </Pressable>
                 <Pressable
                   style={globalStyles.buttonDangerSmall}
-                  onPress={() => handleRemoveSetup(setup._id)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleRemoveSetup(setup._id)
+                  }}
                 >
                   <Text style={globalStyles.smallButtonText}>Remove</Text>
                 </Pressable>
                 </View>
-              </View>
+              </Pressable>
             ))
           )}
 
