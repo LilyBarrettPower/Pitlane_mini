@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Modal, Pressable } from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../../../../assets/api";
 import { useAuth } from "../../../../../context/AuthContext";
@@ -24,12 +24,14 @@ type SetUp = {
 };
 
 export default function SetupDetailPage() {
-    const { setupId } = useLocalSearchParams<{ id: string; setupId: string }>();
+    const { id, setupId } = useLocalSearchParams<{ id: string; setupId: string }>();
     const { token } = useAuth();
 
     const [setup, setSetup] = useState<SetUp | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     async function fetchSetup() {
         try {
@@ -55,6 +57,30 @@ export default function SetupDetailPage() {
         if (setupId && token) fetchSetup();
     }, [setupId, token]);
 
+    async function handleDeleteSetup() {
+        try {
+            setIsLoading(true);
+            setErrorMessage("");
+
+            await apiFetch(`/setups/${setupId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            setShowDeleteModal(false);
+
+            await fetchSetup();
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Failed to remove setup"
+            );
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     if (isLoading) {
         return (
             <SafeAreaView style={globalStyles.container}>
@@ -77,6 +103,18 @@ export default function SetupDetailPage() {
         <SafeAreaView style={globalStyles.container}>
             <ScrollView contentContainerStyle={styles.content}>
                 <Text style={globalStyles.title}>Setup {setup.version}</Text>
+
+                <View style={styles.actionRow}>
+                    <Pressable style={globalStyles.smallButton}>
+                        <Text style={globalStyles.smallButtonText}>Edit setup</Text>
+                    </Pressable>
+                    <Pressable
+                        style={globalStyles.buttonDangerSmall}
+                        onPress={() => setShowDeleteModal(true)}
+                    >
+                        <Text style={globalStyles.smallButtonText}>Delete Setup</Text>
+                    </Pressable>
+                </View>
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Springs</Text>
@@ -111,6 +149,37 @@ export default function SetupDetailPage() {
                     <Text style={globalStyles.cardText}>Splitter: {setup.splitter || '-'}</Text>
                     <Text style={globalStyles.cardText}>Notes: {setup.notes || '-'}</Text>
                 </View>
+
+                <Modal
+                    visible={showDeleteModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowDeleteModal(false)}
+                >
+                    <View style={globalStyles.modalOverlay}>
+                        <View style={globalStyles.modalCard}>
+                            <Text style={globalStyles.modalTitle}>Delete setup?</Text>
+                            <Text style={globalStyles.text}>Are you sure you want to delete setup {setup.version}?</Text>
+
+                            <View style={styles.actionRow}>
+                                <Pressable
+                                    style={globalStyles.buttonPrimary}
+                                    onPress={() => setShowDeleteModal(false)}
+                                    disabled={isLoading}
+                                >
+                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                                </Pressable>
+                                <Pressable
+                                    style={[globalStyles.buttonDanger, isLoading && globalStyles.buttonDisabled]}
+                                    onPress={handleDeleteSetup}
+                                    disabled={isLoading}
+                                >
+                                    <Text style={globalStyles.buttonPrimaryText}>Yes, Delete</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
         </SafeAreaView>
     );
@@ -121,4 +190,9 @@ const styles = StyleSheet.create({
         padding: 24,
         gap: 16
     },
+    actionRow: {
+        flexDirection: "row",
+        gap: 10,
+        marginTop: 14,
+    }
 });
