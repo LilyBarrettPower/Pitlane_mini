@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from '../../../../assets/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { globalStyles } from '../../../../constants/styles';
+import SetupModal from '../../../../components/SetupModal';
 
 
 type Vehicle = {
@@ -75,25 +76,25 @@ export default function VehicleDetailPage() {
 
   const [setups, setSetups] = useState<SetUp[]>([]);
   const [showSetupModal, setShowSetupModal] = useState(false);
-  const [setupVersion, setSetupVersion] = useState('');
-  const [springFront, setSpringFront] = useState('');
-  const [springRear, setSpringRear] = useState('');
-  const [arbFront, setArbFront] = useState('');
-  const [arbRear, setArbRear] = useState('');
-  const [rideHeightFront, setRideHeightFront] = useState('');
-  const [rideHeightRear, setRideHeightRear] = useState('');
-  const [camberFront, setCamberFront] = useState('');
-  const [camberRear, setCamberRear] = useState('');
-  const [toeFront, setToeFront] = useState('');
-  const [toeRear, setToeRear] = useState('');
-  const [packersFront, setPackersFront] = useState('');
-  const [packersRear, setPackersRear] = useState('');
-  const [diffPreload, setDiffPreload] = useState('');
-  const [brakeBias, setBrakeBias] = useState('');
-  const [wingHole, setWingHole] = useState('');
-  const [splitter, setSplitter] = useState('');
-  const [setupNotes, setSetupNotes] = useState('');
-  const [isSavingSetup, setIsSavingSetup] = useState(false);
+  // const [setupVersion, setSetupVersion] = useState('');
+  // const [springFront, setSpringFront] = useState('');
+  // const [springRear, setSpringRear] = useState('');
+  // const [arbFront, setArbFront] = useState('');
+  // const [arbRear, setArbRear] = useState('');
+  // const [rideHeightFront, setRideHeightFront] = useState('');
+  // const [rideHeightRear, setRideHeightRear] = useState('');
+  // const [camberFront, setCamberFront] = useState('');
+  // const [camberRear, setCamberRear] = useState('');
+  // const [toeFront, setToeFront] = useState('');
+  // const [toeRear, setToeRear] = useState('');
+  // const [packersFront, setPackersFront] = useState('');
+  // const [packersRear, setPackersRear] = useState('');
+  // const [diffPreload, setDiffPreload] = useState('');
+  // const [brakeBias, setBrakeBias] = useState('');
+  // const [wingHole, setWingHole] = useState('');
+  // const [splitter, setSplitter] = useState('');
+  // const [setupNotes, setSetupNotes] = useState('');
+  // const [isSavingSetup, setIsSavingSetup] = useState(false);
 
   const [editingSetup, setEditingSetup] = useState<SetUp | null>(null);
 
@@ -248,160 +249,170 @@ export default function VehicleDetailPage() {
     }
   }
 
-  async function handleSaveSetup(saveAsNewVersion = false) {
-    if (!setupVersion) {
-      setErrorMessage("Setup version is required");
-      return;
-    }
+  // async function handleSaveSetup(saveAsNewVersion = false) {
+  //   if (!setupVersion) {
+  //     setErrorMessage("Setup version is required");
+  //     return;
+  //   }
 
-    let finalVersion = setupVersion;
+  //   let finalVersion = setupVersion;
 
-    if (editingSetup && saveAsNewVersion && setupVersion === editingSetup.version) {
-      finalVersion = getNextSetupVersionName(editingSetup.version);
-    }
+  //   if (editingSetup && saveAsNewVersion && setupVersion === editingSetup.version) {
+  //     finalVersion = getNextSetupVersionName(editingSetup.version);
+  //   }
 
-    const payload = {
-      vehicleId: id,
-      version: finalVersion,
+  //   const payload = {
+  //     vehicleId: id,
+  //     version: finalVersion,
 
-      springNm: {
-        front: springFront ? Number(springFront) : undefined,
-        rear: springRear ? Number(springRear) : undefined,
-      },
+  //     springNm: {
+  //       front: springFront ? Number(springFront) : undefined,
+  //       rear: springRear ? Number(springRear) : undefined,
+  //     },
 
-      arbPos: {
-        front: arbFront ? Number(arbFront) : undefined,
-        rear: arbRear ? Number(arbRear) : undefined,
-      },
+  //     arbPos: {
+  //       front: arbFront ? Number(arbFront) : undefined,
+  //       rear: arbRear ? Number(arbRear) : undefined,
+  //     },
 
-      rideHeight: {
-        front: rideHeightFront ? Number(rideHeightFront) : undefined,
-        rear: rideHeightRear ? Number(rideHeightRear) : undefined,
-      },
+  //     rideHeight: {
+  //       front: rideHeightFront ? Number(rideHeightFront) : undefined,
+  //       rear: rideHeightRear ? Number(rideHeightRear) : undefined,
+  //     },
 
-      camber: {
-        front: camberFront,
-        rear: camberRear,
-      },
+  //     camber: {
+  //       front: camberFront,
+  //       rear: camberRear,
+  //     },
 
-      toe: {
-        front: toeFront,
-        rear: toeRear,
-      },
+  //     toe: {
+  //       front: toeFront,
+  //       rear: toeRear,
+  //     },
 
-      packers: {
-        front: packersFront,
-        rear: packersRear,
-      },
+  //     packers: {
+  //       front: packersFront,
+  //       rear: packersRear,
+  //     },
 
-      diffPreload: diffPreload ? Number(diffPreload) : undefined,
-      brakeBias,
-      wingHole,
-      splitter,
-      notes: setupNotes,
-    };
+  //     diffPreload: diffPreload ? Number(diffPreload) : undefined,
+  //     brakeBias,
+  //     wingHole,
+  //     splitter,
+  //     notes: setupNotes,
+  //   };
 
-    try {
-      setIsSavingSetup(true);
-      setErrorMessage("");
+  //   try {
+  //     setIsSavingSetup(true);
+  //     setErrorMessage("");
 
-      if (editingSetup && !saveAsNewVersion) {
-        await apiFetch(`/setups/${editingSetup._id}`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await apiFetch("/setups", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-      }
-      clearSetupForm();
-      setShowSetupModal(false);
-      await fetchSetups();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to create setup"
-      );
-    } finally {
-      setIsSavingSetup(false);
-    }
-  }
+  //     if (editingSetup && !saveAsNewVersion) {
+  //       await apiFetch(`/setups/${editingSetup._id}`, {
+  //         method: "PATCH",
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(payload),
+  //       });
+  //     } else {
+  //       await apiFetch("/setups", {
+  //         method: "POST",
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(payload),
+  //       });
+  //     }
+  //     clearSetupForm();
+  //     setShowSetupModal(false);
+  //     await fetchSetups();
+  //   } catch (error) {
+  //     setErrorMessage(
+  //       error instanceof Error ? error.message : "Failed to create setup"
+  //     );
+  //   } finally {
+  //     setIsSavingSetup(false);
+  //   }
+  // }
 
-  function clearSetupForm() {
-    setEditingSetup(null);
-    setSetupVersion('');
-    setSpringFront('');
-    setSpringRear('');
-    setArbFront('');
-    setArbRear('');
-    setRideHeightFront('');
-    setRideHeightRear('');
-    setCamberFront('');
-    setCamberRear('');
-    setToeFront('');
-    setToeRear('');
-    setPackersFront('');
-    setPackersRear('');
-    setDiffPreload('');
-    setBrakeBias('');
-    setWingHole('');
-    setSplitter('');
-    setSetupNotes('');
-  }
+  // function clearSetupForm() {
+  //   setEditingSetup(null);
+  //   setSetupVersion('');
+  //   setSpringFront('');
+  //   setSpringRear('');
+  //   setArbFront('');
+  //   setArbRear('');
+  //   setRideHeightFront('');
+  //   setRideHeightRear('');
+  //   setCamberFront('');
+  //   setCamberRear('');
+  //   setToeFront('');
+  //   setToeRear('');
+  //   setPackersFront('');
+  //   setPackersRear('');
+  //   setDiffPreload('');
+  //   setBrakeBias('');
+  //   setWingHole('');
+  //   setSplitter('');
+  //   setSetupNotes('');
+  // }
 
-  // for the names/ version for the setup:
-  function getNextSetupVersionName(originalVersion: string) {
-    const baseName = originalVersion.replace(/\.\d+$/, "");
+  // // for the names/ version for the setup:
+  // function getNextSetupVersionName(originalVersion: string) {
+  //   const baseName = originalVersion.replace(/\.\d+$/, "");
 
-    const matchingVersions = setups
-      .map((setup) => setup.version)
-      .filter((version) => {
-        return version === baseName || version.startsWith(`${baseName}.`);
-      });
+  //   const matchingVersions = setups
+  //     .map((setup) => setup.version)
+  //     .filter((version) => {
+  //       return version === baseName || version.startsWith(`${baseName}.`);
+  //     });
 
-      let highestNumber = 1;
+  //     let highestNumber = 1;
 
-      matchingVersions.forEach((version) => {
-        const match = version.match(/\.(\d+)$/);
+  //     matchingVersions.forEach((version) => {
+  //       const match = version.match(/\.(\d+)$/);
       
-        if (match) {
-          const number = Number(match[1]);
-          if (number > highestNumber) highestNumber = number;
-        }
-      });
+  //       if (match) {
+  //         const number = Number(match[1]);
+  //         if (number > highestNumber) highestNumber = number;
+  //       }
+  //     });
 
-      return `${baseName}.${highestNumber + 1}`;
+  //     return `${baseName}.${highestNumber + 1}`;
+  // }
+
+  // function openEditSetupModal(setup: SetUp) {
+  //   setEditingSetup(setup);
+
+  //   setSetupVersion(setup.version || '');
+  //   setSpringFront(setup.springNm?.front ? String(setup.springNm.front) : '');
+  //   setSpringRear(setup.springNm?.rear ? String(setup.springNm.rear) : '');
+  //   setArbFront(setup.arbPos?.front ? String(setup.arbPos.front) : '');
+  //   setArbRear(setup.arbPos?.rear ? String(setup.arbPos.rear) : '');
+  //   setRideHeightFront(setup.rideHeight?.front ? String(setup.rideHeight.front) : '');
+  //   setRideHeightRear(setup.rideHeight?.rear ? String(setup.rideHeight.rear) : '');
+  //   setCamberFront(setup.camber?.front || '');
+  //   setCamberRear(setup.camber?.rear || '');
+  //   setToeFront(setup.toe?.front || '');
+  //   setToeRear(setup.toe?.rear || '');
+  //   setPackersFront(setup.packers?.front || '');
+  //   setPackersRear(setup.packers?.rear || '');
+  //   setDiffPreload(setup.diffPreload ? String(setup.diffPreload) : '');
+  //   setBrakeBias(setup.brakeBias || '');
+  //   setWingHole(setup.wingHole || '');
+  //   setSplitter(setup.splitter || '');
+  //   setSetupNotes(setup.notes || '');
+
+  //   setShowSetupModal(true);
+  // }
+
+  function openCreateSetupModal() {
+    setEditingSetup(null);
+    setShowSetupModal(true);
   }
 
   function openEditSetupModal(setup: SetUp) {
     setEditingSetup(setup);
-
-    setSetupVersion(setup.version || '');
-    setSpringFront(setup.springNm?.front ? String(setup.springNm.front) : '');
-    setSpringRear(setup.springNm?.rear ? String(setup.springNm.rear) : '');
-    setArbFront(setup.arbPos?.front ? String(setup.arbPos.front) : '');
-    setArbRear(setup.arbPos?.rear ? String(setup.arbPos.rear) : '');
-    setRideHeightFront(setup.rideHeight?.front ? String(setup.rideHeight.front) : '');
-    setRideHeightRear(setup.rideHeight?.rear ? String(setup.rideHeight.rear) : '');
-    setCamberFront(setup.camber?.front || '');
-    setCamberRear(setup.camber?.rear || '');
-    setToeFront(setup.toe?.front || '');
-    setToeRear(setup.toe?.rear || '');
-    setPackersFront(setup.packers?.front || '');
-    setPackersRear(setup.packers?.rear || '');
-    setDiffPreload(setup.diffPreload ? String(setup.diffPreload) : '');
-    setBrakeBias(setup.brakeBias || '');
-    setWingHole(setup.wingHole || '');
-    setSplitter(setup.splitter || '');
-    setSetupNotes(setup.notes || '');
-
     setShowSetupModal(true);
   }
 
@@ -556,10 +567,7 @@ export default function VehicleDetailPage() {
           <View style={styles.actionRow}>
             <Pressable
               style={[globalStyles.buttonPrimary, styles.buttonGap]}
-              onPress={() => {
-                clearSetupForm();
-                setShowSetupModal(true);
-              }}
+              onPress={openCreateSetupModal}
             >
               <Text style={globalStyles.buttonPrimaryText}>Create Setup</Text>
             </Pressable>
@@ -641,7 +649,7 @@ export default function VehicleDetailPage() {
             </View>
           </View>
         </Modal>
-        <Modal
+        {/* <Modal
           visible={showSetupModal}
           transparent
           animationType="fade"
@@ -845,7 +853,18 @@ export default function VehicleDetailPage() {
               </View>
             </View>
           </ScrollView>
-        </Modal>
+        </Modal> */}
+        <SetupModal 
+          visible={showSetupModal}
+          vehicleId={String(id)}
+          setup={editingSetup}
+          existingSetups={setups}
+          onClose={() => {
+            setEditingSetup(null);
+            setShowSetupModal(false);
+          }}
+          onSaved={fetchSetups}
+          />
       </ScrollView>
     </SafeAreaView>
   );
