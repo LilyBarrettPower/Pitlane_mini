@@ -5,6 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../../../../assets/api";
 import { useAuth } from "../../../../../context/AuthContext";
 import { globalStyles } from "../../../../../constants/styles";
+import SetupModal from "../../../../../components/SetupModal";
+
 
 type SetUp = {
     _id: string;
@@ -32,6 +34,7 @@ export default function SetupDetailPage() {
     const [errorMessage, setErrorMessage] = useState("");
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showSetupModal, setShowSetupModal] = useState(false);
 
     async function fetchSetup() {
         try {
@@ -106,7 +109,9 @@ export default function SetupDetailPage() {
 
                 <View style={styles.actionRow}>
                     <Pressable style={globalStyles.smallButton}>
-                        <Text style={globalStyles.smallButtonText}>Edit setup</Text>
+                        <Text style={globalStyles.smallButtonText}
+                            onPress={() => setShowSetupModal(true)}
+                        >Edit setup</Text>
                     </Pressable>
                     <Pressable
                         style={globalStyles.buttonDangerSmall}
@@ -179,7 +184,17 @@ export default function SetupDetailPage() {
                             </View>
                         </View>
                     </View>
-                </Modal>
+                </Modal>l
+
+                <SetupModal 
+                    visible={showSetupModal}
+                    vehicleId={String(id)}
+                    setup={setup}
+                    existingSetups={setup ? [setup] : []}
+                    onClose={() => setShowSetupModal(false)}
+                    onSaved={fetchSetup}
+                    />
+
             </ScrollView>
         </SafeAreaView>
     );
