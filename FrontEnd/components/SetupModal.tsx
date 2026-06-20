@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native';
 import { apiFetch } from '../assets/api';
 import { useAuth } from '../context/AuthContext';
 import { globalStyles } from '../constants/styles';
@@ -209,9 +209,12 @@ export default function SetupModal({
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <ScrollView contentContainerStyle={globalStyles.container}>
             <View style={globalStyles.modalOverlay}>
-                <View style={globalStyles.modalCard}>
+                <View style={styles.setupModalCard}>
+                    <ScrollView 
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={styles.setupModalContent}>
+
 
                     <Text style={globalStyles.modalTitle}>
                         {isEditing ? 'Edit Setup' : 'Create Setup'}
@@ -314,10 +317,24 @@ export default function SetupModal({
                             </Pressable>
                         )}
                     </View>
-
+                    </ScrollView>
                 </View>
             </View>
-        </ScrollView>
     </Modal >
   );
 }
+
+const styles = StyleSheet.create({
+    setupModalCard: {
+        width: "100%",
+        maxWidth: 700,
+        maxHeight: "90%",
+        backgroundColor: "#1f2937",
+        borderRadius: 16,
+        padding: 20,
+    },
+    setupModalContent: {
+        gap: 10,
+        paddingBottom: 24,
+    },
+});

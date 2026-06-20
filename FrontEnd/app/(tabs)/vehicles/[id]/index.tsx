@@ -1,5 +1,5 @@
-import { useLocalSearchParams, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useEffect, useState, useCallback } from 'react';
 import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput, SectionList } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from '../../../../assets/api';
@@ -415,6 +415,17 @@ export default function VehicleDetailPage() {
     setEditingSetup(setup);
     setShowSetupModal(true);
   }
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id && token) {
+        fetchSetups();
+        fetchVehicleDrivers();
+        fetchDrivers();
+        fetchSetups();
+      }
+    }, [id, token])
+  );
 
   if (isLoading) {
     return (

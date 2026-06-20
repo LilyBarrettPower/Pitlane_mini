@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { router } from "expo-router";
+import { useEffect, useState} from "react";
+import { router} from "expo-router";
 import {
     StyleSheet,
     Text,
@@ -159,6 +159,7 @@ export default function VehiclesPage() {
             setIsLoading(false);
         }
     }
+
 
     return (
         <SafeAreaView style={globalStyles.container}>

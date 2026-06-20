@@ -35,6 +35,8 @@ export default function SetupDetailPage() {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showSetupModal, setShowSetupModal] = useState(false);
+    const [allSetups, setAllSetups] = useState<SetUp[]>([]);
+
 
     async function fetchSetup() {
         try {
@@ -56,9 +58,21 @@ export default function SetupDetailPage() {
         }
     }
 
+    async function fetchAllSetupsForVehicle() {
+        const data = await apiFetch(`/setups?vehicleId=${id}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setAllSetups(data.setups || []);
+    }
+
     useEffect(() => {
         if (setupId && token) fetchSetup();
-    }, [setupId, token]);
+        if (id && token) fetchAllSetupsForVehicle();
+    }, [id, setupId, token]);
 
     async function handleDeleteSetup() {
         try {
@@ -188,11 +202,14 @@ export default function SetupDetailPage() {
 
                 <SetupModal 
                     visible={showSetupModal}
-                    vehicleId={String(id)}
+                    vehicleId={setup.vehicleId}
                     setup={setup}
-                    existingSetups={setup ? [setup] : []}
+                    existingSetups={allSetups}
                     onClose={() => setShowSetupModal(false)}
-                    onSaved={fetchSetup}
+                    onSaved={() => {
+                        fetchSetup();
+                        fetchAllSetupsForVehicle();
+                    }}
                     />
 
             </ScrollView>
