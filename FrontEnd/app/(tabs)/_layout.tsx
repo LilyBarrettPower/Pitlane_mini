@@ -1,9 +1,9 @@
-import {Tabs} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabsLayout() {
-    return (
-  <Tabs
+  return (
+    <Tabs
       screenOptions={{
         headerShown: false,
 
@@ -46,21 +46,31 @@ export default function TabsLayout() {
         name="vehicles"
         options={{
           title: 'Vehicles',
-          tabBarIcon: ({color, size}) => (
-            <Ionicons name="car-sport" size={size} color={color}/>
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="car-sport" size={size} color={color} />
           ),
         }}
-        />
-      
+      />
+
       <Tabs.Screen
         name="drivers"
         options={{
           title: 'Drivers',
-          tabBarIcon: ({color, size}) => (
-            <Ionicons name="id-card" size={size} color={color}/>
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="id-card" size={size} color={color} />
           ),
         }}
-        />
+      />
+
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: "Events",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
 
       <Tabs.Screen
         name="settings"
@@ -72,20 +82,21 @@ export default function TabsLayout() {
         }}
       />
 
-{/* Hidden Routes: */}
-      <Tabs.Screen 
+
+      {/* Hidden Routes: */}
+      <Tabs.Screen
         name="vehicles/[id]/index"
         options={{
           href: null,
         }}
-        />
+      />
 
-        <Tabs.Screen  
-          name="vehicles/[id]/setups/[setupId]"
-          options={{ 
-            href: null,
-          }}
-          />
+      <Tabs.Screen
+        name="vehicles/[id]/setups/[setupId]"
+        options={{
+          href: null,
+        }}
+      />
 
     </Tabs>
   );
