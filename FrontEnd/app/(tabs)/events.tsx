@@ -1,5 +1,5 @@
-import { useEffect, useState} from "react";
-import { router} from "expo-router";
+import { useEffect, useState } from "react";
+import { router } from "expo-router";
 import {
     StyleSheet,
     Text,
@@ -33,7 +33,7 @@ type Event = {
 
 export default function EventsPage() {
 
-    const {user, token} = useAuth();
+    const { user, token } = useAuth();
 
     const [events, setEvents] = useState<Event[]>([]);
     const [tracks, setTracks] = useState<Track[]>([]);
@@ -112,8 +112,8 @@ export default function EventsPage() {
         setName(event.name || "");
         setTrackId(typeof event.trackId === "string" ? event.trackId : event.trackId?._id || "");
         setType(event.type || "");
-        setStartDate(event.startDate ? event.startDate.slice(0,10) : "");
-        setEndDate(event.endDate ? event.endDate.slice(0,10) : "");
+        setStartDate(event.startDate ? event.startDate.slice(0, 10) : "");
+        setEndDate(event.endDate ? event.endDate.slice(0, 10) : "");
         setStatus(event.status || "upcoming");
         setNotes(event.notes || "");
         setShowModal(true);
@@ -190,151 +190,155 @@ export default function EventsPage() {
 
     function getTrackName(event: Event) {
         if (typeof event.trackId !== "string") return event.trackId?.name || "-";
-        
+
         const track = tracks.find((item) => item._id === event.trackId);
         return track?.name || "-";
     }
-    
+
     function formatDate(date?: string) {
         if (!date) return "-";
         return new Date(date).toLocaleDateString();
     }
 
-  return (
-    <SafeAreaView style={globalStyles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.headerRow}>
-          <Text style={globalStyles.title}>Events</Text>
+    return (
+        <SafeAreaView style={globalStyles.container}>
+            <ScrollView contentContainerStyle={styles.content}>
+                <View style={styles.headerRow}>
+                    <Text style={globalStyles.title}>Events</Text>
 
-          <Pressable style={globalStyles.buttonPrimary} onPress={openCreateModal}>
-            <Text style={globalStyles.buttonPrimaryText}>Add Event</Text>
-          </Pressable>
-        </View>
-
-        {errorMessage ? <Text style={globalStyles.errorText}>{errorMessage}</Text> : null}
-
-        {isLoading ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : events.length === 0 ? (
-          <Text style={globalStyles.text}>No events yet</Text>
-        ) : (
-          events.map((event) => (
-            <View key={event._id} style={globalStyles.card}>
-              <Text style={globalStyles.cardTitle}>{event.name}</Text>
-              <Text style={globalStyles.cardText}>Track: {getTrackName(event)}</Text>
-              <Text style={globalStyles.cardText}>Type: {event.type}</Text>
-              <Text style={globalStyles.cardText}>Start: {formatDate(event.startDate)}</Text>
-              <Text style={globalStyles.cardText}>End: {formatDate(event.endDate)}</Text>
-              <Text style={globalStyles.cardText}>Status: {event.status || "-"}</Text>
-              <Text style={globalStyles.cardText}>Notes: {event.notes || "-"}</Text>
-
-              <View style={styles.actionRow}>
-                <Pressable style={globalStyles.smallButton} onPress={() => openEditModal(event)}>
-                  <Text style={globalStyles.smallButtonText}>Edit</Text>
-                </Pressable>
-
-                <Pressable style={globalStyles.buttonDangerSmall} onPress={() => handleDeleteEvent(event)}>
-                  <Text style={globalStyles.smallButtonText}>Delete</Text>
-                </Pressable>
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
-
-      <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
-        <View style={globalStyles.modalOverlay}>
-          <View style={globalStyles.modalCard}>
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <Text style={globalStyles.modalTitle}>
-                {editingEvent ? "Edit Event" : "Create Event"}
-              </Text>
-
-              <Text style={globalStyles.label}>Event Name</Text>
-              <TextInput style={globalStyles.input} value={name} onChangeText={setName} />
-
-              <Text style={globalStyles.label}>Track</Text>
-              {tracks.length === 0 ? (
-                <Text style={globalStyles.text}>No tracks available</Text>
-              ) : (
-                <View style={styles.selectList}>
-                  {tracks.map((track) => (
-                    <Pressable
-                      key={track._id}
-                      style={[
-                        styles.selectItem,
-                        trackId === track._id && styles.selectItemActive,
-                      ]}
-                      onPress={() => setTrackId(track._id)}
-                    >
-                      <Text style={globalStyles.text}>{track.name}</Text>
+                    <Pressable style={globalStyles.buttonPrimary} onPress={openCreateModal}>
+                        <Text style={globalStyles.buttonPrimaryText}>Add Event</Text>
                     </Pressable>
-                  ))}
                 </View>
-              )}
 
-              <Text style={globalStyles.label}>Type</Text>
-              <TextInput
-                style={globalStyles.input}
-                value={type}
-                onChangeText={setType}
-                placeholder="Race, Test, Practice"
-                placeholderTextColor="#9ca3af"
-              />
+                {errorMessage ? <Text style={globalStyles.errorText}>{errorMessage}</Text> : null}
 
-              <Text style={globalStyles.label}>Start Date</Text>
-              <TextInput
-                style={globalStyles.input}
-                value={startDate}
-                onChangeText={setStartDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#9ca3af"
-              />
+                {isLoading ? (
+                    <ActivityIndicator color="#ffffff" />
+                ) : events.length === 0 ? (
+                    <Text style={globalStyles.text}>No events yet</Text>
+                ) : (
+                    events.map((event) => (
+                        <View key={event._id} style={globalStyles.card}>
+                            <Text style={globalStyles.cardTitle}>{event.name}</Text>
+                            <Text style={globalStyles.cardText}>Track: {getTrackName(event)}</Text>
+                            <Text style={globalStyles.cardText}>Type: {event.type}</Text>
+                            <Text style={globalStyles.cardText}>Start: {formatDate(event.startDate)}</Text>
+                            <Text style={globalStyles.cardText}>End: {formatDate(event.endDate)}</Text>
+                            <Text style={globalStyles.cardText}>Status: {event.status || "-"}</Text>
+                            <Text style={globalStyles.cardText}>Notes: {event.notes || "-"}</Text>
 
-              <Text style={globalStyles.label}>End Date</Text>
-              <TextInput
-                style={globalStyles.input}
-                value={endDate}
-                onChangeText={setEndDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#9ca3af"
-              />
+                            <View style={styles.actionRow}>
+                                <Pressable style={globalStyles.smallButton} onPress={() => openEditModal(event)}>
+                                    <Text style={globalStyles.smallButtonText}>Edit</Text>
+                                </Pressable>
 
-              <Text style={globalStyles.label}>Status</Text>
-              <TextInput
-                style={globalStyles.input}
-                value={status}
-                onChangeText={setStatus}
-                placeholder="upcoming / active / complete"
-                placeholderTextColor="#9ca3af"
-              />
-
-              <Text style={globalStyles.label}>Notes</Text>
-              <TextInput style={globalStyles.input} value={notes} onChangeText={setNotes} />
-
-              <View style={styles.modalActions}>
-                <Pressable
-                  style={globalStyles.buttonDanger}
-                  onPress={() => {
-                    clearForm();
-                    setShowModal(false);
-                  }}
-                >
-                  <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                </Pressable>
-
-                <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveEvent}>
-                  <Text style={globalStyles.buttonPrimaryText}>
-                    {editingEvent ? "Save Changes" : "Create Event"}
-                  </Text>
-                </Pressable>
-              </View>
+                                <Pressable style={globalStyles.buttonDangerSmall} onPress={() => handleDeleteEvent(event)}>
+                                    <Text style={globalStyles.smallButtonText}>Delete</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+                    ))
+                )}
             </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
-  );
+
+            <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
+                <ScrollView contentContainerStyle={styles.modalContent}>
+                    <View style={globalStyles.modalOverlay}>
+
+                        <View style={globalStyles.modalCard}>
+
+                            <Text style={globalStyles.modalTitle}>
+                                {editingEvent ? "Edit Event" : "Create Event"}
+                            </Text>
+
+                            <Text style={globalStyles.label}>Event Name</Text>
+                            <TextInput style={globalStyles.input} value={name} onChangeText={setName} />
+
+                            <Text style={globalStyles.label}>Track</Text>
+                            {tracks.length === 0 ? (
+                                <Text style={globalStyles.text}>No tracks available</Text>
+                            ) : (
+                                <View style={styles.selectList}>
+                                    {tracks.map((track) => (
+                                        <Pressable
+                                            key={track._id}
+                                            style={[
+                                                styles.selectItem,
+                                                trackId === track._id && styles.selectItemActive,
+                                            ]}
+                                            onPress={() => setTrackId(track._id)}
+                                        >
+                                            <Text style={globalStyles.text}>{track.name}</Text>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            )}
+
+                            <Text style={globalStyles.label}>Type</Text>
+                            <TextInput
+                                style={globalStyles.input}
+                                value={type}
+                                onChangeText={setType}
+                                placeholder="Race, Test, Practice"
+                                placeholderTextColor="#9ca3af"
+                            />
+
+                            <Text style={globalStyles.label}>Start Date</Text>
+                            <TextInput
+                                style={globalStyles.input}
+                                value={startDate}
+                                onChangeText={setStartDate}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor="#9ca3af"
+                            />
+
+                            <Text style={globalStyles.label}>End Date</Text>
+                            <TextInput
+                                style={globalStyles.input}
+                                value={endDate}
+                                onChangeText={setEndDate}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor="#9ca3af"
+                            />
+
+                            <Text style={globalStyles.label}>Status</Text>
+                            <TextInput
+                                style={globalStyles.input}
+                                value={status}
+                                onChangeText={setStatus}
+                                placeholder="upcoming / active / complete"
+                                placeholderTextColor="#9ca3af"
+                            />
+
+                            <Text style={globalStyles.label}>Notes</Text>
+                            <TextInput style={globalStyles.input} value={notes} onChangeText={setNotes} />
+
+                            <View style={styles.modalActions}>
+                                <Pressable
+                                    style={globalStyles.buttonDanger}
+                                    onPress={() => {
+                                        clearForm();
+                                        setShowModal(false);
+                                    }}
+                                >
+                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                                </Pressable>
+
+                                <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveEvent}>
+                                    <Text style={globalStyles.buttonPrimaryText}>
+                                        {editingEvent ? "Save Changes" : "Create Event"}
+                                    </Text>
+                                </Pressable>
+                            </View>
+
+                        </View>
+
+                    </View>
+                </ScrollView>
+            </Modal>
+        </SafeAreaView>
+    );
 }
 
 
