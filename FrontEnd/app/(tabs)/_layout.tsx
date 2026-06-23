@@ -63,7 +63,7 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="events"
+        name="events/index"
         options={{
           title: "Events",
           tabBarIcon: ({ color, size }) => (
@@ -97,6 +97,14 @@ export default function TabsLayout() {
           href: null,
         }}
       />
+
+      <Tabs.Screen
+        name="events/[id]/index"
+        options={{ 
+          href: null
+         }}
+      />
+
 
     </Tabs>
   );

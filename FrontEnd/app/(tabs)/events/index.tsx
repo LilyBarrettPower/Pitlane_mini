@@ -11,9 +11,9 @@ import {
     TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { globalStyles } from '../../constants/styles';
-import { apiFetch } from "../../assets/api";
-import { useAuth } from "../../context/AuthContext";
+import { globalStyles } from '../../../constants/styles';
+import { apiFetch } from "../../../assets/api";
+import { useAuth } from "../../../context/AuthContext";
 
 type Track = {
     _id: string;
@@ -219,7 +219,14 @@ export default function EventsPage() {
                     <Text style={globalStyles.text}>No events yet</Text>
                 ) : (
                     events.map((event) => (
-                        <View key={event._id} style={globalStyles.card}>
+                        <Pressable key={event._id} 
+                            style={globalStyles.card}
+                            onPress={() => 
+                                router.push({
+                                    pathname: "/events/[id]" as any,
+                                    params: {id: event._id},
+                                })
+                            }>
                             <Text style={globalStyles.cardTitle}>{event.name}</Text>
                             <Text style={globalStyles.cardText}>Track: {getTrackName(event)}</Text>
                             <Text style={globalStyles.cardText}>Type: {event.type}</Text>
@@ -229,15 +236,23 @@ export default function EventsPage() {
                             <Text style={globalStyles.cardText}>Notes: {event.notes || "-"}</Text>
 
                             <View style={styles.actionRow}>
-                                <Pressable style={globalStyles.smallButton} onPress={() => openEditModal(event)}>
+                                <Pressable style={globalStyles.smallButton} 
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        openEditModal(event);
+                                    }}>
                                     <Text style={globalStyles.smallButtonText}>Edit</Text>
                                 </Pressable>
 
-                                <Pressable style={globalStyles.buttonDangerSmall} onPress={() => handleDeleteEvent(event)}>
+                                <Pressable style={globalStyles.buttonDangerSmall} 
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteEvent(event);
+                                    }}>
                                     <Text style={globalStyles.smallButtonText}>Delete</Text>
                                 </Pressable>
                             </View>
-                        </View>
+                        </Pressable>
                     ))
                 )}
             </ScrollView>

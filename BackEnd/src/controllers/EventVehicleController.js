@@ -3,7 +3,7 @@ const Vehicle = require('../models/Vehicle');
 const Event = require('../models/Event');
 
 
-// Create a vehicle driver:
+// Create an event vehicle:
 
 exports.createAssignment = async (req, res) => {
     try {
