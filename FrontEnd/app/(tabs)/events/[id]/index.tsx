@@ -54,6 +54,8 @@ export default function EventDetailPage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [eventVehicles, setEventVehicles] = useState<EventVehicle[]>([]);
 
+    const [tracks, setTracks] = useState<Track[]>([]);
+
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedVehicleId, setSelectedVehicleId] = useState("");
 
@@ -94,6 +96,18 @@ export default function EventDetailPage() {
         setEventVehicles(data.assignments || []);
     }
 
+    
+    async function fetchTracks() {
+        const data = await apiFetch("/tracks", {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setTracks(data.tracks || []);
+    }
+
     async function fetchPageData() {
         try {
             setIsLoading(true);
@@ -103,6 +117,7 @@ export default function EventDetailPage() {
                 fetchEvent(),
                 fetchVehicles(),
                 fetchEventVehicles(),
+                fetchTracks(),
             ]);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : "Failed to load event");
@@ -170,12 +185,16 @@ export default function EventDetailPage() {
 
     function getTrackName() {
         if (!event) return "-";
-        if (typeof event.trackId !== "string") return event.trackId?.name || "-";
-        return "-";
+        if (typeof event.trackId !== "string") {
+            return event.trackId?.name || "-";
+        }
+            
+        const track = tracks.find((item) => item._id === event.trackId);
+        return track?.name || "-";
     }
 
     function vehicleLabel(vehicle: Vehicle) {
-        return `${vehicle.racingNumber ? `#{vehicle.racingNumber}` : ""}${vehicle.name || `${vehicle.make || ""} ${vehicle.model || ""}`
+        return `${vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""}${vehicle.name || `${vehicle.make || ""} ${vehicle.model || ""}`
             }`;
     }
 
