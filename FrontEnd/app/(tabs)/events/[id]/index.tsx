@@ -8,7 +8,7 @@ import {
     Text,
     View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { apiFetch } from "../../../../assets/api";
@@ -86,7 +86,7 @@ export default function EventDetailPage() {
     }
 
     async function fetchEventVehicles() {
-        const data = await apiFetch(`/event-vehicles/event/${id}`, {
+        const data = await apiFetch(`/event-vehicles/vehicle/${id}`, {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${token}`
@@ -245,7 +245,19 @@ export default function EventDetailPage() {
                         <Text style={globalStyles.text}>No vehicles assigned</Text>
                     ) : (
                         eventVehicles.map((item) => (
-                            <View key={item._id} style={styles.vehicleRow}>
+                            <Pressable 
+                                key={item._id} 
+                                style={styles.vehicleRow}
+                                onPress={() => 
+                                    router.push({
+                                        pathname: "/events/[id]/vehicles/[eventVehicleId]" as any,
+                                        params: {
+                                            id: String(id),
+                                            eventVehicleId: item._id,
+                                        },
+                                    })
+                                }
+                                >
                                 <View>
                                     <Text style={globalStyles.cardText}>
                                         {vehicleLabel(item.vehicleId)}
@@ -257,11 +269,14 @@ export default function EventDetailPage() {
 
                                 <Pressable
                                     style={globalStyles.buttonDangerSmall}
-                                    onPress={() => handleRemoveVehicleAssignment(item._id)}
-                                >
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveVehicleAssignment(item._id);
+                                    }}
+                                    >
                                     <Text style={globalStyles.smallButtonText}>Remove</Text>
                                 </Pressable>
-                            </View>
+                            </Pressable>
                         ))
                     )}
 
@@ -357,6 +372,7 @@ const styles = StyleSheet.create({
     },
     vehicleRow: {
         marginBottom: 10,
+        marginTop: 10,
         paddingBottom: 8,
         borderBottomWidth: 1,
         borderBottomColor: "#374151",
