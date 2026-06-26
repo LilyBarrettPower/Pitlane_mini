@@ -22,6 +22,12 @@ type EventVehicle = {
     type?: string;
 };
 
+type Event = {
+    _id: string,
+    name: string,
+    type?: string,
+};
+
 export default function EventVehicleDetailPage() {
     const { id: eventId, eventVehicleId } = useLocalSearchParams<{
         id: string;
@@ -33,6 +39,7 @@ export default function EventVehicleDetailPage() {
     const [eventVehicle, setEventVehicle] = useState<EventVehicle | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [event, setEvent] = useState<Event | null>(null);
 
     async function fetchEventVehicle() {
         try {
@@ -58,9 +65,21 @@ export default function EventVehicleDetailPage() {
         }
     }
 
+    async function fetchEvent() {
+        const data = await apiFetch(`/events/${eventId}`,{
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+        });
+
+        setEvent(data.event);
+    }
+
     useEffect(() => {
         if (eventId && eventVehicleId && token) {
             fetchEventVehicle();
+            fetchEvent();
         }
     }, [eventId, eventVehicleId, token]);
 
@@ -94,16 +113,22 @@ export default function EventVehicleDetailPage() {
     return (
         <SafeAreaView style={globalStyles.container}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={globalStyles.title}>
+                <View style={styles.breadcrumbCard}>
+                    <Text style={globalStyles.title}>
+                        {event?.name || "Event"}
+                    </Text>
+                
+                <Text style={globalStyles.text}>
                     {typeof eventVehicle.vehicleId === "string"
                     ? "Event Vehicle"
                     : vehicleLabel(eventVehicle.vehicleId)}
                 </Text>
+                </View>
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Event Vehicle Info</Text>
                     <Text style={globalStyles.cardText}>
-                        Type: {eventVehicle.type || "-"}
+                        Do we want any text here?
                     </Text>
                 </View>
 
@@ -130,4 +155,12 @@ const styles = StyleSheet.create({
         padding: 24,
         gap: 16,
     },
+    breadcrumbCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 12,
+        gap: 4,
+    }
 });
