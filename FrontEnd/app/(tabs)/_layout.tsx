@@ -106,7 +106,7 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen 
-        name="events/[id]/vehicles/[eventVehicleId]"
+        name="events/[id]/vehicles/[eventVehicleId]/index"
         options={{href: null}}
         />
 

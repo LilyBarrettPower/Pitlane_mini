@@ -3,9 +3,9 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-nat
 import { useLocalSearchParams } from "expo-router";
 import {SafeAreaView} from "react-native-safe-area-context";
 
-import { apiFetch } from "../../../../../assets/api";
-import {useAuth} from "../../../../../context/AuthContext";
-import {globalStyles} from "../../../../../constants/styles";
+import { apiFetch } from "../../../../../../assets/api";
+import {useAuth} from "../../../../../../context/AuthContext";
+import {globalStyles} from "../../../../../../constants/styles";
 
 type Vehicle = {
     _id: string;
