@@ -70,16 +70,21 @@ exports.createRun = async (req, res) => {
 };
 
 
-// GET RUns
+// GET Runs for eventVehicleId
 
 exports.getRuns = async (req, res) => {
     try {
         const organisationId = req.user.organisationId;
+        const {eventVehicleId} = req.query;
 
         const filter = {
             organisationId,
             isActive: true,
         };
+
+        if (eventVehicleId) {
+            filter.eventVehicleId = eventVehicleId;
+        }
 
         const runs = await Run.find(filter).sort({ createdAt: -1 });
         res.json({ runs });
