@@ -24,11 +24,10 @@ exports.createRun = async (req, res) => {
         if (
             !eventVehicleId ||
             lapsDone == null ||
-            fuelStart == null ||
-            fuelEnd == null
+            fuelStart == null
         ) {
             return res.status(400).json({
-                message: 'EventVehicleId, lapsDone, fuelStart and fuelEnd are required'
+                message: 'EventVehicleId, lapsDone and fuelStart are required'
             });
         }
 
@@ -55,10 +54,10 @@ exports.createRun = async (req, res) => {
             inTime,
             lapsDone,
             fuelStart,
-            fuelEnd,
-            fuelUsed,
-            fuelPerLap,
-            averageLapS,
+            fuelEnd: fuelEnd ?? undefined,
+            fuelUsed: 0,
+            fuelPerLap: 0,
+            averageLapS: 0,
             bestLapS
         });
 

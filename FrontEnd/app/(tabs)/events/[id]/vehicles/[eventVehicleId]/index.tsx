@@ -34,11 +34,11 @@ type Run = {
     weather?: string;
     trackTemp?: string;
     trackCondition?: string;
-    outTime?: string;
-    inTime?: string;
+    // outTime?: string;
+    // inTime?: string;
     lapsDone?: number;
     fuelStart?: number;
-    fuelEnd?: number;
+    // fuelEnd?: number;
     fuelUsed?: number; // Make it so that this auto populates 
     fuelPerLap?: number; // Also auto populates
     bestLapS?: number;
@@ -142,11 +142,11 @@ export default function EventVehicleDetailPage() {
         setWeather("");
         setTrackTemp("");
         setTrackCondition("");
-        setOutTime("");
-        setInTime("");
+        // setOutTime("");
+        // setInTime("");
         setLapsDone("");
         setFuelStart("");
-        setFuelEnd("");
+        // setFuelEnd("");
         setBestLapS("");
         setNotes("");
     }
@@ -166,11 +166,11 @@ export default function EventVehicleDetailPage() {
                     weather,
                     trackTemp: trackTemp ? Number(trackTemp) : undefined,
                     trackCondition,
-                    outTime,
-                    inTime,
+                    // outTime,
+                    // inTime,
                     lapsDone: lapsDone ? Number(lapsDone) : undefined,
                     fuelStart: fuelStart ? Number(fuelStart) : undefined,
-                    fuelEnd: fuelEnd ? Number(fuelEnd) : undefined,
+                    // fuelEnd: fuelEnd ? Number(fuelEnd) : undefined,
                     bestLapS: bestLapS ? Number(bestLapS) : undefined,
                     notes,
                 }),
@@ -239,7 +239,7 @@ export default function EventVehicleDetailPage() {
                                 style={styles.runRow}
                                 onPress={() =>
                                     router.push({
-                                        pathname: "/events/[id]/vehicles/[eventVehicleId/runs/[runId]" as any,
+                                        pathname: "/events/[id]/vehicles/[eventVehicleId]/runs/[runId]" as any,
                                         params: {
                                             id: String(eventId),
                                             eventVehicleId: String(eventVehicleId),
@@ -313,7 +313,7 @@ export default function EventVehicleDetailPage() {
                                     placeholderTextColor="#9ca3af"
                                 />
 
-                                <Text style={globalStyles.label}>Out Time</Text>
+                                {/* <Text style={globalStyles.label}>Out Time</Text>
                                 <TextInput
                                     style={globalStyles.input}
                                     value={outTime}
@@ -329,7 +329,7 @@ export default function EventVehicleDetailPage() {
                                     onChangeText={setInTime}
                                     placeholder="12:50"
                                     placeholderTextColor="#9ca3af"
-                                />
+                                /> */}
 
                                 <Text style={globalStyles.label}>Laps Done</Text>
                                 <TextInput
@@ -347,13 +347,13 @@ export default function EventVehicleDetailPage() {
                                     keyboardType="numeric"
                                 />
 
-                                <Text style={globalStyles.label}>Fuel End</Text>
+                                {/* <Text style={globalStyles.label}>Fuel End</Text>
                                 <TextInput
                                     style={globalStyles.input}
                                     value={fuelEnd}
                                     onChangeText={setFuelEnd}
                                     keyboardType="numeric"
-                                />
+                                /> */}
 
                                 <Text style={globalStyles.label}>Best Lap Seconds</Text>
                                 <TextInput
