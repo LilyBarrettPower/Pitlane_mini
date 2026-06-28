@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import {SafeAreaView} from "react-native-safe-area-context";
 
 import { apiFetch } from "../../../../../../assets/api";
@@ -28,6 +28,24 @@ type Event = {
     type?: string,
 };
 
+type Run = {
+    _id: string;
+    eventVehicleId: string;
+    weather?: string;
+    trackTemp?: string;
+    trackCondition?: string;
+    outTime?: string;
+    inTime?: string;
+    lapsDone?: number;
+    fuelStart?: number;
+    fuelEnd?: number;
+    fuelUsed?: number; // Make it so that this auto populates 
+    fuelPerLap?: number; // Also auto populates
+    bestLapS?: number;
+    averageLapS?: number;
+    notes?: string;
+};
+
 export default function EventVehicleDetailPage() {
     const { id: eventId, eventVehicleId } = useLocalSearchParams<{
         id: string;
@@ -40,6 +58,8 @@ export default function EventVehicleDetailPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [event, setEvent] = useState<Event | null>(null);
+
+    const [runs, setRuns] = useState<Run[]>([]);
 
     async function fetchEventVehicle() {
         try {
@@ -76,10 +96,22 @@ export default function EventVehicleDetailPage() {
         setEvent(data.event);
     }
 
+    async function fetchRuns() {
+        const data = await apiFetch(`/runs?eventVehicleId=${eventVehicleId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setRuns(data.runs || []);
+    }
+
     useEffect(() => {
         if (eventId && eventVehicleId && token) {
             fetchEventVehicle();
             fetchEvent();
+            fetchRuns();
         }
     }, [eventId, eventVehicleId, token]);
 
@@ -134,7 +166,42 @@ export default function EventVehicleDetailPage() {
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Runs</Text>
-                    <Text style={globalStyles.text}>Coming later...</Text>
+                    {runs.length === 0 ? (
+                        <Text style={globalStyles.text}>No runs yet</Text>
+                    ) : (
+                        runs.map((run, index) => (
+                            <Pressable 
+                                key={run._id}
+                                style={styles.runRow}
+                                onPress={() => 
+                                    router.push({
+                                        pathname: "/events/[id]/vehicles/[eventVehicleId/runs/[runId]" as any,
+                                        params: {
+                                            id: String(eventId),
+                                            eventVehicleId: String(eventVehicleId),
+                                            runId: run._id,
+                                        },
+                                    })
+                                }
+                                >
+                                    <View>
+                                        <Text style={globalStyles.cardText}>Run {index + 1}</Text>
+                                        <Text style={globalStyles.subText}>
+                                            Laps: {run.lapsDone ?? "-"} | Best: {run.bestLapS ?? "-"}
+                                        </Text>
+                                        <Text style={globalStyles.subText}>
+                                            Fuel Used: {run.fuelUsed ?? "-"} L
+                                        </Text>
+                                    </View>
+                                </Pressable>
+                        ))
+                    )}
+
+                    <View style={styles.actionRow}>
+                        <Pressable style={globalStyles.buttonPrimary}>
+                            <Text style={globalStyles.buttonPrimaryText}>Create Run</Text>
+                        </Pressable>
+                    </View>
                 </View>
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Setup Used</Text>
@@ -162,5 +229,17 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 12,
         gap: 4,
+    },
+    runRow: {
+        marginBottom: 10,
+        paddingBottom: 8,
+        borderBottomWidth: 1, 
+        borderBottomColor: "#374151",
+    },
+    actionRow: {
+        flexDirection: "row",
+        gap: 10,
+        marginTop: 14,
+        flexWrap: "wrap",
     }
 });

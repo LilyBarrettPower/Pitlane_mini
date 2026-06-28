@@ -100,15 +100,20 @@ export default function TabsLayout() {
 
       <Tabs.Screen
         name="events/[id]/index"
-        options={{ 
+        options={{
           href: null
-         }}
+        }}
       />
 
-      <Tabs.Screen 
+      <Tabs.Screen
         name="events/[id]/vehicles/[eventVehicleId]/index"
-        options={{href: null}}
-        />
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="events/[id]/vehicles/[eventVehicleId]/runs/[runId]"
+        options={{ href: null }}
+      />
 
 
     </Tabs>

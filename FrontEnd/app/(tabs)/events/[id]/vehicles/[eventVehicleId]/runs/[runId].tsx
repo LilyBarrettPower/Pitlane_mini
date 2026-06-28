@@ -1,0 +1,150 @@
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { apiFetch } from "../../../../../../../assets/api";
+import { useAuth } from "../../../../../../../context/AuthContext";
+import { globalStyles } from "../../../../../../../constants/styles";
+
+type Run = {
+    _id: string;
+    eventVehicleId: string;
+    weather?: string;
+    trackTemp?: string;
+    trackCondition?: string;
+    outTime?: string;
+    inTime?: string;
+    lapsDone?: number;
+    fuelStart?: number;
+    fuelEnd?: number;
+    fuelUsed?: number; // Make it so that this auto populates 
+    fuelPerLap?: number; // Also auto populates
+    bestLapS?: number;
+    averageLapS?: number;
+    notes?: string;
+};
+
+export default function RunDetailPage() {
+    const { runId } = useLocalSearchParams<{
+        id: string;
+        eventVehicleId: string;
+        runId: string;
+    }>();
+
+    const { token } = useAuth();
+    const [run, setRun] = useState<Run | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    async function fetchRun() {
+        try {
+            setIsLoading(true);
+            setErrorMessage("");
+
+            const data = await apiFetch(`/runs/${runId}`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            });
+
+            setRun(data.run);
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to load run");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        if (runId && token) {
+            fetchRun();
+        }
+    }, [runId, token]);
+
+    function formatLapTime(seconds?: number) {
+        if (!seconds && seconds !== 0) return "-";
+
+        const mins = Math.floor(seconds / 60);
+        const secs = (seconds % 60).toFixed(3).padStart(6, "0");
+
+        return `${mins}:${secs}`;
+    }
+
+    if (isLoading) {
+        return (
+            <SafeAreaView style={globalStyles.container}>
+                <ActivityIndicator color="#ffffff" />
+            </SafeAreaView>
+        );
+    }
+
+    if (errorMessage || !run) {
+        return (
+            <SafeAreaView style={globalStyles.container}>
+                <View style={styles.content}>
+                    <Text style={globalStyles.errorText}>
+                        {errorMessage || "Run not found"}
+                    </Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    return (
+        <SafeAreaView style={globalStyles.container}>
+            <ScrollView contentContainerStyle={styles.content}>
+                <Text style={globalStyles.title}>
+                    Run Detail
+                </Text>
+
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>Run Info</Text>
+                    <Text style={globalStyles.cardText}>Out Time: {run.outTime || "-"}</Text>
+                    <Text style={globalStyles.cardText}>In Time: {run.inTime || "-"}</Text>
+                    <Text style={globalStyles.cardText}>Laps Done: {run.lapsDone ?? "-"}</Text>
+                </View>
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>Conditions</Text>
+                    <Text style={globalStyles.cardText}>Weather: {run.weather || "-"}</Text>
+                    <Text style={globalStyles.cardText}>Track Temp: {run.trackTemp ?? "-"}°C</Text>
+                    <Text style={globalStyles.cardText}>
+                        Track Condition: {run.trackCondition || "-"}
+                    </Text>
+                </View>
+
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>Fuel</Text>
+                    <Text style={globalStyles.cardText}>Fuel Start: {run.fuelStart ?? "-"} L</Text>
+                    <Text style={globalStyles.cardText}>Fuel End: {run.fuelEnd ?? "-"} L</Text>
+                    <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed ?? "-"} L</Text>
+                    <Text style={globalStyles.cardText}>Fuel/Lap: {run.fuelPerLap ?? "-"} L</Text>
+                </View>
+
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>Lap Times</Text>
+                    <Text style={globalStyles.cardText}>
+                        Best Lap: {formatLapTime(run.bestLapS)}
+                    </Text>
+                    <Text style={globalStyles.cardText}>
+                        Average Lap: {formatLapTime(run.averageLapS)}
+                    </Text>
+                </View>
+
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>Notes</Text>
+                    <Text style={globalStyles.cardText}>{run.notes || "-"}</Text>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    )
+
+}
+
+const styles = StyleSheet.create({
+    content: {
+        padding: 24,
+        gap: 16,
+    },
+});
