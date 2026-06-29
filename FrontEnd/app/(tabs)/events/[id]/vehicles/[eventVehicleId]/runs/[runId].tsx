@@ -99,7 +99,7 @@ export default function RunDetailPage() {
             minute: "2-digit",
             second: "2-digit",
             hour12: true,
-            });
+        });
     }
 
 
@@ -141,14 +141,23 @@ export default function RunDetailPage() {
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Run Info</Text>
-                    <View style={styles.actionRow}>
-                        <Pressable style={globalStyles.buttonPrimary} onPress={handleCarOut}>
-                            <Text style={globalStyles.buttonPrimaryText}>Car Out</Text>
-                        </Pressable>
-                        <Pressable style={globalStyles.buttonDanger} onPress={handleCarIn}>
-                            <Text style={globalStyles.buttonPrimaryText}>Car In</Text>
-                        </Pressable>
-                    </View>
+                    {!run.outTime ? (
+                        <View style={styles.actionRow}>
+                            <Pressable style={globalStyles.buttonPrimary} onPress={handleCarOut}>
+                                <Text style={globalStyles.buttonPrimaryText}>Car Out</Text>
+                            </Pressable>
+                        </View>
+                    ) : !run.inTime ? (
+                        <View style={styles.actionRow}>
+                            <Pressable style={globalStyles.buttonDanger} onPress={handleCarIn}>
+                                <Text style={globalStyles.buttonPrimaryText}>Car In</Text>
+                            </Pressable>
+                        </View>
+                    ) : (
+                        <View style={styles.completeCard}>
+                            <Text style={globalStyles.text}>Run Complete</Text>
+                        </View>
+                    )}
                     <Text style={globalStyles.cardText}>Out Time: {formatTime(run.outTime)}</Text>
                     <Text style={globalStyles.cardText}>In Time: {formatTime(run.inTime)}</Text>
                     <Text style={globalStyles.cardText}>Laps Done: {run.lapsDone ?? "-"}</Text>
@@ -198,7 +207,17 @@ const styles = StyleSheet.create({
     actionRow: {
         flexDirection: "row",
         gap: 10,
-        marginTop: 14,
+        marginTop: 10,
         flexWrap: "wrap",
+        marginBottom: 10,
+    },
+    completeCard: {
+        borderWidth: 1,
+        borderColor: "#10b981",
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 10,
+        marginTop: 10,
+        alignItems: "center",
     },
 });
