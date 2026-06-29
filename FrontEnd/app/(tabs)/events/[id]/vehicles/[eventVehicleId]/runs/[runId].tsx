@@ -91,9 +91,15 @@ export default function RunDetailPage() {
         await fetchRun();
     }
 
+    // Would need to change this depending on where in the world you sold the app.
     function formatTime(date?: string) {
         if (!date) return "-";
-        return new Date(date).toLocaleDateString();
+        return new Date(date).toLocaleDateString("en-NZ", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+            });
     }
 
 
@@ -139,7 +145,7 @@ export default function RunDetailPage() {
                         <Pressable style={globalStyles.buttonPrimary} onPress={handleCarOut}>
                             <Text style={globalStyles.buttonPrimaryText}>Car Out</Text>
                         </Pressable>
-                        <Pressable style={globalStyles.buttonDanger} onPress={handleCarOut}>
+                        <Pressable style={globalStyles.buttonDanger} onPress={handleCarIn}>
                             <Text style={globalStyles.buttonPrimaryText}>Car In</Text>
                         </Pressable>
                     </View>
