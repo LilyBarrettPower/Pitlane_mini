@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -63,6 +63,40 @@ export default function RunDetailPage() {
         }
     }, [runId, token]);
 
+    async function handleCarOut() {
+        await apiFetch(`/runs/${runId}`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                outTime: new Date().toISOString(),
+            }),
+        });
+
+        await fetchRun();
+    }
+
+    async function handleCarIn() {
+        await apiFetch(`/runs/${runId}`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                inTime: new Date().toISOString(),
+            }),
+        });
+
+        await fetchRun();
+    }
+
+    function formatTime(date?: string) {
+        if (!date) return "-";
+        return new Date(date).toLocaleDateString();
+    }
+
+
     function formatLapTime(seconds?: number) {
         if (!seconds && seconds !== 0) return "-";
 
@@ -101,8 +135,16 @@ export default function RunDetailPage() {
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Run Info</Text>
-                    <Text style={globalStyles.cardText}>Out Time: {run.outTime || "-"}</Text>
-                    <Text style={globalStyles.cardText}>In Time: {run.inTime || "-"}</Text>
+                    <View style={styles.actionRow}>
+                        <Pressable style={globalStyles.buttonPrimary} onPress={handleCarOut}>
+                            <Text style={globalStyles.buttonPrimaryText}>Car Out</Text>
+                        </Pressable>
+                        <Pressable style={globalStyles.buttonDanger} onPress={handleCarOut}>
+                            <Text style={globalStyles.buttonPrimaryText}>Car In</Text>
+                        </Pressable>
+                    </View>
+                    <Text style={globalStyles.cardText}>Out Time: {formatTime(run.outTime)}</Text>
+                    <Text style={globalStyles.cardText}>In Time: {formatTime(run.inTime)}</Text>
                     <Text style={globalStyles.cardText}>Laps Done: {run.lapsDone ?? "-"}</Text>
                 </View>
                 <View style={globalStyles.card}>
@@ -146,5 +188,11 @@ const styles = StyleSheet.create({
     content: {
         padding: 24,
         gap: 16,
+    },
+    actionRow: {
+        flexDirection: "row",
+        gap: 10,
+        marginTop: 14,
+        flexWrap: "wrap",
     },
 });
