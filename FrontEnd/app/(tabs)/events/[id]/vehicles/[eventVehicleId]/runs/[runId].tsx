@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable, Modal, TextInput } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -36,6 +36,10 @@ export default function RunDetailPage() {
     const [run, setRun] = useState<Run | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+
+    const [showFuelEndModal, setShowFuelEndModal] = useState(false);
+    const [fuelEndInput, setFuelEndInput] = useState("");
+    const [isSavingFuelEnd, setIsSavingFuelEnd] = useState(false);
 
     async function fetchRun() {
         try {
@@ -102,6 +106,35 @@ export default function RunDetailPage() {
         });
     }
 
+    async function handleSaveFuelEnd() {
+        if (!fuelEndInput) {
+            setErrorMessage("Fuel end is required")
+            return;
+        }
+
+        try {
+            setIsSavingFuelEnd(true);
+            setErrorMessage("");
+
+            await apiFetch(`/runs/${runId}`, {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    fuelEnd: Number(fuelEndInput)
+                }),
+            });
+
+            setFuelEndInput("");
+            setShowFuelEndModal(false);
+            await fetchRun();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to save fuel end");
+        } finally {
+            setIsSavingFuelEnd(false);
+        }
+    }
 
     function formatLapTime(seconds?: number) {
         if (!seconds && seconds !== 0) return "-";
@@ -177,6 +210,19 @@ export default function RunDetailPage() {
                     <Text style={globalStyles.cardText}>Fuel End: {run.fuelEnd ?? "-"} L</Text>
                     <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed ?? "-"} L</Text>
                     <Text style={globalStyles.cardText}>Fuel/Lap: {run.fuelPerLap ?? "-"} L</Text>
+                    <View style={styles.actionRow}>
+                        <Pressable
+                            style={globalStyles.buttonPrimary}
+                            onPress={() => {
+                                setFuelEndInput(run.fuelEnd ? String(run.fuelEnd) : "");
+                                setShowFuelEndModal(true);
+                            }}
+                        >
+                            <Text style={globalStyles.buttonPrimaryText}>
+                                {run.fuelEnd == null ? "Enter Fuel End" : "Edit Fuel End"}
+                            </Text>
+                        </Pressable>
+                    </View>
                 </View>
 
                 <View style={globalStyles.card}>
@@ -193,6 +239,57 @@ export default function RunDetailPage() {
                     <Text style={globalStyles.sectionTitle}>Notes</Text>
                     <Text style={globalStyles.cardText}>{run.notes || "-"}</Text>
                 </View>
+
+                <Modal
+                    visible={showFuelEndModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowFuelEndModal(false)}
+                >
+                    <View style={globalStyles.modalOverlay}>
+                        <View style={globalStyles.modalCard}>
+                            <Text style={globalStyles.modalTitle}>Fuel End</Text>
+
+                            <Text style={globalStyles.label}>Fuel End</Text>
+                            <TextInput
+                                style={globalStyles.input}
+                                value={fuelEndInput}
+                                onChangeText={setFuelEndInput}
+                                keyboardType="numeric"
+                                placeholder="e.g. 18"
+                                placeholderTextColor="#9ca3af"
+                            />
+
+                            <View style={styles.actionRow}>
+                                <Pressable
+                                    style={globalStyles.buttonDanger}
+                                    onPress={() => {
+                                        setFuelEndInput("");
+                                        setShowFuelEndModal(false);
+                                    }}
+                                    disabled={isSavingFuelEnd}
+                                >
+                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={[
+                                        globalStyles.buttonPrimary,
+                                        isSavingFuelEnd && globalStyles.buttonDisabled,
+                                    ]}
+                                    onPress={handleSaveFuelEnd}
+                                    disabled={isSavingFuelEnd}
+                                >
+                                    {isSavingFuelEnd ? (
+                                        <ActivityIndicator color="#ffffff" />
+                                    ) : (
+                                        <Text style={globalStyles.buttonPrimaryText}>Save Fuel End</Text>
+                                    )}
+                                </Pressable>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
         </SafeAreaView>
     )

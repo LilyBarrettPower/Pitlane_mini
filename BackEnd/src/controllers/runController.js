@@ -124,15 +124,25 @@ exports.updateRun = async (req, res) => {
         const { id } = req.params;
         const organisationId = req.user.organisationId;
 
-        const run = await Run.findOneAndUpdate(
-            { _id: id, organisationId, isActive: true },
-            req.body,
-            { new: true }
-        );
+        const run = await Run.findOne({
+            _id: id,
+            organisationId,
+            isActive: true,
+        });
 
         if (!run) {
             return res.status(404).json({ message: 'Run Not Found' });
         }
+
+        Object.assign(run, req.body);
+
+        if (run.fuelStart != null && run.fuelEnd != null) {
+            run.fuelUsed = run.fuelStart - run.fuelEnd;
+            run.fuelPerLap = 
+                run.lapsDone && run.lapsDone > 0 ? run.fuelUsed / run.lapsDone : 0;
+        }
+        await run.save();
+        
         res.json({ run });
     } catch (err) {
         console.error('Update Run error', err);
