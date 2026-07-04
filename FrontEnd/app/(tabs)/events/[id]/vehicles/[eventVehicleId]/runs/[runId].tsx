@@ -10,6 +10,7 @@ import { globalStyles } from "../../../../../../../constants/styles";
 type Run = {
     _id: string;
     eventVehicleId: string;
+    name: string;
     weather?: string;
     trackTemp?: string;
     trackCondition?: string;
@@ -174,6 +175,7 @@ export default function RunDetailPage() {
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Run Info</Text>
+                    <Text style={globalStyles.text}>{run.name}</Text>
                     {!run.outTime ? (
                         <View style={styles.actionRow}>
                             <Pressable style={globalStyles.buttonPrimary} onPress={handleCarOut}>

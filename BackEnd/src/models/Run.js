@@ -12,6 +12,7 @@ const RunSchema = new mongoose.Schema(
             ref: 'EventVehicle',
             required: true,
         },
+        name: { type: String, default: "", trim: true },
         weather: { type: String, trim: true },
         trackTemp: { type: String, trim: true },
         trackCondition: {type: String, trim: true}, 

@@ -31,6 +31,7 @@ type Event = {
 type Run = {
     _id: string;
     eventVehicleId: string;
+    name: string;
     weather?: string;
     trackTemp?: string;
     trackCondition?: string;
@@ -64,6 +65,7 @@ export default function EventVehicleDetailPage() {
     const [showRunModal, setShowRunModal] = useState(false);
     const [isSavingRun, setIsSavingRun] = useState(false);
 
+    const [name, setName] = useState("");
     const [weather, setWeather] = useState("");
     const [trackTemp, setTrackTemp] = useState("");
     const [trackCondition, setTrackCondition] = useState("");
@@ -163,6 +165,7 @@ export default function EventVehicleDetailPage() {
                 },
                 body: JSON.stringify({
                     eventVehicleId,
+                    name,
                     weather,
                     trackTemp: trackTemp ? Number(trackTemp) : undefined,
                     trackCondition,
@@ -286,7 +289,13 @@ export default function EventVehicleDetailPage() {
                         <View style={globalStyles.modalOverlay}>
                             <View style={globalStyles.modalCard}>
                                 <Text style={globalStyles.modalTitle}>Create Run</Text>
-
+                                <Text style={globalStyles.label}>Run Name</Text>
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholderTextColor="#9ca3af"
+                                />
                                 <Text style={globalStyles.label}>Weather</Text>
                                 <TextInput
                                     style={globalStyles.input}
