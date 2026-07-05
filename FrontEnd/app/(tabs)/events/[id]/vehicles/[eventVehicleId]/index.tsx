@@ -69,12 +69,12 @@ export default function EventVehicleDetailPage() {
     const [weather, setWeather] = useState("");
     const [trackTemp, setTrackTemp] = useState("");
     const [trackCondition, setTrackCondition] = useState("");
-    const [outTime, setOutTime] = useState("");
-    const [inTime, setInTime] = useState("");
-    const [lapsDone, setLapsDone] = useState("");
+    // const [outTime, setOutTime] = useState("");
+    // const [inTime, setInTime] = useState("");
+    // const [lapsDone, setLapsDone] = useState("");
     const [fuelStart, setFuelStart] = useState("");
     const [fuelEnd, setFuelEnd] = useState("");
-    const [bestLapS, setBestLapS] = useState("");
+    // const [bestLapS, setBestLapS] = useState("");
     const [notes, setNotes] = useState("");
     // Do you need to add anything else here? ^ ANd what about stuff that's supposed to autopopulate
 
@@ -146,10 +146,10 @@ export default function EventVehicleDetailPage() {
         setTrackCondition("");
         // setOutTime("");
         // setInTime("");
-        setLapsDone("");
+        // setLapsDone("");
         setFuelStart("");
         // setFuelEnd("");
-        setBestLapS("");
+        // setBestLapS("");
         setNotes("");
     }
 
@@ -171,10 +171,10 @@ export default function EventVehicleDetailPage() {
                     trackCondition,
                     // outTime,
                     // inTime,
-                    lapsDone: lapsDone ? Number(lapsDone) : undefined,
+                    // lapsDone: lapsDone ? Number(lapsDone) : undefined,
                     fuelStart: fuelStart ? Number(fuelStart) : undefined,
                     // fuelEnd: fuelEnd ? Number(fuelEnd) : undefined,
-                    bestLapS: bestLapS ? Number(bestLapS) : undefined,
+                    // bestLapS: bestLapS ? Number(bestLapS) : undefined,
                     notes,
                 }),
             });
@@ -340,13 +340,13 @@ export default function EventVehicleDetailPage() {
                                     placeholderTextColor="#9ca3af"
                                 /> */}
 
-                                <Text style={globalStyles.label}>Laps Done</Text>
+                                {/* <Text style={globalStyles.label}>Laps Done</Text>
                                 <TextInput
                                     style={globalStyles.input}
                                     value={lapsDone}
                                     onChangeText={setLapsDone}
                                     keyboardType="numeric"
-                                />
+                                /> */}
 
                                 <Text style={globalStyles.label}>Fuel Start</Text>
                                 <TextInput
@@ -364,7 +364,7 @@ export default function EventVehicleDetailPage() {
                                     keyboardType="numeric"
                                 /> */}
 
-                                <Text style={globalStyles.label}>Best Lap Seconds</Text>
+                                {/* <Text style={globalStyles.label}>Best Lap Seconds</Text>
                                 <TextInput
                                     style={globalStyles.input}
                                     value={bestLapS}
@@ -372,7 +372,7 @@ export default function EventVehicleDetailPage() {
                                     placeholder="92.315"
                                     placeholderTextColor="#9ca3af"
                                     keyboardType="numeric"
-                                />
+                                /> */}
 
                                 <Text style={globalStyles.label}>Notes</Text>
                                 <TextInput
