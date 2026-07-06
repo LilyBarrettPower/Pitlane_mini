@@ -26,6 +26,19 @@ type Run = {
     notes?: string;
 };
 
+type LapTime = {
+    _id: string;
+    runId: string;
+    lapNumber: number;
+    lapTimeS: number;
+    fuelPerLap?: number;
+    trackStatus?: string;
+    isInLap?: boolean;
+    isOutLap?: boolean;
+    notes?: string;
+};
+
+
 export default function RunDetailPage() {
     const { runId } = useLocalSearchParams<{
         id: string;
@@ -41,6 +54,16 @@ export default function RunDetailPage() {
     const [showFuelEndModal, setShowFuelEndModal] = useState(false);
     const [fuelEndInput, setFuelEndInput] = useState("");
     const [isSavingFuelEnd, setIsSavingFuelEnd] = useState(false);
+
+    const [lapTimes, setLapTimes] = useState<LapTime[]>([]);
+    const [showLapModal, setShowLapModal] = useState(false);
+    const [isSavingLap, setIsSavingLap] = useState(false);
+
+    const [lapNumber, setLapNumber] = useState("");
+    const [lapTimeS, setLapTimeS] = useState("");
+    const [fuelPerLap, setFuelPerLap] = useState("");
+    const [trackStatus, setTrackStatus] = useState("Green");
+    const [lapNotes, setLapNotes] = useState("");
 
     async function fetchRun() {
         try {
@@ -62,9 +85,21 @@ export default function RunDetailPage() {
         }
     }
 
+    async function fetchLapTimes() {
+        const data = await apiFetch(`/lap-times?runId=${runId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setLapTimes(data.lapTimes || []);
+    }
+
     useEffect(() => {
         if (runId && token) {
             fetchRun();
+            fetchLapTimes();
         }
     }, [runId, token]);
 
@@ -146,6 +181,61 @@ export default function RunDetailPage() {
         return `${mins}:${secs}`;
     }
 
+    function clearLapForm() {
+        setLapNumber("");
+        setLapTimeS("");
+        setFuelPerLap("");
+        setTrackStatus("Green");
+        setLapNotes("");
+    }
+
+    function openAddLapModal() {
+        const nextLapNumber = lapTimes.length + 1;
+        setLapNumber(String(nextLapNumber));
+        setLapTimeS("");
+        setFuelPerLap("");
+        setTrackStatus("Green");
+        setLapNotes("");
+        setShowLapModal(true);
+    }
+
+    async function handleCreateLap() {
+        if (!lapNumber || !lapTimeS) {
+            setErrorMessage("Lap number and lap time are required");
+            return;
+        }
+
+        try {
+            setIsSavingLap(true);
+            setErrorMessage("");
+
+            await apiFetch("/lap-times", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    runId,
+                    lapNumber: Number(lapNumber),
+                    lapTimeS: Number(lapTimeS),
+                    fuelPerLap: fuelPerLap ? Number(fuelPerLap) : undefined,
+                    trackStatus,
+                    notes: lapNotes,
+                }),
+            });
+
+            clearLapForm();
+            setShowLapModal(false);
+
+            await fetchLapTimes();
+            await fetchRun();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to create lap");
+        } finally {
+            setIsSavingLap(false);
+        }
+    }
+
     if (isLoading) {
         return (
             <SafeAreaView style={globalStyles.container}>
@@ -175,7 +265,9 @@ export default function RunDetailPage() {
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Run Info</Text>
-                    <Text style={globalStyles.text}>{run.name}</Text>
+                    <Text style={globalStyles.text}>{run.name}
+
+                    </Text>
                     {!run.outTime ? (
                         <View style={styles.actionRow}>
                             <Pressable style={globalStyles.buttonPrimary} onPress={handleCarOut}>
@@ -229,12 +321,30 @@ export default function RunDetailPage() {
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Lap Times</Text>
-                    <Text style={globalStyles.cardText}>
-                        Best Lap: {formatLapTime(run.bestLapS)}
-                    </Text>
-                    <Text style={globalStyles.cardText}>
-                        Average Lap: {formatLapTime(run.averageLapS)}
-                    </Text>
+                    {lapTimes.length === 0 ? (
+                        <Text style={globalStyles.text}>No lap times yet</Text>
+                    ) : (
+                        lapTimes.map((lap) => (
+                            <View key={lap._id} style={styles.lapRow}>
+                                <View>
+                                    <Text style={globalStyles.cardText}>
+                                        Lap {lap.lapNumber}: {formatLapTime(lap.lapTimeS)}
+                                    </Text>
+                                    <Text style={globalStyles.subText}>
+                                        Fuel/Lap: {lap.fuelPerLap ?? "-"} L | Status: {lap.trackStatus || "-"}
+                                    </Text>
+                                    {lap.notes ? (
+                                        <Text style={globalStyles.subText}>Notes: {lap.notes}</Text>
+                                    ) : null}
+                                </View>
+                            </View>
+                        ))
+                    )}
+                    <View style={styles.actionRow}>
+                        <Pressable style={globalStyles.buttonPrimary} onPress={openAddLapModal}>
+                            <Text style={globalStyles.buttonPrimaryText}>Add Lap</Text>
+                        </Pressable>
+                    </View>
                 </View>
 
                 <View style={globalStyles.card}>
@@ -292,6 +402,90 @@ export default function RunDetailPage() {
                         </View>
                     </View>
                 </Modal>
+                <Modal
+                    visible={showLapModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowLapModal(false)}
+                >
+                    <ScrollView contentContainerStyle={styles.modalContent}>
+                        <View style={globalStyles.modalOverlay}>
+                            <View style={globalStyles.modalCard}>
+
+                                <Text style={globalStyles.modalTitle}>Add Lap</Text>
+
+                                <Text style={globalStyles.label}>Lap Number</Text>
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={lapNumber}
+                                    onChangeText={setLapNumber}
+                                    keyboardType="numeric"
+                                />
+
+                                <Text style={globalStyles.label}>Lap Time Seconds</Text>
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={lapTimeS}
+                                    onChangeText={setLapTimeS}
+                                    placeholder="92.154"
+                                    placeholderTextColor="#9ca3af"
+                                    keyboardType="numeric"
+                                />
+
+                                <Text style={globalStyles.label}>Fuel/Lap</Text>
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={fuelPerLap}
+                                    onChangeText={setFuelPerLap}
+                                    keyboardType="numeric"
+                                />
+                                <Text style={globalStyles.label}>Track Status</Text>
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={trackStatus}
+                                    onChangeText={setTrackStatus}
+                                    placeholder="Green"
+                                    placeholderTextColor="#9ca3af"
+                                />
+
+                                <Text style={globalStyles.label}>Notes</Text>
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={lapNotes}
+                                    onChangeText={setLapNotes}
+                                />
+
+                                <View style={styles.actionRow}>
+                                    <Pressable
+                                        style={globalStyles.buttonDanger}
+                                        onPress={() => {
+                                            clearLapForm();
+                                            setShowLapModal(false);
+                                        }}
+                                        disabled={isSavingLap}
+                                    >
+                                        <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                                    </Pressable>
+
+                                    <Pressable
+                                        style={[
+                                            globalStyles.buttonPrimary,
+                                            isSavingLap && globalStyles.buttonDisabled,
+                                        ]}
+                                        onPress={handleCreateLap}
+                                        disabled={isSavingLap}
+                                    >
+                                        {isSavingLap ? (
+                                            <ActivityIndicator color="#ffffff" />
+                                        ) : (
+                                            <Text style={globalStyles.buttonPrimaryText}>Save Lap</Text>
+                                        )}
+                                    </Pressable>
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </Modal>
             </ScrollView>
         </SafeAreaView>
     )
@@ -318,5 +512,16 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         marginTop: 10,
         alignItems: "center",
+    },
+    lapRow: {
+        marginBottom: 10,
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: "#374151",
+    },
+
+    modalContent: {
+        gap: 10,
+        paddingBottom: 24,
     },
 });

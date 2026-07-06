@@ -1,4 +1,4 @@
-const LapTime = require("../models/LapTime");
+const LapTime = require("../models/LapTimes");
 const Run = require("../models/Run");
 
 async function recalculateRun(runId, organisationId) {
@@ -102,7 +102,7 @@ exports.createLapTime = async (req, res) => {
             });
         }
 
-        res.staus(500).json({message: "Server error"});
+        res.status(500).json({message: "Server error"});
     }
 };
 
