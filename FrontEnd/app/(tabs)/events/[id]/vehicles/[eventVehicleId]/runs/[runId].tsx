@@ -31,7 +31,7 @@ type LapTime = {
     runId: string;
     lapNumber: number;
     lapTimeS: number;
-    fuelPerLap?: number;
+    fuelRemaining?: number;
     trackStatus?: string;
     isInLap?: boolean;
     isOutLap?: boolean;
@@ -61,7 +61,7 @@ export default function RunDetailPage() {
 
     const [lapNumber, setLapNumber] = useState("");
     const [lapTimeS, setLapTimeS] = useState("");
-    const [fuelPerLap, setFuelPerLap] = useState("");
+    const [fuelRemaining, setFuelRemaining] = useState("");
     const [trackStatus, setTrackStatus] = useState("Green");
     const [lapNotes, setLapNotes] = useState("");
 
@@ -184,7 +184,7 @@ export default function RunDetailPage() {
     function clearLapForm() {
         setLapNumber("");
         setLapTimeS("");
-        setFuelPerLap("");
+        setFuelRemaining("");
         setTrackStatus("Green");
         setLapNotes("");
     }
@@ -193,7 +193,7 @@ export default function RunDetailPage() {
         const nextLapNumber = lapTimes.length + 1;
         setLapNumber(String(nextLapNumber));
         setLapTimeS("");
-        setFuelPerLap("");
+        setFuelRemaining("");
         setTrackStatus("Green");
         setLapNotes("");
         setShowLapModal(true);
@@ -218,7 +218,7 @@ export default function RunDetailPage() {
                     runId,
                     lapNumber: Number(lapNumber),
                     lapTimeS: Number(lapTimeS),
-                    fuelPerLap: fuelPerLap ? Number(fuelPerLap) : undefined,
+                    fuelRemaining: fuelRemaining ? Number(fuelRemaining) : undefined,
                     trackStatus,
                     notes: lapNotes,
                 }),
@@ -331,7 +331,7 @@ export default function RunDetailPage() {
                                         Lap {lap.lapNumber}: {formatLapTime(lap.lapTimeS)}
                                     </Text>
                                     <Text style={globalStyles.subText}>
-                                        Fuel/Lap: {lap.fuelPerLap ?? "-"} L | Status: {lap.trackStatus || "-"}
+                                        Fuel Remaining: {lap.fuelRemaining ?? "-"} L | Status: {lap.trackStatus || "-"}
                                     </Text>
                                     {lap.notes ? (
                                         <Text style={globalStyles.subText}>Notes: {lap.notes}</Text>
@@ -432,11 +432,11 @@ export default function RunDetailPage() {
                                     keyboardType="numeric"
                                 />
 
-                                <Text style={globalStyles.label}>Fuel/Lap</Text>
+                                <Text style={globalStyles.label}>Fuel Remaining</Text>
                                 <TextInput
                                     style={globalStyles.input}
-                                    value={fuelPerLap}
-                                    onChangeText={setFuelPerLap}
+                                    value={fuelRemaining}
+                                    onChangeText={setFuelRemaining}
                                     keyboardType="numeric"
                                 />
                                 <Text style={globalStyles.label}>Track Status</Text>

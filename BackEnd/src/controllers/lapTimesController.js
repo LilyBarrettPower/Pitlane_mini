@@ -30,20 +30,34 @@ async function recalculateRun(runId, organisationId) {
     }
 
     const fuelLaps = laps.filter(
-        (lap) => lap.fuelPerLap !== undefined && lap.fuelPerLap !== null
+        (lap) => lap.fuelRemaining !== undefined && lap.fuelRemaining !== null
     );
 
-    if (fuelLaps.length > 0) {
-        const totalFuelPerLap = fuelLaps.reduce(
-            (sum, laps) => sum + lap.fuelPerLap,
-            0
-        );
+    if (fuelLaps.length > 0 && run.fuelStart !== undefined && run.fuelStart !== null) {
+        let previousFuel = run.fuelStart;
+        let totalFuelUsed = 0;
+        let validFuelLapCount = 0;
 
-        run.fuelPerLap = totalFuelPerLap / fuelLaps.length;
-        run.fuelUsed = totalFuelPerLap;
+        fuelLaps.forEach((lap) => {
+            const fuelBurnThisLap = previousFuel - lap.fuelRemaining;
+
+            if (fuelBurnThisLap >= 0) {
+                totalFuelUsed += fuelBurnThisLap;
+                validFuelLapCount += 1;
+                previousFuel = lap.fuelRemaining;
+            }
+        });
+
+        run.fuelUsed = totalFuelUsed;
+        run.fuelPerLap = 
+            validFuelLapCount > 0 ? totalFuelUsed / validFuelLapCount : 0;
+    } else {
+        run.fuelUsed = 0;
+        run.fuelPerLap = 0;
     }
 
     await run.save();
+
 }
 
 // Create lap time
@@ -56,7 +70,7 @@ exports.createLapTime = async (req, res) => {
             runId,
             lapNumber,
             lapTimeS,
-            fuelPerLap,
+            fuelRemaining,
             trackStatus,
             isInLap,
             isOutLap,
@@ -84,7 +98,7 @@ exports.createLapTime = async (req, res) => {
             runId,
             lapNumber,
             lapTimeS,
-            fuelPerLap: fuelPerLap ?? undefined,
+            fuelRemaining: fuelRemaining ?? undefined,
             trackStatus: trackStatus || "Green",
             isInLap: isInLap || false,
             isOutLap: isOutLap || false,

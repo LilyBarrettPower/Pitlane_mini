@@ -21,10 +21,6 @@ const LapTimeSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-        fuelPerLap: {
-            type: Number, 
-            default: 0,
-        },
         fuelRemaining: {
             type: Number,
             default: undefined,

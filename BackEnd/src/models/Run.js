@@ -18,7 +18,7 @@ const RunSchema = new mongoose.Schema(
         trackCondition: {type: String, trim: true}, 
         outTime: {type: Date},
         inTime: {type: Date},
-        lapsDone: {tye: Number},
+        lapsDone: {type: Number},
         fuelStart: { type: Number},
         fuelEnd: { type: Number},
         fuelUsed: { type: Number},
