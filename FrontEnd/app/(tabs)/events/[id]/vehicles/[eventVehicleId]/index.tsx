@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable, Modal, TextInput } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { apiFetch } from "../../../../../../assets/api";
@@ -35,8 +35,8 @@ type Run = {
     weather?: string;
     trackTemp?: string;
     trackCondition?: string;
-    // outTime?: string;
-    // inTime?: string;
+    outTime?: string;
+    inTime?: string;
     lapsDone?: number;
     fuelStart?: number;
     // fuelEnd?: number;
@@ -133,6 +133,14 @@ export default function EventVehicleDetailPage() {
         }
     }, [eventId, eventVehicleId, token]);
 
+    useFocusEffect(
+        useCallback(() => {
+            if (eventVehicleId && token) {
+                fetchRuns();
+            }
+        }, [eventVehicleId, token])
+    );
+
     function vehicleLabel(vehicle: Vehicle) {
         const number = vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""
         const name = vehicle.name || `${vehicle.make || ""} ${vehicle.model || ""}`.trim();
@@ -141,15 +149,11 @@ export default function EventVehicleDetailPage() {
     }
 
     function clearRunForm() {
+        setName("");
         setWeather("");
         setTrackTemp("");
         setTrackCondition("");
-        // setOutTime("");
-        // setInTime("");
-        // setLapsDone("");
         setFuelStart("");
-        // setFuelEnd("");
-        // setBestLapS("");
         setNotes("");
     }
 
@@ -165,16 +169,11 @@ export default function EventVehicleDetailPage() {
                 },
                 body: JSON.stringify({
                     eventVehicleId,
-                    name,
+                    name: name.trim(),
                     weather,
                     trackTemp: trackTemp ? Number(trackTemp) : undefined,
                     trackCondition,
-                    // outTime,
-                    // inTime,
-                    // lapsDone: lapsDone ? Number(lapsDone) : undefined,
                     fuelStart: fuelStart ? Number(fuelStart) : undefined,
-                    // fuelEnd: fuelEnd ? Number(fuelEnd) : undefined,
-                    // bestLapS: bestLapS ? Number(bestLapS) : undefined,
                     notes,
                 }),
             });
@@ -236,23 +235,37 @@ export default function EventVehicleDetailPage() {
                     {runs.length === 0 ? (
                         <Text style={globalStyles.text}>No runs yet</Text>
                     ) : (
-                        runs.map((run, index) => (
+                        runs.map((run) => (
                             <Pressable
                                 key={run._id}
                                 style={styles.runRow}
-                                onPress={() =>
-                                    router.push({
-                                        pathname: "/events/[id]/vehicles/[eventVehicleId]/runs/[runId]" as any,
-                                        params: {
-                                            id: String(eventId),
-                                            eventVehicleId: String(eventVehicleId),
-                                            runId: run._id,
-                                        },
-                                    })
-                                }
+                                onPress={() => {
+                                    console.log("Opening run:", {
+                                        name: run.name,
+                                        runId: run._id,
+                                    });
+
+                                    router.push(
+                                        `/events/${String(eventId)}/vehicles/${String(
+                                            eventVehicleId
+                                        )}/runs/${run._id}`
+                                    );
+                                }}
                             >
                                 <View>
-                                    <Text style={globalStyles.cardText}>Run {index + 1}</Text>
+                                    <Text style={globalStyles.cardText}>{run.name || "Unnamed Run"}</Text>
+                                    <Text style={globalStyles.subText}>
+                                        Status:{" "}
+                                        {!run.outTime
+                                            ? "Not started"
+                                            : !run.inTime
+                                                ? "On track"
+                                                : "Complete"}
+                                    </Text>
+                                    <Text style={globalStyles.subText}>
+                                        ID: {run._id}
+                                    </Text>
+
                                     <Text style={globalStyles.subText}>
                                         Laps: {run.lapsDone ?? "-"} | Best: {run.bestLapS ?? "-"}
                                     </Text>
@@ -294,6 +307,7 @@ export default function EventVehicleDetailPage() {
                                     style={globalStyles.input}
                                     value={name}
                                     onChangeText={setName}
+                                    placeholder="Practice 1/Qualifying/ Race 1"
                                     placeholderTextColor="#9ca3af"
                                 />
                                 <Text style={globalStyles.label}>Weather</Text>
@@ -363,8 +377,8 @@ export default function EventVehicleDetailPage() {
                                     onChangeText={setFuelEnd}
                                     keyboardType="numeric"
                                 /> */}
-
-                                {/* <Text style={globalStyles.label}>Best Lap Seconds</Text>
+                                {/* 
+                                <Text style={globalStyles.label}>Best Lap Seconds</Text>
                                 <TextInput
                                     style={globalStyles.input}
                                     value={bestLapS}

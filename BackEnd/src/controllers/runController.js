@@ -1,8 +1,85 @@
 const Run = require('../models/Run');
 const EventVehicle = require('../models/EventVehicle');
+const LapTime = require("../models/LapTimes");
+
+exports.carIn = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organisationId = req.user.organisationId;
+
+        const run = await Run.findOne({
+            _id: id,
+            organisationId,
+            isActive: true,
+        });
+
+        if (!run) {
+            return res.status(404).json({message: "Run not found"});
+        }
+
+        const laps = await LapTime.find({
+            organisationId,
+            runId: id,
+            isActive: true,
+        }).sort({lapNumber: 1});
+
+        run.inTime = new Date();
+        run.lapsDone = laps.length;
+
+        if (laps.length > 0) {
+            const validLapTimes = laps
+                .map((lap) => lap.lapTimeS)
+                .filter((time) => Number.isFinite(time));
+
+            if (validLapTimes.length > 0) {
+                const totalLapTime = validLapTimes.reduce(
+                    (total, time) => total + time,
+                    0
+                );
+
+                run.bestLapS = Math.min(...validLapTimes);
+                run.averageLapS = totalLapTime / validLapTimes.length;
+            }
+
+            const lapsWithFuel = laps.filter(
+                (lap) => 
+                    lap.fuelRemaining !== undefined &&
+                lap.fuelRemaining !== null &&
+                Number.isFinite(lap.fuelRemaining)
+            );
+
+            if (
+                lapsWithFuel.length > 0 &&
+                run.fuelStart !== undefined &&
+                run.fuelStart !== null
+            ) {
+                const finalFuelReading = 
+                    lapsWithFuel[lapsWithFuel.length - 1].fuelRemaining;
+
+                run.fuelEnd = finalFuelReading;
+                run.fuelUsed = run.fuelStart - finalFuelReading;
+
+                run.fuelPerLap = 
+                    lapsWithFuel.length > 0
+                        ? run.fuelUsed / lapsWithFuel.length
+                        : 0;
+            }
+        }
+
+        await run.save();
+
+        res.json({
+            message: "Car marked as in and run calculated",
+            run,
+        });
+    } catch (err) {
+        console.error("Car in error", err);
+        res.status(500).json({message: "Server error"});
+    }
+};
 
 
-// POST - create a tyre
+// POST - create a run
 
 exports.createRun = async (req, res) => {
     try {
@@ -10,55 +87,36 @@ exports.createRun = async (req, res) => {
 
         const {
             eventVehicleId,
+            name,
             weather,
             trackTemp,
             trackCondition,
-            outTime,
-            inTime,
-            lapsDone,
             fuelStart,
-            fuelEnd,
-            bestLapS
+            notes,
         } = req.body;
 
         if (
             !eventVehicleId ||
-            lapsDone == null ||
             fuelStart == null
         ) {
             return res.status(400).json({
-                message: 'EventVehicleId, lapsDone and fuelStart are required'
+                message: 'EventVehicleId and fuelStart are required'
             });
-        }
-
-        const fuelUsed = fuelStart - fuelEnd;
-        const fuelPerLap = lapsDone > 0 ? fuelUsed / lapsDone : 0;
-
-
-        // This doesn't work...
-
-        let averageLapS = 0;
-        if (outTime && inTime && lapsDone > 0) {
-            const runSeconds =
-                (new Date(inTime).getTime() - new Date(outTime).getTime()) / 1000;
-            averageLapS = runSeconds / lapsDone;
         }
 
         const run = await Run.create({
             organisationId,
             eventVehicleId,
-            weather,
-            trackTemp,
-            trackCondition,
-            outTime,
-            inTime,
-            lapsDone,
+            name: name || "",
+            weather: weather || "",
+            trackTemp: trackTemp ?? undefined,
+            trackCondition: trackCondition || "",
             fuelStart,
-            fuelEnd: fuelEnd ?? undefined,
+            lapsDone: 0,
             fuelUsed: 0,
             fuelPerLap: 0,
             averageLapS: 0,
-            bestLapS
+            notes: notes || "",
         });
 
         res.status(201).json({ run });
