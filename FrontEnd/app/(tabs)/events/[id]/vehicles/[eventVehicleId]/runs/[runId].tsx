@@ -236,6 +236,28 @@ export default function RunDetailPage() {
         }
     }
 
+    function getLapFuelBurn(index: number) {
+        const currentLap = lapTimes[index];
+
+        if (
+            currentLap.fuelRemaining === undefined ||
+            currentLap.fuelRemaining === null
+        ) {
+            return null;
+        }
+
+        const previousFuel =
+            index === 0
+                ? run?.fuelStart
+                : lapTimes[index - 1]?.fuelRemaining;
+
+        if (previousFuel === undefined || previousFuel === null) {
+            return null;
+        }
+
+        return previousFuel - currentLap.fuelRemaining;
+    }
+
     if (isLoading) {
         return (
             <SafeAreaView style={globalStyles.container}>
@@ -324,23 +346,35 @@ export default function RunDetailPage() {
                     {lapTimes.length === 0 ? (
                         <Text style={globalStyles.text}>No lap times yet</Text>
                     ) : (
-                        lapTimes.map((lap) => (
-                            <View key={lap._id} style={styles.lapRow}>
-                                <View>
+                        lapTimes.map((lap, index) => {
+                            const fuelBurn = getLapFuelBurn(index);
+
+                            return (
+                                <View key={lap._id} style={styles.lapRow}>
                                     <Text style={globalStyles.cardText}>
                                         Lap {lap.lapNumber}: {formatLapTime(lap.lapTimeS)}
                                     </Text>
+
                                     <Text style={globalStyles.subText}>
-                                        Fuel Remaining: {lap.fuelRemaining ?? "-"} L | Status: {lap.trackStatus || "-"}
+                                        Fuel Remaining: {lap.fuelRemaining ?? "-"} L
                                     </Text>
+
+                                    <Text style={globalStyles.subText}>
+                                        Fuel Burn: {fuelBurn !== null ? `${fuelBurn.toFixed(2)} L` : "-"}
+                                    </Text>
+
+                                    <Text style={globalStyles.subText}>
+                                        Status: {lap.trackStatus || "-"}
+                                    </Text>
+
                                     {lap.notes ? (
                                         <Text style={globalStyles.subText}>Notes: {lap.notes}</Text>
                                     ) : null}
                                 </View>
-                            </View>
-                        ))
+                            );
+                        })
                     )}
-                    <View style={styles.actionRow}>
+                    < View style={styles.actionRow}>
                         <Pressable style={globalStyles.buttonPrimary} onPress={openAddLapModal}>
                             <Text style={globalStyles.buttonPrimaryText}>Add Lap</Text>
                         </Pressable>
@@ -487,7 +521,7 @@ export default function RunDetailPage() {
                     </ScrollView>
                 </Modal>
             </ScrollView>
-        </SafeAreaView>
+        </SafeAreaView >
     )
 
 }
