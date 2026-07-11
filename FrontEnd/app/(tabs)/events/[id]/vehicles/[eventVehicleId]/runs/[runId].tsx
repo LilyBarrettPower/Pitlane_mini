@@ -305,6 +305,19 @@ export default function RunDetailPage() {
         return previousFuel - currentLap.fuelRemaining;
     }
 
+    function getBestLapNumber() {
+        if (lapTimes.length === 0 || run?.bestLapS == null) {
+            return null;
+        }
+
+        const bestLap = lapTimes.find(
+            (lap) => lap.lapTimeS === run.bestLapS
+        );
+
+        return bestLap?.lapNumber ?? null;
+    }
+
+
     if (isLoading) {
         return (
             <SafeAreaView style={globalStyles.container}>
@@ -449,8 +462,16 @@ export default function RunDetailPage() {
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Laps Summary</Text>
                     <Text style={globalStyles.cardText}>Total Laps: {run.lapsDone || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Best Lap: {run.bestLapS || "-"}</Text>
+                    <Text style={globalStyles.cardText}>
+                        Best Lap: {""}
+                        {run.bestLapS != null
+                            ? `Lap ${getBestLapNumber()} (${formatLapTime(run.bestLapS)})`
+                            : "-"
+                        }
+                    </Text>
                     <Text style={globalStyles.cardText}>Average Lap: {run.averageLapS || "-"}</Text>
+                    <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed}</Text>
+                    <Text style={globalStyles.cardText}>Average Fuel/Lap: {run.fuelPerLap}</Text>
 
                 </View>
 
