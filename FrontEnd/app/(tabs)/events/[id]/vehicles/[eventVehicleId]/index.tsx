@@ -262,12 +262,12 @@ export default function EventVehicleDetailPage() {
                                                 ? "On track"
                                                 : "Complete"}
                                     </Text>
-                                    <Text style={globalStyles.subText}>
+                                    {/* <Text style={globalStyles.subText}>
                                         ID: {run._id}
-                                    </Text>
+                                    </Text> */}
 
                                     <Text style={globalStyles.subText}>
-                                        Laps: {run.lapsDone ?? "-"} | Best: {run.bestLapS ?? "-"}
+                                        Total Laps: {run.lapsDone ?? "-"} | Best Time s: {run.bestLapS ?? "-"}
                                     </Text>
                                     <Text style={globalStyles.subText}>
                                         Fuel Used: {run.fuelUsed ?? "-"} L
@@ -307,7 +307,7 @@ export default function EventVehicleDetailPage() {
                                     style={globalStyles.input}
                                     value={name}
                                     onChangeText={setName}
-                                    placeholder="Practice 1/Qualifying/ Race 1"
+                                    placeholder="Practice 1/ Qualifying/ Race 1"
                                     placeholderTextColor="#9ca3af"
                                 />
                                 <Text style={globalStyles.label}>Weather</Text>
