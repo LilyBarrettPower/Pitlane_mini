@@ -65,6 +65,8 @@ export default function RunDetailPage() {
     const [trackStatus, setTrackStatus] = useState("Green");
     const [lapNotes, setLapNotes] = useState("");
 
+    const [editingLap, setEditingLap] = useState<LapTime | null>(null);
+
     async function fetchRun() {
         try {
             setIsLoading(true);
@@ -138,20 +140,6 @@ export default function RunDetailPage() {
 
         await fetchRun();
     }
-
-    // async function handleCarIn() {
-    //     await apiFetch(`/runs/${runId}`, {
-    //         method: "PATCH",
-    //         headers: {
-    //             Authorization: `Bearer ${token}`
-    //         },
-    //         body: JSON.stringify({
-    //             inTime: new Date().toISOString(),
-    //         }),
-    //     });
-
-    //     await fetchRun();
-    // }
 
     async function handleCarIn() {
         try {
@@ -229,6 +217,7 @@ export default function RunDetailPage() {
     }
 
     function clearLapForm() {
+        setEditingLap(null);
         setLapNumber("");
         setLapTimeS("");
         setFuelRemaining("");
@@ -237,7 +226,13 @@ export default function RunDetailPage() {
     }
 
     function openAddLapModal() {
-        const nextLapNumber = lapTimes.length + 1;
+        setEditingLap(null);
+
+        const nextLapNumber =
+            lapTimes.length === 0
+                ? 1
+                : Math.max(...lapTimes.map((lap) => lap.lapNumber)) + 1;
+
         setLapNumber(String(nextLapNumber));
         setLapTimeS("");
         setFuelRemaining("");
@@ -246,7 +241,21 @@ export default function RunDetailPage() {
         setShowLapModal(true);
     }
 
-    async function handleCreateLap() {
+    function openEditLapModal(lap: LapTime) {
+        setEditingLap(lap);
+
+        setLapNumber(String(lap.lapNumber));
+        setLapTimeS(String(lap.lapTimeS));
+        setFuelRemaining(
+            lap.fuelRemaining != null ? String(lap.fuelRemaining) : ""
+        );
+        setTrackStatus(lap.trackStatus || "Green");
+        setLapNotes(lap.notes || "");
+
+        setShowLapModal(true);
+    }
+
+    async function handleSaveLap() {
         if (!lapNumber || !lapTimeS) {
             setErrorMessage("Lap number and lap time are required");
             return;
@@ -256,28 +265,50 @@ export default function RunDetailPage() {
             setIsSavingLap(true);
             setErrorMessage("");
 
-            await apiFetch("/lap-times", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    runId,
-                    lapNumber: Number(lapNumber),
-                    lapTimeS: Number(lapTimeS),
-                    fuelRemaining: fuelRemaining ? Number(fuelRemaining) : undefined,
-                    trackStatus,
-                    notes: lapNotes,
-                }),
-            });
+            const payload = {
+                runId,
+                lapNumber: Number(lapNumber),
+                lapTimeS: Number(lapTimeS),
+                fuelRemaining: fuelRemaining
+                    ? Number(fuelRemaining)
+                    : undefined,
+                trackStatus,
+                notes: lapNotes,
+            };
+
+            if (editingLap) {
+                await apiFetch(`/lap-times/${editingLap._id}`, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+            } else {
+                await apiFetch("/lap-times", {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+            }
 
             clearLapForm();
             setShowLapModal(false);
 
-            await fetchLapTimes();
-            await fetchRun();
+            await Promise.all([
+                fetchLapTimes(),
+                fetchRun(),
+            ]);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Failed to create lap");
+            setErrorMessage(
+                error instanceof Error
+                    ? error.message
+                    : editingLap
+                        ? "Failed to update lap"
+                        : "Failed to create lap"
+            );
         } finally {
             setIsSavingLap(false);
         }
@@ -427,6 +458,15 @@ export default function RunDetailPage() {
                                     {lap.notes ? (
                                         <Text style={globalStyles.subText}>Notes: {lap.notes}</Text>
                                     ) : null}
+
+                                    <View style={styles.lapButtonRow}>
+                                        <Pressable 
+                                            style={globalStyles.smallButton}
+                                            onPress={() => openEditLapModal(lap)}
+                                            >
+                                                <Text style={globalStyles.smallButtonText}>Edit</Text>
+                                            </Pressable>
+                                    </View>
                                 </View>
                             );
                         })
@@ -540,7 +580,9 @@ export default function RunDetailPage() {
                         <View style={globalStyles.modalOverlay}>
                             <View style={globalStyles.modalCard}>
 
-                                <Text style={globalStyles.modalTitle}>Add Lap</Text>
+                                <Text style={globalStyles.modalTitle}>
+                                    {editingLap ? "Edit Lap" : "Add Lap"}
+                                    </Text>
 
                                 <Text style={globalStyles.label}>Lap Number</Text>
                                 <TextInput
@@ -600,13 +642,15 @@ export default function RunDetailPage() {
                                             globalStyles.buttonPrimary,
                                             isSavingLap && globalStyles.buttonDisabled,
                                         ]}
-                                        onPress={handleCreateLap}
+                                        onPress={handleSaveLap}
                                         disabled={isSavingLap}
                                     >
                                         {isSavingLap ? (
                                             <ActivityIndicator color="#ffffff" />
                                         ) : (
-                                            <Text style={globalStyles.buttonPrimaryText}>Save Lap</Text>
+                                            <Text style={globalStyles.buttonPrimaryText}>
+                                                {editingLap ? "Save Changes" : "Save Lap"}
+                                                </Text>
                                         )}
                                     </Pressable>
                                 </View>
@@ -651,5 +695,10 @@ const styles = StyleSheet.create({
     modalContent: {
         gap: 10,
         paddingBottom: 24,
+    },
+    lapButtonRow: {
+        flexDirection: "row",
+        gap: 8,
+        marginTop: 8,
     },
 });
