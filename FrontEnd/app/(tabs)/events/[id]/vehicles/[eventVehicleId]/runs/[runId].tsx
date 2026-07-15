@@ -66,6 +66,8 @@ export default function RunDetailPage() {
     const [lapNotes, setLapNotes] = useState("");
 
     const [editingLap, setEditingLap] = useState<LapTime | null>(null);
+    const [lapToDelete, setLapToDelete] = useState<LapTime | null>(null);
+    const [isDeletingLap, setIsDeletingLap] = useState(false);
 
     async function fetchRun() {
         try {
@@ -314,6 +316,35 @@ export default function RunDetailPage() {
         }
     }
 
+    async function handleDeleteLap() {
+        if (!lapToDelete) return;
+
+        try {
+            setIsDeletingLap(true);
+            setErrorMessage("");
+
+            await apiFetch(`/lap-times/${lapToDelete._id}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            setLapToDelete(null);
+
+            await Promise.all([
+                fetchLapTimes(),
+                fetchRun(),
+            ]);
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Failed to delete lap"
+            );
+        } finally {
+            setIsDeletingLap(false);
+        }
+    }
+
     function getLapFuelBurn(index: number) {
         const currentLap = lapTimes[index];
 
@@ -465,6 +496,12 @@ export default function RunDetailPage() {
                                             onPress={() => openEditLapModal(lap)}
                                             >
                                                 <Text style={globalStyles.smallButtonText}>Edit</Text>
+                                            </Pressable>
+                                            <Pressable 
+                                                style={globalStyles.buttonDangerSmall}
+                                                onPress={() => setLapToDelete(lap)}
+                                            >
+                                                <Text style={globalStyles.smallButtonText}>Delete</Text>
                                             </Pressable>
                                     </View>
                                 </View>
@@ -658,6 +695,41 @@ export default function RunDetailPage() {
                         </View>
                     </ScrollView>
                 </Modal>
+                <Modal 
+                    visible={lapToDelete !== null}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setLapToDelete(null)}
+                    >
+                        <View style={globalStyles.modalOverlay}>
+                            <View style={globalStyles.modalCard}>
+                                <Text style={globalStyles.modalTitle}>Delete Lap</Text>
+                                <Text style={globalStyles.text}>
+                                    Are you sure you want to delete lap {lapToDelete?.lapNumber}?
+                                </Text>
+                                <View style={styles.actionRow}>
+                                    <Pressable
+                                        style={globalStyles.smallButton}
+                                        onPress={() => setLapToDelete(null)}
+                                        disabled={isDeletingLap}
+                                        >
+                                            <Text style={globalStyles.smallButtonText}>Cancel</Text>
+                                        </Pressable>
+                                    <Pressable
+                                        style={[globalStyles.buttonDanger, isDeletingLap && globalStyles.buttonDisabled]}
+                                        onPress={handleDeleteLap}
+                                        disabled={isDeletingLap}
+                                        >
+                                            {isDeletingLap ? (
+                                                <ActivityIndicator color="#ffffff"/>
+                                            ) : (
+                                                <Text style={globalStyles.buttonPrimaryText}>Delete Lap</Text>
+                                            )}
+                                        </Pressable>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
             </ScrollView>
         </SafeAreaView >
     )
