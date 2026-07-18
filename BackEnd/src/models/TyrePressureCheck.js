@@ -24,7 +24,7 @@ const cornerValuesSchema = new mongoose.Schema(
     }
 );
 
-const TypePressureCheckSchema = new mongoose.Schema(
+const TyrePressureCheckSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,

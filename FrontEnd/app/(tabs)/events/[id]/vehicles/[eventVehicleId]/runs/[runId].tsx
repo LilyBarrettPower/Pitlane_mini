@@ -38,6 +38,36 @@ type LapTime = {
     notes?: string;
 };
 
+type CornerValues = {
+    LF?: number;
+    RF?: number;
+    LR?: number;
+    RR?: number
+};
+
+type TyreRun = {
+    _id: string;
+    runId: string;
+    tyres: {
+        LF: string;
+        RF: string;
+        LR: string;
+        RR: string;
+    };
+};
+
+type TyrePressureCheck = {
+    _id: string;
+    tyreRunId: string;
+    stage: "start" | "mid" | "end";
+    pressurePsi: CornerValues;
+    tyreTempC?: CornerValues;
+    rimTempC?: CornerValues;
+    lapNumber?: number;
+    recordedAt: string;
+    notes?: string;
+};
+
 
 export default function RunDetailPage() {
     const { runId } = useLocalSearchParams<{
@@ -68,6 +98,20 @@ export default function RunDetailPage() {
     const [editingLap, setEditingLap] = useState<LapTime | null>(null);
     const [lapToDelete, setLapToDelete] = useState<LapTime | null>(null);
     const [isDeletingLap, setIsDeletingLap] = useState(false);
+
+    const [tyreRun, setTyreRun] = useState<TyreRun | null>(null);
+    const [pressureChecks, setPressureChecks] = useState<TyrePressureCheck[]>([]);
+
+    const [showPressureModal, setShowPressureModal] = useState(false);
+    const [isSavingPressure, setIsSavingPressure] = useState(false);
+
+    const [pressureStage, setPressureStage] = useState<"start" | "mid" | "end">("mid");
+    const [pressureLapNumber, setPressureLapNumber] = useState("");
+    const [psiLF, setPsiLF] = useState("");
+    const [psiRF, setPsiRF] = useState("");
+    const [psiLR, setPsiLR] = useState("");
+    const [psiRR, setPsiRR] = useState("");
+    const [pressureNotes, setPressureNotes] = useState("");
 
     async function fetchRun() {
         try {
@@ -116,17 +160,70 @@ export default function RunDetailPage() {
         setLapTimes(data.lapTimes || []);
     }
 
+    async function fetchTyreRun() {
+        const data = await apiFetch(`/tyre-runs?runId=${runId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const foundTyreRun = data.tyreRuns?.[0] || null;
+        setTyreRun(foundTyreRun);
+
+        return foundTyreRun;
+    }
+
+    async function fetchPressureChecks(tyreRunId?: string) {
+        if (!tyreRunId) {
+            setPressureChecks([]);
+            return;
+        }
+
+        const data = await apiFetch(`/tyre-pressure-checks?tyreRunId=${tyreRunId}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        setPressureChecks(data.pressureChecks || []);
+    }
+
+
     useEffect(() => {
         setRun(null);
         setLapTimes([]);
+        setTyreRun(null);
+        setPressureChecks([]);
         setErrorMessage("");
 
-        if (runId && token) {
-            Promise.all([
-                fetchRun(),
-                fetchLapTimes(),
-            ])
+        async function loadPage() {
+            if (!runId || !token) return;
+
+            try {
+                await Promise.all([
+                    fetchRun(),
+                    fetchLapTimes(),
+                ]);
+
+                const loadedTyreRun = await fetchTyreRun();
+
+                if (loadedTyreRun?._id) {
+                    await fetchPressureChecks(loadedTyreRun._id);
+                } else {
+                    setPressureChecks([]);
+                }
+            } catch (error) {
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Failed to load run information"
+                );
+            }
         }
+
+        loadPage();
     }, [runId, token]);
 
     async function handleCarOut() {
@@ -440,27 +537,6 @@ export default function RunDetailPage() {
                 </View>
 
                 <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Fuel</Text>
-                    <Text style={globalStyles.cardText}>Fuel Start: {run.fuelStart ?? "-"} L</Text>
-                    <Text style={globalStyles.cardText}>Fuel End: {run.fuelEnd ?? "-"} L</Text>
-                    <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed ?? "-"} L</Text>
-                    <Text style={globalStyles.cardText}>Average Fuel/Lap: {run.fuelPerLap ?? "-"} L</Text>
-                    <View style={styles.actionRow}>
-                        <Pressable
-                            style={globalStyles.buttonPrimary}
-                            onPress={() => {
-                                setFuelEndInput(run.fuelEnd ? String(run.fuelEnd) : "");
-                                setShowFuelEndModal(true);
-                            }}
-                        >
-                            <Text style={globalStyles.buttonPrimaryText}>
-                                {run.fuelEnd == null ? "Enter Fuel End" : "Edit Fuel End"}
-                            </Text>
-                        </Pressable>
-                    </View>
-                </View>
-
-                <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Laps</Text>
                     {lapTimes.length === 0 ? (
                         <Text style={globalStyles.text}>No lap times yet</Text>
@@ -491,18 +567,18 @@ export default function RunDetailPage() {
                                     ) : null}
 
                                     <View style={styles.lapButtonRow}>
-                                        <Pressable 
+                                        <Pressable
                                             style={globalStyles.smallButton}
                                             onPress={() => openEditLapModal(lap)}
-                                            >
-                                                <Text style={globalStyles.smallButtonText}>Edit</Text>
-                                            </Pressable>
-                                            <Pressable 
-                                                style={globalStyles.buttonDangerSmall}
-                                                onPress={() => setLapToDelete(lap)}
-                                            >
-                                                <Text style={globalStyles.smallButtonText}>Delete</Text>
-                                            </Pressable>
+                                        >
+                                            <Text style={globalStyles.smallButtonText}>Edit</Text>
+                                        </Pressable>
+                                        <Pressable
+                                            style={globalStyles.buttonDangerSmall}
+                                            onPress={() => setLapToDelete(lap)}
+                                        >
+                                            <Text style={globalStyles.smallButtonText}>Delete</Text>
+                                        </Pressable>
                                     </View>
                                 </View>
                             );
@@ -537,139 +613,132 @@ export default function RunDetailPage() {
                     </View>
                 </View>
                 <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Laps Summary</Text>
-                    <Text style={globalStyles.cardText}>Total Laps: {run.lapsDone || "-"}</Text>
-                    <Text style={globalStyles.cardText}>
-                        Best Lap: {""}
-                        {run.bestLapS != null
-                            ? `Lap ${getBestLapNumber()} (${formatLapTime(run.bestLapS)})`
-                            : "-"
-                        }
-                    </Text>
-                    <Text style={globalStyles.cardText}>Average Lap: {run.averageLapS || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed}</Text>
-                    <Text style={globalStyles.cardText}>Average Fuel/Lap: {run.fuelPerLap}</Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={globalStyles.sectionTitle}>Tyre Pressure Checks</Text>
+                        {tyreRun && (
+                            <Pressable
+                                style={globalStyles.buttonPrimary}
+                                onPress={() => setShowPressureModal(true)}
+                            >
+                                <Text style={globalStyles.buttonPrimaryText}>Record Pressures</Text>
+                            </Pressable>
+                        )}
+                        </View>
 
-                </View>
+                        {!tyreRun ? (
+                            <Text style={globalStyles.text}>No tyre set assigned to this run</Text>
+                        ) : pressureChecks.length === 0 ? (
+                            <Text style={globalStyles.text}>No pressure checks recorded</Text>
+                        ) : (
+                            pressureChecks.map((check) => (
+                                <View key={check._id} style={styles.pressureCheckCard}>
+                                    <View style={styles.pressureCheckHeader}>
+                                        <Text style={styles.pressureCheckTitle}>
+                                            {check.stage.toUpperCase()} CHECK
+                                        </Text>
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Notes</Text>
-                    <Text style={globalStyles.cardText}>{run.notes || "-"}</Text>
-                </View>
+                                        <Text style={styles.pressureCheckLap}>
+                                            {check.lapNumber != null
+                                                ? `Lap ${check.lapNumber}`
+                                                : "Lap not recorded"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.pressureCorner}>
+                                        <Text style={styles.cornerLabel}>RF</Text>
+                                        <Text style={styles.pressureValue}>{check.pressurePsi?.RF ?? "-"} psi</Text>
+                                    </View>
+                                    <View style={styles.pressureCorner}>
+                                        <Text style={styles.cornerLabel}>LF</Text>
+                                        <Text style={styles.pressureValue}>{check.pressurePsi?.LF ?? "-"} psi</Text>
+                                    </View>
+                                    <View style={styles.pressureCorner}>
+                                        <Text style={styles.cornerLabel}>RR</Text>
+                                        <Text style={styles.pressureValue}>{check.pressurePsi?.RR ?? "-"} psi</Text>
+                                    </View>
+                                    <View style={styles.pressureCorner}>
+                                        <Text style={styles.cornerLabel}>LR</Text>
+                                        <Text style={styles.pressureValue}>{check.pressurePsi?.LR ?? "-"} psi</Text>
+                                    </View>
 
-                <Modal
-                    visible={showFuelEndModal}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setShowFuelEndModal(false)}
-                >
-                    <View style={globalStyles.modalOverlay}>
-                        <View style={globalStyles.modalCard}>
-                            <Text style={globalStyles.modalTitle}>Fuel End</Text>
 
-                            <Text style={globalStyles.label}>Fuel End</Text>
-                            <TextInput
-                                style={globalStyles.input}
-                                value={fuelEndInput}
-                                onChangeText={setFuelEndInput}
-                                keyboardType="numeric"
-                                placeholder="e.g. 18"
-                                placeholderTextColor="#9ca3af"
-                            />
-
-                            <View style={styles.actionRow}>
-                                <Pressable
-                                    style={globalStyles.buttonDanger}
-                                    onPress={() => {
-                                        setFuelEndInput("");
-                                        setShowFuelEndModal(false);
-                                    }}
-                                    disabled={isSavingFuelEnd}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                                </Pressable>
-
-                                <Pressable
-                                    style={[
-                                        globalStyles.buttonPrimary,
-                                        isSavingFuelEnd && globalStyles.buttonDisabled,
-                                    ]}
-                                    onPress={handleSaveFuelEnd}
-                                    disabled={isSavingFuelEnd}
-                                >
-                                    {isSavingFuelEnd ? (
-                                        <ActivityIndicator color="#ffffff" />
-                                    ) : (
-                                        <Text style={globalStyles.buttonPrimaryText}>Save Fuel End</Text>
-                                    )}
-                                </Pressable>
-                            </View>
+                                    {check.notes ? (
+                                        <Text style={styles.pressureNotes}>
+                                            {check.notes}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                            ))
+                        )}
+                    </View>
+                    <View style={globalStyles.card}>
+                        <Text style={globalStyles.sectionTitle}>Fuel</Text>
+                        <Text style={globalStyles.cardText}>Fuel Start: {run.fuelStart ?? "-"} L</Text>
+                        <Text style={globalStyles.cardText}>Fuel End: {run.fuelEnd ?? "-"} L</Text>
+                        <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed ?? "-"} L</Text>
+                        <Text style={globalStyles.cardText}>Average Fuel/Lap: {run.fuelPerLap ?? "-"} L</Text>
+                        <View style={styles.actionRow}>
+                            <Pressable
+                                style={globalStyles.buttonPrimary}
+                                onPress={() => {
+                                    setFuelEndInput(run.fuelEnd ? String(run.fuelEnd) : "");
+                                    setShowFuelEndModal(true);
+                                }}
+                            >
+                                <Text style={globalStyles.buttonPrimaryText}>
+                                    {run.fuelEnd == null ? "Enter Fuel End" : "Edit Fuel End"}
+                                </Text>
+                            </Pressable>
                         </View>
                     </View>
-                </Modal>
-                <Modal
-                    visible={showLapModal}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setShowLapModal(false)}
-                >
-                    <ScrollView contentContainerStyle={styles.modalContent}>
+                    <View style={globalStyles.card}>
+                        <Text style={globalStyles.sectionTitle}>Laps Summary</Text>
+                        <Text style={globalStyles.cardText}>Total Laps: {run.lapsDone || "-"}</Text>
+                        <Text style={globalStyles.cardText}>
+                            Best Lap: {""}
+                            {run.bestLapS != null
+                                ? `Lap ${getBestLapNumber()} (${formatLapTime(run.bestLapS)})`
+                                : "-"
+                            }
+                        </Text>
+                        <Text style={globalStyles.cardText}>Average Lap: {run.averageLapS || "-"}</Text>
+                        <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed}</Text>
+                        <Text style={globalStyles.cardText}>Average Fuel/Lap: {run.fuelPerLap}</Text>
+
+                    </View>
+
+                    <View style={globalStyles.card}>
+                        <Text style={globalStyles.sectionTitle}>Notes</Text>
+                        <Text style={globalStyles.cardText}>{run.notes || "-"}</Text>
+                    </View>
+
+                    <Modal
+                        visible={showFuelEndModal}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setShowFuelEndModal(false)}
+                    >
                         <View style={globalStyles.modalOverlay}>
                             <View style={globalStyles.modalCard}>
+                                <Text style={globalStyles.modalTitle}>Fuel End</Text>
 
-                                <Text style={globalStyles.modalTitle}>
-                                    {editingLap ? "Edit Lap" : "Add Lap"}
-                                    </Text>
-
-                                <Text style={globalStyles.label}>Lap Number</Text>
+                                <Text style={globalStyles.label}>Fuel End</Text>
                                 <TextInput
                                     style={globalStyles.input}
-                                    value={lapNumber}
-                                    onChangeText={setLapNumber}
+                                    value={fuelEndInput}
+                                    onChangeText={setFuelEndInput}
                                     keyboardType="numeric"
-                                />
-
-                                <Text style={globalStyles.label}>Lap Time Seconds</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={lapTimeS}
-                                    onChangeText={setLapTimeS}
-                                    placeholder="92.154"
+                                    placeholder="e.g. 18"
                                     placeholderTextColor="#9ca3af"
-                                    keyboardType="numeric"
-                                />
-
-                                <Text style={globalStyles.label}>Fuel Remaining</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={fuelRemaining}
-                                    onChangeText={setFuelRemaining}
-                                    keyboardType="numeric"
-                                />
-                                <Text style={globalStyles.label}>Track Status</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={trackStatus}
-                                    onChangeText={setTrackStatus}
-                                    placeholder="Green"
-                                    placeholderTextColor="#9ca3af"
-                                />
-
-                                <Text style={globalStyles.label}>Notes</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={lapNotes}
-                                    onChangeText={setLapNotes}
                                 />
 
                                 <View style={styles.actionRow}>
                                     <Pressable
                                         style={globalStyles.buttonDanger}
                                         onPress={() => {
-                                            clearLapForm();
-                                            setShowLapModal(false);
+                                            setFuelEndInput("");
+                                            setShowFuelEndModal(false);
                                         }}
-                                        disabled={isSavingLap}
+                                        disabled={isSavingFuelEnd}
                                     >
                                         <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
                                     </Pressable>
@@ -677,29 +746,114 @@ export default function RunDetailPage() {
                                     <Pressable
                                         style={[
                                             globalStyles.buttonPrimary,
-                                            isSavingLap && globalStyles.buttonDisabled,
+                                            isSavingFuelEnd && globalStyles.buttonDisabled,
                                         ]}
-                                        onPress={handleSaveLap}
-                                        disabled={isSavingLap}
+                                        onPress={handleSaveFuelEnd}
+                                        disabled={isSavingFuelEnd}
                                     >
-                                        {isSavingLap ? (
+                                        {isSavingFuelEnd ? (
                                             <ActivityIndicator color="#ffffff" />
                                         ) : (
-                                            <Text style={globalStyles.buttonPrimaryText}>
-                                                {editingLap ? "Save Changes" : "Save Lap"}
-                                                </Text>
+                                            <Text style={globalStyles.buttonPrimaryText}>Save Fuel End</Text>
                                         )}
                                     </Pressable>
                                 </View>
                             </View>
                         </View>
-                    </ScrollView>
-                </Modal>
-                <Modal 
-                    visible={lapToDelete !== null}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setLapToDelete(null)}
+                    </Modal>
+                    <Modal
+                        visible={showLapModal}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setShowLapModal(false)}
+                    >
+                        <ScrollView contentContainerStyle={styles.modalContent}>
+                            <View style={globalStyles.modalOverlay}>
+                                <View style={globalStyles.modalCard}>
+
+                                    <Text style={globalStyles.modalTitle}>
+                                        {editingLap ? "Edit Lap" : "Add Lap"}
+                                    </Text>
+
+                                    <Text style={globalStyles.label}>Lap Number</Text>
+                                    <TextInput
+                                        style={globalStyles.input}
+                                        value={lapNumber}
+                                        onChangeText={setLapNumber}
+                                        keyboardType="numeric"
+                                    />
+
+                                    <Text style={globalStyles.label}>Lap Time Seconds</Text>
+                                    <TextInput
+                                        style={globalStyles.input}
+                                        value={lapTimeS}
+                                        onChangeText={setLapTimeS}
+                                        placeholder="92.154"
+                                        placeholderTextColor="#9ca3af"
+                                        keyboardType="numeric"
+                                    />
+
+                                    <Text style={globalStyles.label}>Fuel Remaining</Text>
+                                    <TextInput
+                                        style={globalStyles.input}
+                                        value={fuelRemaining}
+                                        onChangeText={setFuelRemaining}
+                                        keyboardType="numeric"
+                                    />
+                                    <Text style={globalStyles.label}>Track Status</Text>
+                                    <TextInput
+                                        style={globalStyles.input}
+                                        value={trackStatus}
+                                        onChangeText={setTrackStatus}
+                                        placeholder="Green"
+                                        placeholderTextColor="#9ca3af"
+                                    />
+
+                                    <Text style={globalStyles.label}>Notes</Text>
+                                    <TextInput
+                                        style={globalStyles.input}
+                                        value={lapNotes}
+                                        onChangeText={setLapNotes}
+                                    />
+
+                                    <View style={styles.actionRow}>
+                                        <Pressable
+                                            style={globalStyles.buttonDanger}
+                                            onPress={() => {
+                                                clearLapForm();
+                                                setShowLapModal(false);
+                                            }}
+                                            disabled={isSavingLap}
+                                        >
+                                            <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                                        </Pressable>
+
+                                        <Pressable
+                                            style={[
+                                                globalStyles.buttonPrimary,
+                                                isSavingLap && globalStyles.buttonDisabled,
+                                            ]}
+                                            onPress={handleSaveLap}
+                                            disabled={isSavingLap}
+                                        >
+                                            {isSavingLap ? (
+                                                <ActivityIndicator color="#ffffff" />
+                                            ) : (
+                                                <Text style={globalStyles.buttonPrimaryText}>
+                                                    {editingLap ? "Save Changes" : "Save Lap"}
+                                                </Text>
+                                            )}
+                                        </Pressable>
+                                    </View>
+                                </View>
+                            </View>
+                        </ScrollView>
+                    </Modal>
+                    <Modal
+                        visible={lapToDelete !== null}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setLapToDelete(null)}
                     >
                         <View style={globalStyles.modalOverlay}>
                             <View style={globalStyles.modalCard}>
@@ -712,20 +866,20 @@ export default function RunDetailPage() {
                                         style={globalStyles.smallButton}
                                         onPress={() => setLapToDelete(null)}
                                         disabled={isDeletingLap}
-                                        >
-                                            <Text style={globalStyles.smallButtonText}>Cancel</Text>
-                                        </Pressable>
+                                    >
+                                        <Text style={globalStyles.smallButtonText}>Cancel</Text>
+                                    </Pressable>
                                     <Pressable
                                         style={[globalStyles.buttonDanger, isDeletingLap && globalStyles.buttonDisabled]}
                                         onPress={handleDeleteLap}
                                         disabled={isDeletingLap}
-                                        >
-                                            {isDeletingLap ? (
-                                                <ActivityIndicator color="#ffffff"/>
-                                            ) : (
-                                                <Text style={globalStyles.buttonPrimaryText}>Delete Lap</Text>
-                                            )}
-                                        </Pressable>
+                                    >
+                                        {isDeletingLap ? (
+                                            <ActivityIndicator color="#ffffff" />
+                                        ) : (
+                                            <Text style={globalStyles.buttonPrimaryText}>Delete Lap</Text>
+                                        )}
+                                    </Pressable>
                                 </View>
                             </View>
                         </View>
@@ -771,6 +925,69 @@ const styles = StyleSheet.create({
     lapButtonRow: {
         flexDirection: "row",
         gap: 8,
+        marginTop: 8,
+    },
+    sectionHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+
+    pressureCheckCard: {
+        borderWidth: 1,
+        borderColor: "#444",
+        borderRadius: 8,
+        padding: 12,
+        marginTop: 10,
+    },
+
+    pressureCheckHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 10,
+    },
+
+    pressureCheckTitle: {
+        color: "#ffffff",
+        fontSize: 16,
+        fontWeight: "700",
+    },
+
+    pressureCheckLap: {
+        color: "#bbbbbb",
+        fontSize: 14,
+    },
+
+    pressureGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+    },
+
+    pressureCorner: {
+        width: "48%",
+        padding: 10,
+        marginBottom: 8,
+        borderRadius: 6,
+        backgroundColor: "#222222",
+    },
+
+    cornerLabel: {
+        color: "#aaaaaa",
+        fontSize: 13,
+        marginBottom: 4,
+    },
+
+    pressureValue: {
+        color: "#ffffff",
+        fontSize: 18,
+        fontWeight: "700",
+    },
+
+    pressureNotes: {
+        color: "#dddddd",
         marginTop: 8,
     },
 });
