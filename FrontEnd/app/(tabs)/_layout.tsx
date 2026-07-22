@@ -1,12 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-
         tabBarStyle: {
           backgroundColor: '#1f2937',
           borderTopWidth: 0,
@@ -53,11 +53,11 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="drivers"
+        name="tyres/index"
         options={{
-          title: 'Drivers',
+          title: "Tyres",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="id-card" size={size} color={color} />
+            <MaterialCommunityIcons name="tire" size={size} color={color} />
           ),
         }}
       />
@@ -73,6 +73,18 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
+        name="drivers"
+        options={{
+          title: 'Drivers',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="id-card" size={size} color={color} />
+          ),
+        }}
+      />
+
+
+
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
@@ -81,6 +93,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+
 
 
       {/* Hidden Routes: */}
@@ -112,6 +126,11 @@ export default function TabsLayout() {
 
       <Tabs.Screen
         name="events/[id]/vehicles/[eventVehicleId]/runs/[runId]"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="tyres/[tyreId]/index"
         options={{ href: null }}
       />
 

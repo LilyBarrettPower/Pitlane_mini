@@ -336,32 +336,6 @@ export default function EventVehicleDetailPage() {
                                     placeholderTextColor="#9ca3af"
                                 />
 
-                                {/* <Text style={globalStyles.label}>Out Time</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={outTime}
-                                    onChangeText={setOutTime}
-                                    placeholder="12:30"
-                                    placeholderTextColor="#9ca3af"
-                                />
-
-                                <Text style={globalStyles.label}>In Time</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={inTime}
-                                    onChangeText={setInTime}
-                                    placeholder="12:50"
-                                    placeholderTextColor="#9ca3af"
-                                /> */}
-
-                                {/* <Text style={globalStyles.label}>Laps Done</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={lapsDone}
-                                    onChangeText={setLapsDone}
-                                    keyboardType="numeric"
-                                /> */}
-
                                 <Text style={globalStyles.label}>Fuel Start</Text>
                                 <TextInput
                                     style={globalStyles.input}
@@ -369,24 +343,6 @@ export default function EventVehicleDetailPage() {
                                     onChangeText={setFuelStart}
                                     keyboardType="numeric"
                                 />
-
-                                {/* <Text style={globalStyles.label}>Fuel End</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={fuelEnd}
-                                    onChangeText={setFuelEnd}
-                                    keyboardType="numeric"
-                                /> */}
-                                {/* 
-                                <Text style={globalStyles.label}>Best Lap Seconds</Text>
-                                <TextInput
-                                    style={globalStyles.input}
-                                    value={bestLapS}
-                                    onChangeText={setBestLapS}
-                                    placeholder="92.315"
-                                    placeholderTextColor="#9ca3af"
-                                    keyboardType="numeric"
-                                /> */}
 
                                 <Text style={globalStyles.label}>Notes</Text>
                                 <TextInput
@@ -422,7 +378,6 @@ export default function EventVehicleDetailPage() {
                                         )}
                                     </Pressable>
                                 </View>
-
                             </View>
                         </View>
                     </ScrollView>
