@@ -31,6 +31,16 @@ type Tyre = {
     notes?: string;
 };
 
+type TyreSetGroup = {
+    key: string;
+    currentSet: string;
+    vehicleName: string;
+    brand: string;
+    spec?: string;
+    tyres: Tyre[];
+};
+
+
 export default function TyresPage() {
     const { token } = useAuth();
 
@@ -244,6 +254,54 @@ export default function TyresPage() {
         });
     }, [tyres, vehicles, searchText]);
 
+    const groupedTyreSets = useMemo<TyreSetGroup[]>(() => {
+        const groups = new Map<string, TyreSetGroup>();
+
+        filteredTyres.forEach((tyre) => {
+            const vehicleId = getVehicleId(tyre) || "unknown-vehicle";
+            const setName = tyre.currentSet?.trim() || "No Set";
+
+            const groupKey = `${vehicleId}-${setName.toLowerCase()}`;
+
+            const existingGroup = groups.get(groupKey);
+
+            if (existingGroup) {
+                existingGroup.tyres.push(tyre);
+                return;
+            }
+
+            groups.set(groupKey, {
+                key: groupKey,
+                currentSet: setName,
+                vehicleName: getVehicleName(tyre),
+                brand: tyre.brand,
+                spec: tyre.spec,
+                tyres: [tyre],
+            });
+        });
+
+        const positionOrder: Record<string, number> = {
+            LF: 1,
+            RF: 2,
+            LR: 3,
+            RR: 4,
+        };
+
+        return Array.from(groups.values()).map((group) => ({
+            ...group,
+            tyres: [...group.tyres].sort((a, b) => {
+                const aOrder =
+                    positionOrder[a.position?.toUpperCase() || ""] ?? 99;
+
+                const bOrder =
+                    positionOrder[b.position?.toUpperCase() || ""] ?? 99;
+
+                return aOrder - bOrder;
+            }),
+        }))
+
+    }, [filteredTyres, vehicles])
+
     if (isLoading) {
         return (
             <SafeAreaView style={globalStyles.container}>
@@ -281,6 +339,8 @@ export default function TyresPage() {
                     </Text>
                 ) : null}
 
+
+                {/* 
                 {filteredTyres.length === 0 ? (
                     <View style={globalStyles.card}>
                         <Text style={globalStyles.text}>
@@ -298,7 +358,7 @@ export default function TyresPage() {
                             }
                         >
                             <Text style={globalStyles.sectionTitle}>
-                                {tyre.brand}
+                                {tyre.currentSet} - {tyre.brand}
                                 {tyre.spec ? ` ${tyre.spec}` : ""}
                             </Text>
 
@@ -336,6 +396,131 @@ export default function TyresPage() {
                                 </Text>
                             ) : null}
                         </Pressable>
+                    ))
+                )} */}
+
+                {filteredTyres.length === 0 ? (
+                    <View style={globalStyles.card}>
+                        <Text style={globalStyles.text}>
+                            {tyres.length === 0
+                                ? "No tyres have been created yet"
+                                : "No tyres match your search"}
+                        </Text>
+                    </View>
+                ) : (
+                    groupedTyreSets.map((group) => (
+                        <View
+                            key={group.key}
+                            style={styles.tyreSetCard}
+                        >
+                            <View style={styles.tyreSetHeader}>
+                                <View style={styles.tyreSetHeaderText}>
+                                    <Text style={styles.tyreSetTitle}>
+                                        {group.currentSet}
+                                    </Text>
+
+                                    <Text style={styles.tyreSetVehicle}>
+                                        {group.vehicleName}
+                                    </Text>
+
+                                    <Text style={styles.tyreSetBrand}>
+                                        {group.brand}
+                                        {group.spec ? ` ${group.spec}` : ""}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.tyreCountBadge}>
+                                    <Text style={styles.tyreCountText}>
+                                        {group.tyres.length}/4
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.tyreGrid}>
+                                {group.tyres.map((tyre) => (
+                                    <Pressable
+                                        key={tyre._id}
+                                        style={({ pressed }) => [
+                                            styles.tyreCard,
+                                            pressed && styles.tyreCardPressed,
+                                        ]}
+                                        onPress={() =>
+                                            router.push({
+                                                pathname: "/tyres/[tyreId]",
+                                                params: {
+                                                    tyreId: tyre._id,
+                                                },
+                                            })
+                                        }
+                                    >
+                                        <View style={styles.tyreCardHeader}>
+                                            <Text style={styles.tyrePosition}>
+                                                {tyre.position || "No Position"}
+                                            </Text>
+
+                                            <Text
+                                                style={[
+                                                    styles.conditionBadge,
+                                                    tyre.condition === "new" &&
+                                                    styles.conditionNew,
+                                                    tyre.condition === "used" &&
+                                                    styles.conditionUsed,
+                                                ]}
+                                            >
+                                                {tyre.condition || "-"}
+                                            </Text>
+                                        </View>
+
+                                        <Text style={styles.tyreDetailLabel}>
+                                            FIA Serial
+                                        </Text>
+
+                                        <Text style={styles.tyreDetailValue}>
+                                            {tyre.fiaSerial || "-"}
+                                        </Text>
+
+                                        <Text style={styles.tyreDetailLabel}>
+                                            Size
+                                        </Text>
+
+                                        <Text style={styles.tyreDetailValue}>
+                                            {tyre.size || "-"}
+                                        </Text>
+
+                                        <View style={styles.tyreStatsRow}>
+                                            <View style={styles.tyreStat}>
+                                                <Text style={styles.tyreDetailLabel}>
+                                                    Cycles
+                                                </Text>
+
+                                                <Text style={styles.tyreDetailValue}>
+                                                    {tyre.heatCycles ?? 0}
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.tyreStat}>
+                                                <Text style={styles.tyreDetailLabel}>
+                                                    Distance
+                                                </Text>
+
+                                                <Text style={styles.tyreDetailValue}>
+                                                    {tyre.kmTotal ?? 0} km
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        {tyre.notes ? (
+                                            <Text
+                                                style={styles.tyreNotes}
+                                                numberOfLines={2}
+                                            >
+                                                {tyre.notes}
+                                            </Text>
+                                        ) : null}
+                                    </Pressable>
+                                ))}
+                            </View>
+                        </View>
                     ))
                 )}
 
@@ -423,11 +608,11 @@ export default function TyresPage() {
                                 />
 
                                 <Text style={globalStyles.label}>
-                                    Current Position
+                                    Position
                                 </Text>
 
                                 <View style={styles.optionGrid}>
-                                    {["LF", "RF", "LR", "RR", "Spare"].map(
+                                    {["LF", "RF", "LR", "RR"].map(
                                         (item) => {
                                             const isSelected = position === item;
 
@@ -641,5 +826,142 @@ const styles = StyleSheet.create({
 
     notesInput: {
         minHeight: 90,
+    },
+    tyreSetCard: {
+        backgroundColor: "#1f2937",
+        borderRadius: 16,
+        padding: 16,
+        gap: 16,
+    },
+
+    tyreSetHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: 12,
+        paddingBottom: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#374151",
+    },
+
+    tyreSetHeaderText: {
+        flex: 1,
+        gap: 3,
+    },
+
+    tyreSetTitle: {
+        color: "#ffffff",
+        fontSize: 20,
+        fontWeight: "700",
+    },
+
+    tyreSetVehicle: {
+        color: "#d1d5db",
+        fontSize: 15,
+        fontWeight: "600",
+    },
+
+    tyreSetBrand: {
+        color: "#9ca3af",
+        fontSize: 14,
+    },
+
+    tyreCountBadge: {
+        backgroundColor: "#111827",
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+
+    tyreCountText: {
+        color: "#ffffff",
+        fontSize: 13,
+        fontWeight: "700",
+    },
+
+    tyreGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+    },
+
+    tyreCard: {
+        width: "48%",
+        backgroundColor: "#111827",
+        borderRadius: 12,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: "#374151",
+        gap: 5,
+    },
+
+    tyreCardPressed: {
+        opacity: 0.75,
+    },
+
+    tyreCardHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 5,
+    },
+
+    tyrePosition: {
+        color: "#ffffff",
+        fontSize: 18,
+        fontWeight: "800",
+    },
+
+    conditionBadge: {
+        color: "#d1d5db",
+        backgroundColor: "#374151",
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        fontSize: 11,
+        fontWeight: "700",
+        textTransform: "capitalize",
+        overflow: "hidden",
+    },
+
+    conditionNew: {
+        backgroundColor: "#166534",
+        color: "#dcfce7",
+    },
+
+    conditionUsed: {
+        backgroundColor: "#92400e",
+        color: "#fef3c7",
+    },
+
+    tyreDetailLabel: {
+        color: "#9ca3af",
+        fontSize: 11,
+        fontWeight: "600",
+        textTransform: "uppercase",
+    },
+
+    tyreDetailValue: {
+        color: "#f3f4f6",
+        fontSize: 14,
+        fontWeight: "600",
+        marginBottom: 4,
+    },
+
+    tyreStatsRow: {
+        flexDirection: "row",
+        gap: 12,
+        marginTop: 4,
+    },
+
+    tyreStat: {
+        flex: 1,
+    },
+
+    tyreNotes: {
+        color: "#9ca3af",
+        fontSize: 12,
+        marginTop: 5,
     },
 })
