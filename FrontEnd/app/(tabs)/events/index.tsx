@@ -39,7 +39,7 @@ export default function EventsPage() {
     const [tracks, setTracks] = useState<Track[]>([]);
 
     const [showModal, setShowModal] = useState(false);
-    const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+    // const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
     const [name, setName] = useState("");
     const [trackId, setTrackId] = useState("");
@@ -91,13 +91,13 @@ export default function EventsPage() {
     }, [token]);
 
     function clearForm() {
-        setEditingEvent(null);
+        // setEditingEvent(null);
         setName("");
         setTrackId("");
         setType("");
         setStartDate("");
         setEndDate("");
-        setStatus("");
+        setStatus("Upcoming");
         setNotes("");
         setErrorMessage("");
     }
@@ -107,19 +107,19 @@ export default function EventsPage() {
         setShowModal(true);
     }
 
-    function openEditModal(event: Event) {
-        setEditingEvent(event);
-        setName(event.name || "");
-        setTrackId(typeof event.trackId === "string" ? event.trackId : event.trackId?._id || "");
-        setType(event.type || "");
-        setStartDate(event.startDate ? event.startDate.slice(0, 10) : "");
-        setEndDate(event.endDate ? event.endDate.slice(0, 10) : "");
-        setStatus(event.status || "upcoming");
-        setNotes(event.notes || "");
-        setShowModal(true);
-    }
+    // function openEditModal(event: Event) {
+    //     setEditingEvent(event);
+    //     setName(event.name || "");
+    //     setTrackId(typeof event.trackId === "string" ? event.trackId : event.trackId?._id || "");
+    //     setType(event.type || "");
+    //     setStartDate(event.startDate ? event.startDate.slice(0, 10) : "");
+    //     setEndDate(event.endDate ? event.endDate.slice(0, 10) : "");
+    //     setStatus(event.status || "upcoming");
+    //     setNotes(event.notes || "");
+    //     setShowModal(true);
+    // }
 
-    async function handleSaveEvent() {
+    async function handleCreateEvent() {
         if (!name || !trackId || !startDate || !endDate) {
             setErrorMessage("Name, track, type, start date and end date are required");
             return;
@@ -128,6 +128,22 @@ export default function EventsPage() {
         try {
             setIsLoading(true);
             setErrorMessage("");
+
+            await apiFetch("/events", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    trackId,
+                    type: type.trim(),
+                    startDate,
+                    endDate,
+                    status: status.trim() || "Upcoming",
+                    notes: notes.trim(),
+                }),
+            });
 
             const payload = {
                 name,
@@ -139,24 +155,6 @@ export default function EventsPage() {
                 notes,
             };
 
-            if (editingEvent) {
-                await apiFetch(`/events/${editingEvent._id}`, {
-                    method: "PATCH",
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload),
-                });
-            } else {
-                await apiFetch("/events", {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload),
-                });
-            }
-
             clearForm();
             setShowModal(false);
             await fetchEvents();
@@ -167,26 +165,26 @@ export default function EventsPage() {
         }
     }
 
-    async function handleDeleteEvent(event: Event) {
-        try {
-            setIsLoading(true);
-            setErrorMessage("");
+    // async function handleDeleteEvent(event: Event) {
+    //     try {
+    //         setIsLoading(true);
+    //         setErrorMessage("");
 
-            await apiFetch(`/events/${event._id}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-            });
+    //         await apiFetch(`/events/${event._id}`, {
+    //             method: "DELETE",
+    //             headers: {
+    //                 Authorization: `Bearer ${token}`
+    //             },
+    //         });
 
-            await fetchEvents();
+    //         await fetchEvents();
 
-        } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Failed to delete event");
-        } finally {
-            setIsLoading(false);
-        }
-    }
+    //     } catch (error) {
+    //         setErrorMessage(error instanceof Error ? error.message : "Failed to delete event");
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // }
 
     function getTrackName(event: Event) {
         if (typeof event.trackId !== "string") return event.trackId?.name || "-";
@@ -219,12 +217,12 @@ export default function EventsPage() {
                     <Text style={globalStyles.text}>No events yet</Text>
                 ) : (
                     events.map((event) => (
-                        <Pressable key={event._id} 
+                        <Pressable key={event._id}
                             style={globalStyles.card}
-                            onPress={() => 
+                            onPress={() =>
                                 router.push({
                                     pathname: "/events/[id]" as any,
-                                    params: {id: event._id},
+                                    params: { id: event._id },
                                 })
                             }>
                             <Text style={globalStyles.cardTitle}>{event.name}</Text>
@@ -235,8 +233,8 @@ export default function EventsPage() {
                             <Text style={globalStyles.cardText}>Status: {event.status || "-"}</Text>
                             <Text style={globalStyles.cardText}>Notes: {event.notes || "-"}</Text>
 
-                            <View style={styles.actionRow}>
-                                <Pressable style={globalStyles.smallButton} 
+                            {/* <View style={styles.actionRow}>
+                                <Pressable style={globalStyles.smallButton}
                                     onPress={(e) => {
                                         e.stopPropagation();
                                         openEditModal(event);
@@ -244,14 +242,14 @@ export default function EventsPage() {
                                     <Text style={globalStyles.smallButtonText}>Edit</Text>
                                 </Pressable>
 
-                                <Pressable style={globalStyles.buttonDangerSmall} 
+                                <Pressable style={globalStyles.buttonDangerSmall}
                                     onPress={(e) => {
                                         e.stopPropagation();
                                         handleDeleteEvent(event);
                                     }}>
                                     <Text style={globalStyles.smallButtonText}>Delete</Text>
                                 </Pressable>
-                            </View>
+                            </View> */}
                         </Pressable>
                     ))
                 )}
@@ -264,7 +262,7 @@ export default function EventsPage() {
                         <View style={globalStyles.modalCard}>
 
                             <Text style={globalStyles.modalTitle}>
-                                {editingEvent ? "Edit Event" : "Create Event"}
+                                Create Event
                             </Text>
 
                             <Text style={globalStyles.label}>Event Name</Text>
@@ -340,9 +338,9 @@ export default function EventsPage() {
                                     <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
                                 </Pressable>
 
-                                <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveEvent}>
+                                <Pressable style={globalStyles.buttonPrimary} onPress={handleCreateEvent}>
                                     <Text style={globalStyles.buttonPrimaryText}>
-                                        {editingEvent ? "Save Changes" : "Create Event"}
+                                        Create Event
                                     </Text>
                                 </Pressable>
                             </View>

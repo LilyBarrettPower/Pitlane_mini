@@ -7,6 +7,7 @@ import {
     StyleSheet,
     Text,
     View,
+    TextInput
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -58,10 +59,24 @@ export default function EventDetailPage() {
 
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedVehicleId, setSelectedVehicleId] = useState("");
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isAssigning, setIsAssigning] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const [errorMessage, setErrorMessage] = useState("");
+
+    const [name, setName] = useState("");
+    const [trackId, setTrackId] = useState("");
+    const [type, setType] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [status, setStatus] = useState("Upcoming");
+    const [notes, setNotes] = useState("");
+
 
     async function fetchEvent() {
         const data = await apiFetch(`/events/${id}`, {
@@ -96,7 +111,7 @@ export default function EventDetailPage() {
         setEventVehicles(data.assignments || []);
     }
 
-    
+
     async function fetchTracks() {
         const data = await apiFetch("/tracks", {
             method: "GET",
@@ -188,7 +203,7 @@ export default function EventDetailPage() {
         if (typeof event.trackId !== "string") {
             return event.trackId?.name || "-";
         }
-            
+
         const track = tracks.find((item) => item._id === event.trackId);
         return track?.name || "-";
     }
@@ -202,6 +217,123 @@ export default function EventDetailPage() {
         if (!date) return "-";
         return new Date(date).toLocaleDateString();
     }
+
+
+    // Added these for the moving of modals to detail page:
+    function populateEditForm(selectedEvent: Event) {
+        setName(selectedEvent.name || "");
+
+        setTrackId(
+            typeof selectedEvent.trackId === "string"
+                ? selectedEvent.trackId
+                : selectedEvent.trackId?._id || ""
+        );
+
+        setType(selectedEvent.type || "");
+
+        setStartDate(
+            selectedEvent.startDate
+                ? selectedEvent.startDate.slice(0, 10)
+                : ""
+        );
+
+        setEndDate(
+            selectedEvent.endDate
+                ? selectedEvent.endDate.slice(0, 10)
+                : ""
+        );
+
+        setStatus(selectedEvent.status || "Upcoming");
+        setNotes(selectedEvent.notes || "");
+    }
+
+    function openEditModal() {
+        if (!event) return;
+
+        populateEditForm(event);
+        setErrorMessage("");
+        setShowEditModal(true);
+    }
+
+    function closeEditModal() {
+        if (isSaving) return;
+
+        setShowEditModal(false);
+        setErrorMessage("");
+
+        if (event) {
+            populateEditForm(event);
+        }
+    }
+
+    async function handleUpdateEvent() {
+        if (!name.trim()) {
+            setErrorMessage("Event name is required");
+            return;
+        }
+        if (!trackId) {
+            setErrorMessage("Please select a track");
+            return;
+        }
+        if (!type.trim()) {
+            setErrorMessage("Event type is required");
+            return;
+        }
+        if (!startDate || !endDate) {
+            setErrorMessage("Start date and end date are required");
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            setErrorMessage("");
+
+            await apiFetch(`/events/${id}`, {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    trackId,
+                    type: type.trim(),
+                    startDate,
+                    endDate,
+                    status: status.trim(),
+                    notes: notes.trim(),
+                }),
+            });
+
+            await fetchEvent();
+            setShowEditModal(false);
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to update event");
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    async function handleDeleteEvent() {
+        try {
+            setIsDeleting(true);
+            setErrorMessage("");
+
+            await apiFetch(`/events/${id}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            setShowDeleteModal(false);
+            router.replace("/events");
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to delete event");
+        } finally {
+            setIsDeleting(false);
+        }
+    }
+
 
     if (isLoading) {
         return (
@@ -227,7 +359,28 @@ export default function EventDetailPage() {
         <SafeAreaView style={globalStyles.container}>
             <ScrollView contentContainerStyle={styles.content}>
                 <Text style={globalStyles.title}>{event.name}</Text>
+                <View style={styles.eventActionRow}>
+                    <Pressable
+                        style={globalStyles.smallButton}
+                        onPress={openEditModal}
+                    >
+                        <Text style={globalStyles.smallButtonText}>
+                            Edit Event
+                        </Text>
+                    </Pressable>
 
+                    <Pressable
+                        style={globalStyles.buttonDangerSmall}
+                        onPress={() => {
+                            setErrorMessage("");
+                            setShowDeleteModal(true);
+                        }}
+                    >
+                        <Text style={globalStyles.smallButtonText}>
+                            Delete Event
+                        </Text>
+                    </Pressable>
+                </View>
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Event Info</Text>
                     <Text style={globalStyles.cardText}>Track: {getTrackName()}</Text>
@@ -245,10 +398,10 @@ export default function EventDetailPage() {
                         <Text style={globalStyles.text}>No vehicles assigned</Text>
                     ) : (
                         eventVehicles.map((item) => (
-                            <Pressable 
-                                key={item._id} 
+                            <Pressable
+                                key={item._id}
                                 style={styles.vehicleRow}
-                                onPress={() => 
+                                onPress={() =>
                                     router.push({
                                         pathname: "/events/[id]/vehicles/[eventVehicleId]" as any,
                                         params: {
@@ -257,7 +410,7 @@ export default function EventDetailPage() {
                                         },
                                     })
                                 }
-                                >
+                            >
                                 <View>
                                     <Text style={globalStyles.cardText}>
                                         {vehicleLabel(item.vehicleId)}
@@ -273,7 +426,7 @@ export default function EventDetailPage() {
                                         e.stopPropagation();
                                         handleRemoveVehicleAssignment(item._id);
                                     }}
-                                    >
+                                >
                                     <Text style={globalStyles.smallButtonText}>Remove</Text>
                                 </Pressable>
                             </Pressable>
@@ -360,6 +513,253 @@ export default function EventDetailPage() {
                         </View>
                     </View>
                 </Modal>
+                <Modal
+                    visible={showEditModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={closeEditModal}
+                >
+                    <ScrollView contentContainerStyle={styles.modalContent}>
+                        <View style={globalStyles.modalOverlay}>
+                            <View style={globalStyles.modalCard}>
+                                <Text style={globalStyles.modalTitle}>
+                                    Edit Event
+                                </Text>
+
+                                <Text style={globalStyles.label}>
+                                    Event Name
+                                </Text>
+
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholder="Event name"
+                                    placeholderTextColor="#9ca3af"
+                                />
+
+                                <Text style={globalStyles.label}>
+                                    Track
+                                </Text>
+
+                                {tracks.length === 0 ? (
+                                    <Text style={globalStyles.text}>
+                                        No tracks available
+                                    </Text>
+                                ) : (
+                                    <View style={styles.selectList}>
+                                        {tracks.map((track) => {
+                                            const isSelected =
+                                                trackId === track._id;
+
+                                            return (
+                                                <Pressable
+                                                    key={track._id}
+                                                    style={[
+                                                        styles.selectItem,
+                                                        isSelected &&
+                                                        styles.selectItemActive,
+                                                    ]}
+                                                    onPress={() =>
+                                                        setTrackId(track._id)
+                                                    }
+                                                >
+                                                    <Text style={globalStyles.text}>
+                                                        {track.name}
+                                                    </Text>
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                )}
+
+                                <Text style={globalStyles.label}>
+                                    Type
+                                </Text>
+
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={type}
+                                    onChangeText={setType}
+                                    placeholder="Race, Test, Practice"
+                                    placeholderTextColor="#9ca3af"
+                                />
+
+                                <Text style={globalStyles.label}>
+                                    Start Date
+                                </Text>
+
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={startDate}
+                                    onChangeText={setStartDate}
+                                    placeholder="YYYY-MM-DD"
+                                    placeholderTextColor="#9ca3af"
+                                />
+
+                                <Text style={globalStyles.label}>
+                                    End Date
+                                </Text>
+
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={endDate}
+                                    onChangeText={setEndDate}
+                                    placeholder="YYYY-MM-DD"
+                                    placeholderTextColor="#9ca3af"
+                                />
+
+                                <Text style={globalStyles.label}>
+                                    Status
+                                </Text>
+
+                                <TextInput
+                                    style={globalStyles.input}
+                                    value={status}
+                                    onChangeText={setStatus}
+                                    placeholder="Upcoming, Active, Complete"
+                                    placeholderTextColor="#9ca3af"
+                                />
+
+                                <Text style={globalStyles.label}>
+                                    Notes
+                                </Text>
+
+                                <TextInput
+                                    style={[
+                                        globalStyles.input,
+                                        styles.notesInput,
+                                    ]}
+                                    value={notes}
+                                    onChangeText={setNotes}
+                                    multiline
+                                    textAlignVertical="top"
+                                    placeholder="Optional event notes"
+                                    placeholderTextColor="#9ca3af"
+                                />
+
+                                {errorMessage ? (
+                                    <Text style={globalStyles.errorText}>
+                                        {errorMessage}
+                                    </Text>
+                                ) : null}
+
+                                <View style={styles.actionRow}>
+                                    <Pressable
+                                        style={globalStyles.buttonDanger}
+                                        onPress={closeEditModal}
+                                        disabled={isSaving}
+                                    >
+                                        <Text
+                                            style={
+                                                globalStyles.buttonPrimaryText
+                                            }
+                                        >
+                                            Cancel
+                                        </Text>
+                                    </Pressable>
+
+                                    <Pressable
+                                        style={[
+                                            globalStyles.buttonPrimary,
+                                            isSaving &&
+                                            globalStyles.buttonDisabled,
+                                        ]}
+                                        onPress={handleUpdateEvent}
+                                        disabled={isSaving}
+                                    >
+                                        {isSaving ? (
+                                            <ActivityIndicator
+                                                color="#ffffff"
+                                            />
+                                        ) : (
+                                            <Text
+                                                style={
+                                                    globalStyles.buttonPrimaryText
+                                                }
+                                            >
+                                                Save Changes
+                                            </Text>
+                                        )}
+                                    </Pressable>
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </Modal>
+
+                <Modal
+                    visible={showDeleteModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => {
+                        if (!isDeleting) {
+                            setShowDeleteModal(false);
+                        }
+                    }}
+                >
+                    <View style={globalStyles.modalOverlay}>
+                        <View style={globalStyles.modalCard}>
+                            <Text style={globalStyles.modalTitle}>
+                                Delete event?
+                            </Text>
+
+                            <Text style={globalStyles.text}>
+                                Are you sure you want to delete {event.name}?
+                            </Text>
+
+                            <Text style={globalStyles.subText}>
+                                This may also affect vehicles, runs and data
+                                assigned to this event.
+                            </Text>
+
+                            {errorMessage ? (
+                                <Text style={globalStyles.errorText}>
+                                    {errorMessage}
+                                </Text>
+                            ) : null}
+
+                            <View style={styles.actionRow}>
+                                <Pressable
+                                    style={globalStyles.buttonPrimary}
+                                    onPress={() =>
+                                        setShowDeleteModal(false)
+                                    }
+                                    disabled={isDeleting}
+                                >
+                                    <Text
+                                        style={globalStyles.buttonPrimaryText}
+                                    >
+                                        Cancel
+                                    </Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={[
+                                        globalStyles.buttonDanger,
+                                        isDeleting &&
+                                        globalStyles.buttonDisabled,
+                                    ]}
+                                    onPress={handleDeleteEvent}
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? (
+                                        <ActivityIndicator color="#ffffff" />
+                                    ) : (
+                                        <Text
+                                            style={
+                                                globalStyles.buttonPrimaryText
+                                            }
+                                        >
+                                            Yes, Delete
+                                        </Text>
+                                    )}
+                                </Pressable>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+
             </ScrollView>
         </SafeAreaView>
     );
@@ -404,5 +804,18 @@ const styles = StyleSheet.create({
     },
     selectItemDisabled: {
         opacity: 0.45,
+    },
+    eventActionRow: {
+        flexDirection: "row",
+        gap: 8,
+        flexWrap: "wrap",
+    },
+
+    modalContent: {
+        flexGrow: 1,
+    },
+
+    notesInput: {
+        minHeight: 90,
     },
 });
