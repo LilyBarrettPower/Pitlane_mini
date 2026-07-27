@@ -491,7 +491,7 @@ export default function VehicleDetailPage() {
             <Text style={globalStyles.text}>No assigned drivers</Text>
           ) : (
             vehicleDrivers.map((item) => (
-              <View key={item._id} style={styles.listItemCard}>
+              <View key={item._id} style={styles.driverRow}>
                 <View>
                   <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
                   <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
