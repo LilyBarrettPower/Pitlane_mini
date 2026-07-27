@@ -400,7 +400,7 @@ export default function EventDetailPage() {
                         eventVehicles.map((item) => (
                             <Pressable
                                 key={item._id}
-                                style={styles.vehicleRow}
+                                style={styles.listItemCard}
                                 onPress={() =>
                                     router.push({
                                         pathname: "/events/[id]/vehicles/[eventVehicleId]" as any,
@@ -817,5 +817,17 @@ const styles = StyleSheet.create({
 
     notesInput: {
         minHeight: 90,
+    },
+    listItemCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 10,
+
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
 });

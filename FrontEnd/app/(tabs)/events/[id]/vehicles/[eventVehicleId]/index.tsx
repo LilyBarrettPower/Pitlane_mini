@@ -238,7 +238,7 @@ export default function EventVehicleDetailPage() {
                         runs.map((run) => (
                             <Pressable
                                 key={run._id}
-                                style={styles.runRow}
+                                style={styles.listItemCard}
                                 onPress={() => {
                                     console.log("Opening run:", {
                                         name: run.name,
@@ -416,5 +416,17 @@ const styles = StyleSheet.create({
     modalContent: {
         gap: 10,
         paddingBottom: 24,
+    },
+    listItemCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 10,
+
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
 });
