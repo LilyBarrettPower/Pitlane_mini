@@ -1,5 +1,5 @@
-import { useEffect, useState} from "react";
-import { router} from "expo-router";
+import { useEffect, useState } from "react";
+import { router } from "expo-router";
 import {
     StyleSheet,
     Text,
@@ -94,13 +94,13 @@ export default function VehiclesPage() {
                 racingNumber,
                 chassisNumber,
                 notes,
-            } 
-                await apiFetch("/vehicles", {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: JSON.stringify(payload),
-                });
-            
+            }
+            await apiFetch("/vehicles", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: JSON.stringify(payload),
+            });
+
             setName("");
             setMake("");
             setModel("");
@@ -200,7 +200,7 @@ export default function VehiclesPage() {
 
                         <View style={globalStyles.modalCard}>
                             <Text style={globalStyles.modalTitle}>
-                                 Create Vehicle
+                                Create Vehicle
                             </Text>
                             <Text style={globalStyles.label}>Name</Text>
                             <TextInput style={globalStyles.input} placeholder="Name" placeholderTextColor="9ca3af" value={name} onChangeText={setName} />

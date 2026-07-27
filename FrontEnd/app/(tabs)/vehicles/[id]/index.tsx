@@ -352,27 +352,27 @@ export default function VehicleDetailPage() {
     }
   }
 
-  async function handleRemoveSetup(setupId: string) {
-    try {
-      setIsLoading(true);
-      setErrorMessage("");
+  // async function handleRemoveSetup(setupId: string) {
+  //   try {
+  //     setIsLoading(true);
+  //     setErrorMessage("");
 
-      await apiFetch(`/setups/${setupId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  //     await apiFetch(`/setups/${setupId}`, {
+  //       method: "DELETE",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
 
-      await fetchSetups();
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to remove setup"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  //     await fetchSetups();
+  //   } catch (error) {
+  //     setErrorMessage(
+  //       error instanceof Error ? error.message : "Failed to remove setup"
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }
 
 
   function openCreateSetupModal() {
@@ -380,10 +380,10 @@ export default function VehicleDetailPage() {
     setShowSetupModal(true);
   }
 
-  function openEditSetupModal(setup: SetUp) {
-    setEditingSetup(setup);
-    setShowSetupModal(true);
-  }
+  // function openEditSetupModal(setup: SetUp) {
+  //   setEditingSetup(setup);
+  //   setShowSetupModal(true);
+  // }
 
   useFocusEffect(
     useCallback(() => {
@@ -491,7 +491,7 @@ export default function VehicleDetailPage() {
             <Text style={globalStyles.text}>No assigned drivers</Text>
           ) : (
             vehicleDrivers.map((item) => (
-              <View key={item._id} style={styles.driverRow}>
+              <View key={item._id} style={styles.listItemCard}>
                 <View>
                   <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
                   <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
@@ -526,7 +526,7 @@ export default function VehicleDetailPage() {
             setups.map((setup) => (
               <Pressable
                 key={setup._id}
-                style={styles.driverRow}
+                style={styles.listItemCard}
                 onPress={() =>
                   router.push({
                     pathname: "/vehicles/[id]/setups/[setupId]",
@@ -543,27 +543,6 @@ export default function VehicleDetailPage() {
                   <Text style={globalStyles.subText}>
                     Events used at: Coming later
                   </Text>
-                </View>
-
-                <View style={styles.setupButtonRow}>
-                  <Pressable
-                    style={globalStyles.smallButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      openEditSetupModal(setup)
-                    }}
-                  >
-                    <Text style={globalStyles.smallButtonText}>Edit</Text>
-                  </Pressable>
-                  <Pressable
-                    style={globalStyles.buttonDangerSmall}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleRemoveSetup(setup._id)
-                    }}
-                  >
-                    <Text style={globalStyles.smallButtonText}>Remove</Text>
-                  </Pressable>
                 </View>
               </Pressable>
             ))
@@ -905,7 +884,6 @@ export default function VehicleDetailPage() {
             </View>
           </View>
         </Modal>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -989,4 +967,16 @@ const styles = StyleSheet.create({
   notesInput: {
     minHeight: 90,
   },
+  listItemCard: {
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#374151",
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 10,
+
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+},
 });
