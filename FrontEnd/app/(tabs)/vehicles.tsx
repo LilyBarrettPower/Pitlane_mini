@@ -46,6 +46,7 @@ export default function VehiclesPage() {
     // Add delete vehicle state 
     const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
     // Need to know if logged in user is an admin to initialise delete vehicle
+    //DELETE THIS
     const isAdmin = user?.role == "admin";
 
     // Create the use states for the vehicle so you are able to create it 

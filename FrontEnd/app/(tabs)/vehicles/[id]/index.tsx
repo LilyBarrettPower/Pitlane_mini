@@ -62,7 +62,7 @@ type SetUp = {
 
 export default function VehicleDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { token } = useAuth();
+  const { user, token } = useAuth();
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,6 +97,23 @@ export default function VehicleDetailPage() {
   // const [isSavingSetup, setIsSavingSetup] = useState(false);
 
   const [editingSetup, setEditingSetup] = useState<SetUp | null>(null);
+
+  const [showEditVehicleModal, setShowEditVehicleModal] = useState(false);
+  const [showDeleteVehicleModal, setShowDeleteVehicleModal] = useState(false);
+  const [isSavingVehicle, setIsSavingVehicle] = useState(false);
+  const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
+
+  const [name, setName] = useState("");
+  const [make, setMake] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState("");
+  const [owner, setOwner] = useState(""); // Here it would be good to see previous owners saved too 
+  const [odo, setOdo] = useState("");
+  const [racingNumber, setRacingNumber] = useState("");
+  const [chassisNumber, setChassisNumber] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const isAdmin = user?.role === "admin";
 
   async function fetchVehicle() {
     try {
@@ -227,6 +244,114 @@ export default function VehicleDetailPage() {
     }
   }
 
+  function populateVehicleForm(selectedVehicle: Vehicle) {
+    setName(selectedVehicle.name || "");
+    setMake(selectedVehicle.make || "");
+    setModel(selectedVehicle.model || "");
+    setYear(
+      selectedVehicle.year !== undefined
+        ? String(selectedVehicle.year)
+        : ""
+    );
+    setOwner(selectedVehicle.owner || "");
+    setOdo(
+      selectedVehicle.odo !== undefined
+        ? String(selectedVehicle.odo)
+        : ""
+    );
+    setRacingNumber(selectedVehicle.racingNumber || "");
+    setChassisNumber(selectedVehicle.chassisNumber || "");
+    setNotes(selectedVehicle.notes || "");
+  }
+
+  function openEditVehicleModal() {
+    if (!vehicle) return;
+
+    populateVehicleForm(vehicle);
+    setErrorMessage("");
+    setShowEditVehicleModal(true);
+  }
+
+  function closeEditVehicleModal() {
+    if (!isSavingVehicle) return;
+
+    setShowEditVehicleModal(false);
+    setErrorMessage("");
+
+    if (vehicle) {
+      populateVehicleForm(vehicle);
+    }
+  }
+
+  async function handleUpdateVehicle() {
+    if (!vehicle) return;
+
+    if (!name.trim() && !make.trim() && !model.trim()) {
+      setErrorMessage("Please enter a vehicle name, make and model");
+      return;
+    }
+
+    try {
+      setIsSavingVehicle(true);
+      setErrorMessage("");
+
+      await apiFetch(`/vehicles/${vehicle._id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          make: make.trim(),
+          model: model.trim(),
+          year: year.trim() ? Number(year) : undefined,
+          owner: owner.trim(),
+          odo: odo.trim() ? Number(odo) : undefined,
+          racingNumber: racingNumber.trim(),
+          chassisNumber: chassisNumber.trim(),
+          notes: notes.trim(),
+        }),
+      });
+
+      await fetchVehicle();
+      setShowEditVehicleModal(false);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to update vehicle"
+      );
+    } finally {
+      setIsSavingVehicle(false);
+    }
+  }
+
+  async function handleDeleteVehicle() {
+    if (!vehicle) return;
+
+    try {
+      setIsDeletingVehicle(true);
+      setErrorMessage("");
+
+      await apiFetch(`/vehicles/${vehicle._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setShowDeleteVehicleModal(false);
+
+      router.replace("/vehicles");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete vehicle"
+      );
+    } finally {
+      setIsDeletingVehicle(false);
+    }
+  }
+
   async function handleRemoveSetup(setupId: string) {
     try {
       setIsLoading(true);
@@ -249,162 +374,6 @@ export default function VehicleDetailPage() {
     }
   }
 
-  // async function handleSaveSetup(saveAsNewVersion = false) {
-  //   if (!setupVersion) {
-  //     setErrorMessage("Setup version is required");
-  //     return;
-  //   }
-
-  //   let finalVersion = setupVersion;
-
-  //   if (editingSetup && saveAsNewVersion && setupVersion === editingSetup.version) {
-  //     finalVersion = getNextSetupVersionName(editingSetup.version);
-  //   }
-
-  //   const payload = {
-  //     vehicleId: id,
-  //     version: finalVersion,
-
-  //     springNm: {
-  //       front: springFront ? Number(springFront) : undefined,
-  //       rear: springRear ? Number(springRear) : undefined,
-  //     },
-
-  //     arbPos: {
-  //       front: arbFront ? Number(arbFront) : undefined,
-  //       rear: arbRear ? Number(arbRear) : undefined,
-  //     },
-
-  //     rideHeight: {
-  //       front: rideHeightFront ? Number(rideHeightFront) : undefined,
-  //       rear: rideHeightRear ? Number(rideHeightRear) : undefined,
-  //     },
-
-  //     camber: {
-  //       front: camberFront,
-  //       rear: camberRear,
-  //     },
-
-  //     toe: {
-  //       front: toeFront,
-  //       rear: toeRear,
-  //     },
-
-  //     packers: {
-  //       front: packersFront,
-  //       rear: packersRear,
-  //     },
-
-  //     diffPreload: diffPreload ? Number(diffPreload) : undefined,
-  //     brakeBias,
-  //     wingHole,
-  //     splitter,
-  //     notes: setupNotes,
-  //   };
-
-  //   try {
-  //     setIsSavingSetup(true);
-  //     setErrorMessage("");
-
-  //     if (editingSetup && !saveAsNewVersion) {
-  //       await apiFetch(`/setups/${editingSetup._id}`, {
-  //         method: "PATCH",
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //         body: JSON.stringify(payload),
-  //       });
-  //     } else {
-  //       await apiFetch("/setups", {
-  //         method: "POST",
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //         body: JSON.stringify(payload),
-  //       });
-  //     }
-  //     clearSetupForm();
-  //     setShowSetupModal(false);
-  //     await fetchSetups();
-  //   } catch (error) {
-  //     setErrorMessage(
-  //       error instanceof Error ? error.message : "Failed to create setup"
-  //     );
-  //   } finally {
-  //     setIsSavingSetup(false);
-  //   }
-  // }
-
-  // function clearSetupForm() {
-  //   setEditingSetup(null);
-  //   setSetupVersion('');
-  //   setSpringFront('');
-  //   setSpringRear('');
-  //   setArbFront('');
-  //   setArbRear('');
-  //   setRideHeightFront('');
-  //   setRideHeightRear('');
-  //   setCamberFront('');
-  //   setCamberRear('');
-  //   setToeFront('');
-  //   setToeRear('');
-  //   setPackersFront('');
-  //   setPackersRear('');
-  //   setDiffPreload('');
-  //   setBrakeBias('');
-  //   setWingHole('');
-  //   setSplitter('');
-  //   setSetupNotes('');
-  // }
-
-  // // for the names/ version for the setup:
-  // function getNextSetupVersionName(originalVersion: string) {
-  //   const baseName = originalVersion.replace(/\.\d+$/, "");
-
-  //   const matchingVersions = setups
-  //     .map((setup) => setup.version)
-  //     .filter((version) => {
-  //       return version === baseName || version.startsWith(`${baseName}.`);
-  //     });
-
-  //     let highestNumber = 1;
-
-  //     matchingVersions.forEach((version) => {
-  //       const match = version.match(/\.(\d+)$/);
-      
-  //       if (match) {
-  //         const number = Number(match[1]);
-  //         if (number > highestNumber) highestNumber = number;
-  //       }
-  //     });
-
-  //     return `${baseName}.${highestNumber + 1}`;
-  // }
-
-  // function openEditSetupModal(setup: SetUp) {
-  //   setEditingSetup(setup);
-
-  //   setSetupVersion(setup.version || '');
-  //   setSpringFront(setup.springNm?.front ? String(setup.springNm.front) : '');
-  //   setSpringRear(setup.springNm?.rear ? String(setup.springNm.rear) : '');
-  //   setArbFront(setup.arbPos?.front ? String(setup.arbPos.front) : '');
-  //   setArbRear(setup.arbPos?.rear ? String(setup.arbPos.rear) : '');
-  //   setRideHeightFront(setup.rideHeight?.front ? String(setup.rideHeight.front) : '');
-  //   setRideHeightRear(setup.rideHeight?.rear ? String(setup.rideHeight.rear) : '');
-  //   setCamberFront(setup.camber?.front || '');
-  //   setCamberRear(setup.camber?.rear || '');
-  //   setToeFront(setup.toe?.front || '');
-  //   setToeRear(setup.toe?.rear || '');
-  //   setPackersFront(setup.packers?.front || '');
-  //   setPackersRear(setup.packers?.rear || '');
-  //   setDiffPreload(setup.diffPreload ? String(setup.diffPreload) : '');
-  //   setBrakeBias(setup.brakeBias || '');
-  //   setWingHole(setup.wingHole || '');
-  //   setSplitter(setup.splitter || '');
-  //   setSetupNotes(setup.notes || '');
-
-  //   setShowSetupModal(true);
-  // }
 
   function openCreateSetupModal() {
     setEditingSetup(null);
@@ -465,6 +434,31 @@ export default function VehicleDetailPage() {
           {vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""}
           {vehicle.name}
         </Text>
+        <View style={styles.vehicleActionRow}>
+          <Pressable
+            style={globalStyles.smallButton}
+            onPress={openEditVehicleModal}
+          >
+            <Text style={globalStyles.smallButtonText}>
+              Edit Vehicle
+            </Text>
+          </Pressable>
+
+          {isAdmin ? (
+            <Pressable
+              style={globalStyles.buttonDangerSmall}
+              onPress={() => {
+                setErrorMessage("");
+                setShowDeleteVehicleModal(true);
+              }}
+            >
+              <Text style={globalStyles.smallButtonText}>
+                Delete Vehicle
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+
         <View style={globalStyles.card}>
           <Text style={[styles.row, globalStyles.text]}>Make: {vehicle.make || "-"}</Text>
           <Text style={[styles.row, globalStyles.text]}>Model: {vehicle.model || ""}</Text>
@@ -522,7 +516,7 @@ export default function VehicleDetailPage() {
           </View>
 
         </View>
-        
+
         <View style={globalStyles.card}>
           <Text style={globalStyles.sectionTitle}>Setups</Text>
 
@@ -530,17 +524,17 @@ export default function VehicleDetailPage() {
             <Text style={globalStyles.text}>No setups assigned to this vehicle</Text>
           ) : (
             setups.map((setup) => (
-              <Pressable 
-                key={setup._id} 
+              <Pressable
+                key={setup._id}
                 style={styles.driverRow}
-                onPress={() => 
-                    router.push({
-                        pathname: "/vehicles/[id]/setups/[setupId]",
-                        params: {
-                            id,
-                            setupId: setup._id,
-                        },
-                    })
+                onPress={() =>
+                  router.push({
+                    pathname: "/vehicles/[id]/setups/[setupId]",
+                    params: {
+                      id,
+                      setupId: setup._id,
+                    },
+                  })
                 }>
                 <View>
                   <Text style={[styles.row, globalStyles.text]}>
@@ -552,24 +546,24 @@ export default function VehicleDetailPage() {
                 </View>
 
                 <View style={styles.setupButtonRow}>
-                <Pressable
-                  style={globalStyles.smallButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    openEditSetupModal(setup)
-                  }} 
-                >
-                  <Text style={globalStyles.smallButtonText}>Edit</Text>
-                </Pressable>
-                <Pressable
-                  style={globalStyles.buttonDangerSmall}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleRemoveSetup(setup._id)
-                  }}
-                >
-                  <Text style={globalStyles.smallButtonText}>Remove</Text>
-                </Pressable>
+                  <Pressable
+                    style={globalStyles.smallButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      openEditSetupModal(setup)
+                    }}
+                  >
+                    <Text style={globalStyles.smallButtonText}>Edit</Text>
+                  </Pressable>
+                  <Pressable
+                    style={globalStyles.buttonDangerSmall}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleRemoveSetup(setup._id)
+                    }}
+                  >
+                    <Text style={globalStyles.smallButtonText}>Remove</Text>
+                  </Pressable>
                 </View>
               </Pressable>
             ))
@@ -660,212 +654,7 @@ export default function VehicleDetailPage() {
             </View>
           </View>
         </Modal>
-        {/* <Modal
-          visible={showSetupModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowSetupModal(false)}
-        >
-          <ScrollView>
-            <View style={globalStyles.modalOverlay}>
-              <View style={globalStyles.modalCard}>
-                <Text style={globalStyles.modalTitle}>
-                  {editingSetup ? "Edit Setup" : "Create Setup"}
-                </Text>
-                <Text style={globalStyles.label}>Version</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Version"
-                  placeholderTextColor="#9ca3af"
-                  value={setupVersion}
-                  onChangeText={setSetupVersion}
-                />
-                <Text style={globalStyles.sectionTitle}>Springs</Text>
-                <Text style={globalStyles.label}>Front Spring (nm)</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Spring Front nm"
-                  placeholderTextColor="#9ca3af"
-                  value={springFront}
-                  onChangeText={setSpringFront}
-                />
-                <Text style={globalStyles.label}>Rear Spring (nm)</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Spring Rear nm"
-                  placeholderTextColor="#9ca3af"
-                  value={springRear}
-                  onChangeText={setSpringRear}
-                />
-                <Text style={globalStyles.sectionTitle}>ARB</Text>
-                <Text style={globalStyles.label}>ARB Front</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="ARB Front"
-                  placeholderTextColor="#9ca3af"
-                  value={arbFront}
-                  onChangeText={setArbFront}
-                />
-                <Text style={globalStyles.label}>ARB Rear</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="ARB Rear"
-                  placeholderTextColor="#9ca3af"
-                  value={arbRear}
-                  onChangeText={setArbRear}
-                />
-                <Text style={globalStyles.sectionTitle}>Ride Height</Text>
-                <Text style={globalStyles.label}>Ride Height Front</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Ride Height Front"
-                  placeholderTextColor="#9ca3af"
-                  value={rideHeightFront}
-                  onChangeText={setRideHeightFront}
-                />
-                <Text style={globalStyles.label}>Ride Height Rear</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Ride Height Rear"
-                  placeholderTextColor="#9ca3af"
-                  value={rideHeightRear}
-                  onChangeText={setRideHeightRear}
-                />
-                <Text style={globalStyles.sectionTitle}>Camber</Text>
-                <Text style={globalStyles.label}>Camber Front</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Camber Front"
-                  placeholderTextColor="#9ca3af"
-                  value={camberFront}
-                  onChangeText={setCamberFront}
-                />
-                <Text style={globalStyles.label}>Camber Rear</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Camber Rear"
-                  placeholderTextColor="#9ca3af"
-                  value={camberRear}
-                  onChangeText={setCamberRear}
-                />
-                <Text style={globalStyles.sectionTitle}>Toe</Text>
-                <Text style={globalStyles.label}>Toe Front</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Toe Front"
-                  placeholderTextColor="#9ca3af"
-                  value={toeFront}
-                  onChangeText={setToeFront}
-                />
-                <Text style={globalStyles.label}>Toe Rear</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Toe Rear"
-                  placeholderTextColor="#9ca3af"
-                  value={toeRear}
-                  onChangeText={setToeRear}
-                />
-                <Text style={globalStyles.sectionTitle}>Packers</Text>
-                <Text style={globalStyles.label}>Packers Front</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Packers Front"
-                  placeholderTextColor="#9ca3af"
-                  value={packersFront}
-                  onChangeText={setPackersFront}
-                />
-                <Text style={globalStyles.label}>Packers Rear</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Packers Rear"
-                  placeholderTextColor="#9ca3af"
-                  value={packersRear}
-                  onChangeText={setPackersRear}
-                />
-                <Text style={globalStyles.label}>Diff Preload</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Diff Preload"
-                  placeholderTextColor="#9ca3af"
-                  value={diffPreload}
-                  onChangeText={setDiffPreload}
-                />
-                <Text style={globalStyles.label}>Brake Bias</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Brake Bias"
-                  placeholderTextColor="#9ca3af"
-                  value={brakeBias}
-                  onChangeText={setBrakeBias}
-                />
-                <Text style={globalStyles.label}>Wing Hole</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Wing Hole"
-                  placeholderTextColor="#9ca3af"
-                  value={wingHole}
-                  onChangeText={setWingHole}
-                />
-                <Text style={globalStyles.label}>Splitter</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Splitter"
-                  placeholderTextColor="#9ca3af"
-                  value={splitter}
-                  onChangeText={setSplitter}
-                />
-                <Text style={globalStyles.label}>Notes</Text>
-                <TextInput
-                  style={globalStyles.input}
-                  placeholder="Notes"
-                  placeholderTextColor="#9ca3af"
-                  value={setupNotes}
-                  onChangeText={setSetupNotes}
-                />
-
-                <View style={styles.actionRow}>
-                  <Pressable
-                    style={globalStyles.buttonDanger}
-                    onPress={() => {
-                      clearSetupForm();
-                      setShowSetupModal(false);
-                    }}
-                  >
-                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                  </Pressable>
-                  {editingSetup ? (
-                    <>
-                      <Pressable
-                        style={[globalStyles.buttonPrimary, isSavingSetup && globalStyles.buttonDisabled]}
-                        onPress={() => handleSaveSetup(false)}
-                        disabled={isSavingSetup}
-                      >
-                        <Text style={globalStyles.buttonPrimaryText}>Save Changes</Text>
-                      </Pressable>
-                      <Pressable
-                        style={[globalStyles.buttonSecondary, isSavingSetup && globalStyles.buttonDisabled]}
-                        onPress={() => handleSaveSetup(true)}
-                        disabled={isSavingSetup}
-                      >
-                        <Text style={globalStyles.buttonPrimaryText}>Save as new version</Text>
-                      </Pressable>
-                    </>
-                  ) : (
-                    <Pressable
-                      style={[globalStyles.buttonPrimary, isSavingSetup && globalStyles.buttonDisabled]}
-                      onPress={() => handleSaveSetup(false)}
-                      disabled={isSavingSetup}
-                    >
-                      <Text style={globalStyles.buttonPrimaryText}>Create Setup</Text>
-                    </Pressable>
-                  )}
-
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        </Modal> */}
-        <SetupModal 
+        <SetupModal
           visible={showSetupModal}
           vehicleId={String(id)}
           setup={editingSetup}
@@ -875,7 +664,248 @@ export default function VehicleDetailPage() {
             setShowSetupModal(false);
           }}
           onSaved={fetchSetups}
-          />
+        />
+        <Modal
+          visible={showEditVehicleModal}
+          transparent
+          animationType="fade"
+          onRequestClose={closeEditVehicleModal}
+        >
+          <ScrollView
+            contentContainerStyle={styles.modalContent}
+          >
+            <View style={globalStyles.modalOverlay}>
+              <View style={globalStyles.modalCard}>
+                <Text style={globalStyles.modalTitle}>
+                  Edit Vehicle
+                </Text>
+
+                <Text style={globalStyles.label}>Name</Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Vehicle name"
+                  placeholderTextColor="#9ca3af"
+                  value={name}
+                  onChangeText={setName}
+                />
+
+                <Text style={globalStyles.label}>Make</Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Make"
+                  placeholderTextColor="#9ca3af"
+                  value={make}
+                  onChangeText={setMake}
+                />
+
+                <Text style={globalStyles.label}>Model</Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Model"
+                  placeholderTextColor="#9ca3af"
+                  value={model}
+                  onChangeText={setModel}
+                />
+
+                <Text style={globalStyles.label}>Year</Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Year"
+                  placeholderTextColor="#9ca3af"
+                  value={year}
+                  onChangeText={setYear}
+                  keyboardType="numeric"
+                />
+
+                <Text style={globalStyles.label}>Owner</Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Owner"
+                  placeholderTextColor="#9ca3af"
+                  value={owner}
+                  onChangeText={setOwner}
+                />
+
+                <Text style={globalStyles.label}>
+                  Odometer
+                </Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Odometer"
+                  placeholderTextColor="#9ca3af"
+                  value={odo}
+                  onChangeText={setOdo}
+                  keyboardType="numeric"
+                />
+
+                <Text style={globalStyles.label}>
+                  Racing Number
+                </Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Racing number"
+                  placeholderTextColor="#9ca3af"
+                  value={racingNumber}
+                  onChangeText={setRacingNumber}
+                />
+
+                <Text style={globalStyles.label}>
+                  Chassis Number
+                </Text>
+
+                <TextInput
+                  style={globalStyles.input}
+                  placeholder="Chassis number"
+                  placeholderTextColor="#9ca3af"
+                  value={chassisNumber}
+                  onChangeText={setChassisNumber}
+                />
+
+                <Text style={globalStyles.label}>Notes</Text>
+
+                <TextInput
+                  style={[
+                    globalStyles.input,
+                    styles.notesInput,
+                  ]}
+                  placeholder="Vehicle notes"
+                  placeholderTextColor="#9ca3af"
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  textAlignVertical="top"
+                />
+
+                {errorMessage ? (
+                  <Text style={globalStyles.errorText}>
+                    {errorMessage}
+                  </Text>
+                ) : null}
+
+                <View style={styles.modalActions}>
+                  <Pressable
+                    style={globalStyles.buttonDanger}
+                    onPress={closeEditVehicleModal}
+                    disabled={isSavingVehicle}
+                  >
+                    <Text
+                      style={globalStyles.buttonPrimaryText}
+                    >
+                      Cancel
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      globalStyles.buttonPrimary,
+                      isSavingVehicle &&
+                      globalStyles.buttonDisabled,
+                    ]}
+                    onPress={handleUpdateVehicle}
+                    disabled={isSavingVehicle}
+                  >
+                    {isSavingVehicle ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <Text
+                        style={
+                          globalStyles.buttonPrimaryText
+                        }
+                      >
+                        Save Changes
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </Modal>
+        <Modal
+          visible={showDeleteVehicleModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            if (!isDeletingVehicle) {
+              setShowDeleteVehicleModal(false);
+            }
+          }}
+        >
+          <View style={globalStyles.modalOverlay}>
+            <View style={globalStyles.modalCard}>
+              <Text style={globalStyles.modalTitle}>
+                Delete Vehicle?
+              </Text>
+
+              <Text style={globalStyles.text}>
+                Are you sure you want to delete{" "}
+                {vehicle.name ||
+                  vehicle.racingNumber ||
+                  `${vehicle.make || ""} ${vehicle.model || ""
+                    }`.trim() ||
+                  "this vehicle"}
+                ?
+              </Text>
+
+              <Text style={globalStyles.subText}>
+                This vehicle may have drivers, setups, tyres,
+                event assignments and runs linked to it.
+              </Text>
+
+              {errorMessage ? (
+                <Text style={globalStyles.errorText}>
+                  {errorMessage}
+                </Text>
+              ) : null}
+
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={globalStyles.buttonPrimary}
+                  onPress={() =>
+                    setShowDeleteVehicleModal(false)
+                  }
+                  disabled={isDeletingVehicle}
+                >
+                  <Text
+                    style={globalStyles.buttonPrimaryText}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    globalStyles.buttonDanger,
+                    isDeletingVehicle &&
+                    globalStyles.buttonDisabled,
+                  ]}
+                  onPress={handleDeleteVehicle}
+                  disabled={isDeletingVehicle}
+                >
+                  {isDeletingVehicle ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text
+                      style={
+                        globalStyles.buttonPrimaryText
+                      }
+                    >
+                      Yes, Delete
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -937,5 +967,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+  },
+  vehicleActionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12
+  },
+
+  modalContent: {
+    flexGrow: 1,
+  },
+
+  modalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+    flexWrap: "wrap",
+  },
+
+  notesInput: {
+    minHeight: 90,
   },
 });
