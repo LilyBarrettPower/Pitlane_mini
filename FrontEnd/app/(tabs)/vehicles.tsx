@@ -34,20 +34,13 @@ type Vehicle = {
 export default function VehiclesPage() {
 
     //  Make sure there is a valid token to access this page 
-    const { user, token } = useAuth();
+    const { token } = useAuth();
     // Check there is a front end message for when token has expired...
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    // Add editing vehicle state to switch between create & edit modals
-    const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-    // Add delete vehicle state 
-    const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
-    // Need to know if logged in user is an admin to initialise delete vehicle
-    //DELETE THIS
-    const isAdmin = user?.role == "admin";
 
     // Create the use states for the vehicle so you are able to create it 
     const [name, setName] = useState("");
@@ -101,23 +94,13 @@ export default function VehiclesPage() {
                 racingNumber,
                 chassisNumber,
                 notes,
-            }
-
-            if (editingVehicle) {
-                await apiFetch(`/vehicles/${editingVehicle._id}`, {
-                    method: "PATCH",
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: JSON.stringify(payload),
-                });
-            } else {
+            } 
                 await apiFetch("/vehicles", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: JSON.stringify(payload),
                 });
-            }
-
-            setEditingVehicle(null);
+            
             setName("");
             setMake("");
             setModel("");
@@ -138,30 +121,6 @@ export default function VehiclesPage() {
         }
     }
 
-    async function handleDeleteVehicle() {
-        if (!vehicleToDelete) return;
-
-        try {
-            setIsLoading(true);
-            setErrorMessage("");
-
-            await apiFetch(`/vehicles/${vehicleToDelete._id}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            setVehicleToDelete(null);
-            await fetchVehicles();
-        } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Failed to delete vehicle");
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-
     return (
         <SafeAreaView style={globalStyles.container}>
             <ScrollView contentContainerStyle={styles.content}>
@@ -170,7 +129,6 @@ export default function VehiclesPage() {
 
                     <Pressable style={globalStyles.buttonPrimary}
                         onPress={() => {
-                            setEditingVehicle(null);
                             setName("");
                             setMake("");
                             setModel("");
@@ -218,38 +176,6 @@ export default function VehiclesPage() {
                             <Text style={globalStyles.cardText}>Chassis: {vehicle.chassisNumber || "-"}</Text>
                             <Text style={globalStyles.cardText}>Notes: {vehicle.notes || "-"}</Text>
 
-                            <View style={styles.actionRow}>
-                                <Pressable style={globalStyles.smallButton}
-                                    onPress={(e) => {
-                                        e.stopPropagation?.();
-                                        setEditingVehicle(vehicle);
-                                        setName(vehicle.name || "");
-                                        setMake(vehicle.make || "");
-                                        setModel(vehicle.model || "");
-                                        setYear(vehicle.year ? String(vehicle.year) : ""); // Not sure if these are right...
-                                        setOwner(vehicle.owner || "");
-                                        setOdo(vehicle.odo ? String(vehicle.odo) : "");
-                                        setRacingNumber(vehicle.racingNumber || "");
-                                        setChassisNumber(vehicle.chassisNumber || "");
-                                        setNotes(vehicle.notes || "");
-                                        setShowCreateModal(true);
-                                    }}
-                                >
-                                    <Text style={globalStyles.smallButtonText}>Edit</Text>
-                                </Pressable>
-                                {isAdmin ? (
-                                    <Pressable style={globalStyles.buttonDanger}
-                                        onPress={(e) => {
-                                            e.stopPropagation?.();
-                                            setVehicleToDelete(vehicle);
-                                        }}
-                                    >
-                                        <Text style={globalStyles.smallButtonText}>Delete</Text>
-                                    </Pressable>
-                                ) : null}
-
-                            </View>
-
                             <View style={styles.linkGrid}>
                                 {[
                                     "Events > Runs > Setups > Tyre Runs",
@@ -274,7 +200,7 @@ export default function VehiclesPage() {
 
                         <View style={globalStyles.modalCard}>
                             <Text style={globalStyles.modalTitle}>
-                                {editingVehicle ? "Edit Vehicle" : "Create Vehicle"}
+                                 Create Vehicle
                             </Text>
                             <Text style={globalStyles.label}>Name</Text>
                             <TextInput style={globalStyles.input} placeholder="Name" placeholderTextColor="9ca3af" value={name} onChangeText={setName} />
@@ -302,7 +228,7 @@ export default function VehiclesPage() {
 
                                 <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveVehicle}>
                                     <Text style={globalStyles.buttonPrimaryText}>
-                                        {editingVehicle ? "Save Changes" : "Create Vehicle"}
+                                        Create Vehicle
                                     </Text>
                                 </Pressable>
                             </View>
@@ -313,41 +239,6 @@ export default function VehiclesPage() {
                     </View>
                 </ScrollView>
             </Modal>
-            {/* Delete Vehicle Warning Modal */}
-
-            <Modal
-                visible={!!vehicleToDelete}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setVehicleToDelete(null)}
-            >
-                <View style={globalStyles.modalOverlay}>
-                    <View style={globalStyles.modalCard}>
-                        <Text style={globalStyles.modalTitle}>Delete Vehicle?</Text>
-                        <Text style={globalStyles.text}>
-                            Are you sure you want to delete{" "}
-                            {vehicleToDelete?.name || vehicleToDelete?.racingNumber || "this vehicle"}?
-                        </Text>
-                        <View style={styles.modalActions}>
-                            <Pressable
-                                style={globalStyles.buttonPrimary}
-                                onPress={() => setVehicleToDelete(null)}
-                                disabled={isLoading}
-                            >
-                                <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                            </Pressable>
-                            <Pressable
-                                style={[globalStyles.buttonDanger, isLoading && globalStyles.buttonDisabled]}
-                                onPress={handleDeleteVehicle}
-                                disabled={isLoading}
-                            >
-                                <Text style={globalStyles.smallButtonText}>Yes, Delete</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
         </SafeAreaView>
     );
 }
