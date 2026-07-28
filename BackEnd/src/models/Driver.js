@@ -1,10 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const DriverSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         name: {
@@ -14,7 +14,7 @@ const DriverSchema = new mongoose.Schema(
         },
         experience: {
             type: String,
-            default: '',
+            default: "",
             trim: true
         },
         email: {
@@ -31,4 +31,4 @@ const DriverSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model('Driver', DriverSchema);
+module.exports = mongoose.model("Driver", DriverSchema);

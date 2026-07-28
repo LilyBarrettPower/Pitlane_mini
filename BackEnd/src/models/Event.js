@@ -1,28 +1,28 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const EventSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         trackId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Track',
+            ref: "Track",
             required: true, 
         },
         name: { type: String, required: true },
         type: { type: String, required: true },
         startDate: { type: Date, required: true },
         endDate: { type: Date, required: true },
-        status: {type: String, default: 'upcoming'},
+        status: {type: String, default: "upcoming"},
         notes: { type: String },
         isActive: { type: Boolean, default: true },
     },
     { timestamps: true }
 );
 
-module.exports = mongoose.model('Event', EventSchema);
+module.exports = mongoose.model("Event", EventSchema);
 
 

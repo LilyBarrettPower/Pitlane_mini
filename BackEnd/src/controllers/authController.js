@@ -1,22 +1,10 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const Organisation = require('../models/Organisation');
-const User = require('../models/User');
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const Organisation = require("../models/Organisation");
+const User = require("../models/User");
 // Make everything required available in this file 
 
 const SALT_ROUNDS = 10;
-
-// function createToken(user) {
-//     return jwt.sign(
-//         {
-//             userId: user._id.toString(),
-//             organisationId: user.organisationId.toString(),
-//             role: user.role,
-//         },
-//         process.env.JWT_SECRET,
-//         { expiresIn: '1hr' }
-//     );
-// }
 
 
 function createToken(user) {
@@ -30,7 +18,7 @@ function createToken(user) {
             role: user.role,
         },
         process.env.JWT_SECRET,
-        { expiresIn: '1hr' }
+        { expiresIn: "1hr" }
     );
 }
 
@@ -42,14 +30,14 @@ exports.registerOrganisation = async (req, res) => {
         if (!orgName || !email || !password) {
             return res
                 .status(400)
-                .json({ message: 'Organisation name, email and password are required' });
+                .json({ message: "Organisation name, email and password are required" });
         }
 
         const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             return res
                 .status(400)
-                .json({ message: 'User with this email already exists' });
+                .json({ message: "User with this email already exists" });
         }
         const organisation = await Organisation.create({ name: orgName });
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -58,7 +46,7 @@ exports.registerOrganisation = async (req, res) => {
             email: email.toLowerCase(),
             passwordHash,
             name: name,
-            role: 'admin',
+            role: "admin",
         });
 
         const token = createToken(user);
@@ -77,8 +65,8 @@ exports.registerOrganisation = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error('register Organisation error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("register Organisation error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -91,21 +79,21 @@ exports.login = async (req, res) => {
         if (!email || !password) {
             return res
                 .status(400)
-                .json({ message: 'Email and password are required' });
+                .json({ message: "Email and password are required" });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase(), isActive: true }).populate('organisationId', 'name');
+        const user = await User.findOne({ email: email.toLowerCase(), isActive: true }).populate("organisationId", "name");
         if (!user) {
             return res
                 .status(401)
-                .json({ message: 'Invalid email or password' });
+                .json({ message: "Invalid email or password" });
         }
 
         const match = await bcrypt.compare(password, user.passwordHash);
         if (!match) {
             return res
                 .status(401)
-                .json({ message: 'Invalid email or password' });
+                .json({ message: "Invalid email or password" });
         }
 
         const token = createToken(user);
@@ -124,8 +112,8 @@ exports.login = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('login error:', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("login error:", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -133,16 +121,16 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId).select('-passwordHash');
+        const user = await User.findById(req.user.userId).select("-passwordHash");
         if (!user) {
             return res
                 .status(404)
-                .json({ message: 'User not found' });
+                .json({ message: "User not found" });
         }
         res.json({ user });
     } catch (err) {
-        console.error('getMe error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getMe error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -152,9 +140,9 @@ exports.createUser = async (req, res) => {
     try {
         const currentUserRole = req.user.role;
 
-        if (currentUserRole !== 'admin') {
+        if (currentUserRole !== "admin") {
             return res.status(403).json({
-                message: 'Only admins can create users',
+                message: "Only admins can create users",
             });
         }
 
@@ -162,15 +150,15 @@ exports.createUser = async (req, res) => {
 
         if (!email || !password) {
             return res.status(400).json({
-                message: 'Email and password are required',
+                message: "Email and password are required",
             });
         }
 
-        const allowedRoles = ['admin', 'engineer', 'mechanic', 'viewer'];
+        const allowedRoles = ["admin", "engineer", "mechanic", "viewer"];
 
         if (role && !allowedRoles.includes(role)) {
             return res.status(400).json({
-                message: 'Invalid role',
+                message: "Invalid role",
             });
         }
 
@@ -180,7 +168,7 @@ exports.createUser = async (req, res) => {
 
         if (existingUser) {
             return res.status(400).json({
-                message: 'User with this email already exists',
+                message: "User with this email already exists",
             });
         }
 
@@ -194,7 +182,7 @@ exports.createUser = async (req, res) => {
 
         if (!organisation) {
             return res.status(404).json({
-                message: 'Organisation not found',
+                message: "Organisation not found",
             });
         }
 
@@ -204,8 +192,8 @@ exports.createUser = async (req, res) => {
             organisationId: organisation._id,
             email: email.toLowerCase(),
             passwordHash,
-            name: name || '',
-            role: role || 'viewer',
+            name: name || "",
+            role: role || "viewer",
         });
 
         res.status(201).json({
@@ -222,8 +210,8 @@ exports.createUser = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error('createUser error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createUser error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -240,13 +228,13 @@ exports.getUsers = async (req, res) => {
             organisationId,
             isActive: true,
         })
-            .select('-passwordHash')
+            .select("-passwordHash")
             .sort({ createdAt: -1 });
 
         res.json({ users });
     } catch (err) {
-        console.error('getUsers error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getUsers error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 

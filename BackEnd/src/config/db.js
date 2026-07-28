@@ -1,6 +1,6 @@
 // Connection to database 
 
-const mongoose = require('mongoose'); // Load Mongoose library to the file 
+const mongoose = require("mongoose"); // Load Mongoose library to the file 
 
 async function connectDB(mongoUri) { // Define function with mongoUri as the input 
     try {

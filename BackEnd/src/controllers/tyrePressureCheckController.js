@@ -48,15 +48,15 @@ exports.createPressureCheck = async (req, res) => {
 
         if (!tyreRunId || !stage || !pressurePsi) {
             return res.status(400).json({
-                message: 'TyreRunId, stage and pressurePsi are required',
+                message: "TyreRunId, stage and pressurePsi are required",
             });
         }
 
-        const validStages = ['start', 'mid', 'end'];
+        const validStages = ["start", "mid", "end"];
 
         if (!validStages.includes(stage)) {
             return res.status(400).json({
-                message: 'Stage must be start, mid or end',
+                message: "Stage must be start, mid or end",
             });
         }
 
@@ -68,7 +68,7 @@ exports.createPressureCheck = async (req, res) => {
 
         if (!tyreRun) {
             return res.status(404).json({
-                message: 'Tyre run not found',
+                message: "Tyre run not found",
             });
         }
 
@@ -87,13 +87,13 @@ exports.createPressureCheck = async (req, res) => {
             rimTempC: rimTempC || undefined,
             lapNumber: resolvedLapNumber,
             recordedAt: recordedAt || new Date(),
-            notes: notes || '',
+            notes: notes || "",
         });
 
         res.status(201).json({ pressureCheck });
     } catch (err) {
-        console.error('createPressureCheck error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createPressureCheck error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -122,8 +122,8 @@ exports.getPressureChecks = async (req, res) => {
 
         res.json({ pressureChecks });
     } catch (err) {
-        console.error('getPressureChecks error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getPressureChecks error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -142,14 +142,14 @@ exports.getPressureCheckById = async (req, res) => {
 
         if (!pressureCheck) {
             return res.status(404).json({
-                message: 'Pressure check not found',
+                message: "Pressure check not found",
             });
         }
 
         res.json({ pressureCheck });
     } catch (err) {
-        console.error('getPressureCheckById error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getPressureCheckById error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -168,18 +168,18 @@ exports.updatePressureCheck = async (req, res) => {
 
         if (!pressureCheck) {
             return res.status(404).json({
-                message: 'Pressure check not found',
+                message: "Pressure check not found",
             });
         }
 
         const allowedFields = [
-            'stage',
-            'pressurePsi',
-            'tyreTempC',
-            'rimTempC',
-            'lapNumber',
-            'recordedAt',
-            'notes',
+            "stage",
+            "pressurePsi",
+            "tyreTempC",
+            "rimTempC",
+            "lapNumber",
+            "recordedAt",
+            "notes",
         ];
 
         for (const field of allowedFields) {
@@ -190,10 +190,10 @@ exports.updatePressureCheck = async (req, res) => {
 
         if (
             req.body.stage !== undefined &&
-            !['start', 'mid', 'end'].includes(req.body.stage)
+            !["start", "mid", "end"].includes(req.body.stage)
         ) {
             return res.status(400).json({
-                message: 'Stage must be start, mid or end',
+                message: "Stage must be start, mid or end",
             });
         }
 
@@ -201,8 +201,8 @@ exports.updatePressureCheck = async (req, res) => {
 
         res.json({ pressureCheck });
     } catch (err) {
-        console.error('updatePressureCheck error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("updatePressureCheck error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -229,17 +229,17 @@ exports.archivePressureCheck = async (req, res) => {
 
         if (!pressureCheck) {
             return res.status(404).json({
-                message: 'Pressure check not found',
+                message: "Pressure check not found",
             });
         }
 
         res.json({
-            message: 'Pressure check archived',
+            message: "Pressure check archived",
             pressureCheck,
         });
     } catch (err) {
-        console.error('archivePressureCheck error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("archivePressureCheck error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -266,16 +266,16 @@ exports.unarchivePressureCheck = async (req, res) => {
 
         if (!pressureCheck) {
             return res.status(404).json({
-                message: 'Pressure check not found',
+                message: "Pressure check not found",
             });
         }
 
         res.json({
-            message: 'Pressure check unarchived',
+            message: "Pressure check unarchived",
             pressureCheck,
         });
     } catch (err) {
-        console.error('unarchivePressureCheck error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("unarchivePressureCheck error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

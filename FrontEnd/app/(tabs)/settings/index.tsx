@@ -1,8 +1,8 @@
-import { Text, Pressable, StyleSheet } from 'react-native';
-import SettingsShell from '../../../components/settingsShell';
-import {useAuth} from '../../../context/AuthContext';
-import { router } from 'expo-router';
-import { globalStyles } from '../../../constants/styles';
+import { Text, Pressable, StyleSheet } from "react-native";
+import SettingsShell from "../../../components/settingsShell";
+import {useAuth} from "../../../context/AuthContext";
+import { router } from "expo-router";
+import { globalStyles } from "../../../constants/styles";
 
 
 export default function SettingsPage() {
@@ -10,7 +10,7 @@ export default function SettingsPage() {
 
     async function handleLogout() {
         await logout();
-        router.replace('/');
+        router.replace("/");
     }
 
   return (

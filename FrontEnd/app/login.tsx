@@ -1,5 +1,5 @@
-import {useState, useEffect} from 'react';
-import {router} from 'expo-router';
+import {useState, useEffect} from "react";
+import {router} from "expo-router";
 import{
     ActivityIndicator, 
     Pressable, 
@@ -7,24 +7,24 @@ import{
     Text,
     TextInput,
     View
-} from 'react-native';
-import { globalStyles } from '../constants/styles';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {apiFetch} from '../assets/api';
-import { useAuth } from '../context/AuthContext';
+} from "react-native";
+import { globalStyles } from "../constants/styles";
+import {SafeAreaView} from "react-native-safe-area-context";
+import {apiFetch} from "../assets/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [successMessage, setSuccessMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState("");
 
     const {login, token, isLoading: authLoading} = useAuth();
 
     useEffect(() => {
         if (!authLoading && token) {
-            router.replace('/(tabs)/dashboard');
+            router.replace("/(tabs)/dashboard");
         }
     }, [token, authLoading]);
 
@@ -32,11 +32,11 @@ export default function LoginPage() {
 
     async function handleLogin() {
         try {
-            setErrorMessage('');
+            setErrorMessage("");
             setIsLoading(true);
 
-            const data = await apiFetch('/auth/login', {
-                method: 'POST',
+            const data = await apiFetch("/auth/login", {
+                method: "POST",
                 body: JSON.stringify({
                     email, 
                     password,
@@ -53,7 +53,7 @@ export default function LoginPage() {
 
         } catch (error) {
             const message = 
-                error instanceof Error ? error.message : 'Login Failed';
+                error instanceof Error ? error.message : "Login Failed";
             setErrorMessage(message);    
         } finally {
             setIsLoading(false);

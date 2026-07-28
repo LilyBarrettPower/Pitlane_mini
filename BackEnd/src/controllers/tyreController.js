@@ -1,5 +1,5 @@
-const Tyre = require('../models/Tyre');
-const Vehicle = require('../models/Vehicle');
+const Tyre = require("../models/Tyre");
+const Vehicle = require("../models/Vehicle");
 
 // POST - create a tyre
 
@@ -10,13 +10,13 @@ exports.createTyre = async (req, res) => {
 
         const { vehicleId, brand, spec, currentSet, size, position, fiaSerial, condition, heatCycles, kmTotal, notes } = req.body;
         if (!vehicleId || !brand || !condition ) {
-            return res.status(400).json({ message: 'VehicleId, brand and condition are required' });
+            return res.status(400).json({ message: "VehicleId, brand and condition are required" });
         }
 
         // Safety: ensure vehicle belongs to this org
         const vehicle = await Vehicle.findOne({ _id: vehicleId, organisationId, isActive: true });
         if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
+            return res.status(404).json({ message: "Vehicle not found" });
         }
 
         const tyre = await Tyre.create({
@@ -27,24 +27,24 @@ exports.createTyre = async (req, res) => {
             currentSet, 
             size,
             position,
-            fiaSerial: fiaSerial || '',
+            fiaSerial: fiaSerial || "",
             condition, 
             heatCycles: heatCycles ?? 0,
             kmTotal: kmTotal ?? 0,
-            notes: notes || '',
+            notes: notes || "",
         });
 
         res.status(201).json({ tyre});
     } catch (err) {
-        console.error('createTyre error', err);
+        console.error("createTyre error", err);
 
-        // Check to make sure there isn't duplicate fia serial numbers
+        // Check to make sure there isn"t duplicate fia serial numbers
         if (err.code === 11000) {
             return res.status(409).json({
-                message: 'A tyre with this FIA serial number already exists',
+                message: "A tyre with this FIA serial number already exists",
             });
         }
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -68,8 +68,8 @@ exports.getTyres = async (req, res) => {
         const tyres = await Tyre.find(filter).sort({ createdAt: -1 });
         res.json({ tyres });
     } catch (err) {
-        console.error('getTyres error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getTyres error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -87,13 +87,13 @@ exports.getTyreById = async (req, res) => {
         });
 
         if (!tyre) {
-            return res.status(404).json({ message: 'Tyre not found' });
+            return res.status(404).json({ message: "Tyre not found" });
         }
 
         res.json({ tyre});
     } catch (err) {
-        console.error('get TyreById error', err);
-        res.status(500).json({ message: 'Server error' })
+        console.error("get TyreById error", err);
+        res.status(500).json({ message: "Server error" })
     }
 }
 
@@ -111,12 +111,12 @@ exports.updateTyre = async (req, res) => {
         );
 
         if (!tyre) {
-            return res.status(404).json({ message: 'Tyre Not Found' });
+            return res.status(404).json({ message: "Tyre Not Found" });
         }
         res.json({ tyre });
     } catch (err) {
-        console.error('Update Tyre error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Update Tyre error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -134,12 +134,12 @@ exports.archiveTyre = async (req, res) => {
             { new: true }
         );
         if (!tyre) {
-            return res.status(404).json({ message: 'Tyre Not Found' });
+            return res.status(404).json({ message: "Tyre Not Found" });
         }
-        res.json({ message: 'Tyre Archived', tyre });
+        res.json({ message: "Tyre Archived", tyre });
     } catch (err) {
-        console.error('Archive tyre error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Archive tyre error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -157,11 +157,11 @@ exports.unarchiveTyre = async (req, res) => {
             { new: true }
         );
         if (!tyre) {
-            return res.status(404).json({ message: 'Tyre Not Found' });
+            return res.status(404).json({ message: "Tyre Not Found" });
         }
-        res.json({ message: 'Tyre Unarchived', tyre });
+        res.json({ message: "Tyre Unarchived", tyre });
     } catch (err) {
-        console.error('Unarchive tyre error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Unarchive tyre error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };

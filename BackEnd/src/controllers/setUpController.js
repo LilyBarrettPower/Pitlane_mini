@@ -1,5 +1,5 @@
-const SetUp = require('../models/SetUp');
-const Vehicle = require('../models/Vehicle');
+const SetUp = require("../models/SetUp");
+const Vehicle = require("../models/Vehicle");
 
 // Create a setup 
 
@@ -24,7 +24,7 @@ exports.createSetUp = async(req, res) => {
         } = req.body;
 
         if (!vehicleId || !version ) {
-            return res.status(400).json({ message: 'VehicleId and version are required' });
+            return res.status(400).json({ message: "VehicleId and version are required" });
         }
 
         const setup = await SetUp.create({
@@ -41,13 +41,13 @@ exports.createSetUp = async(req, res) => {
             brakeBias,
             wingHole,
             splitter,
-            notes: notes || '',
+            notes: notes || "",
         })
 
         res.status(201).json({setup});
     } catch (err) {
-        console.error('Create Setup Error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Create Setup Error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -69,8 +69,8 @@ exports.getSetUps = async (req, res) => {
         const setups = await SetUp.find(filter).sort({ createdAt: -1 });
         res.json({ setups });
     } catch (err) {
-        console.error('getSetUps error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getSetUps error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -88,13 +88,13 @@ exports.getSetUpById = async (req, res) => {
         });
 
         if (!setup) {
-            return res.status(404).json({ message: 'SetUp not found' });
+            return res.status(404).json({ message: "SetUp not found" });
         }
 
         res.json({ setup});
     } catch (err) {
-        console.error('get SetUpById error', err);
-        res.status(500).json({ message: 'Server error' })
+        console.error("get SetUpById error", err);
+        res.status(500).json({ message: "Server error" })
     }
 };
 
@@ -112,12 +112,12 @@ exports.updateSetUp = async (req, res) => {
         );
 
         if (!setup) {
-            return res.status(404).json({ message: 'SetUp Not Found' });
+            return res.status(404).json({ message: "SetUp Not Found" });
         }
         res.json({ setup });
     } catch (err) {
-        console.error('Update SetUp error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Update SetUp error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -135,12 +135,12 @@ exports.archiveSetUp = async (req, res) => {
             { new: true }
         );
         if (!setup) {
-            return res.status(404).json({ message: 'SetUp Not Found' });
+            return res.status(404).json({ message: "SetUp Not Found" });
         }
-        res.json({ message: 'SetUp Archived', setup });
+        res.json({ message: "SetUp Archived", setup });
     } catch (err) {
-        console.error('Archive setup error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Archive setup error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -157,12 +157,12 @@ exports.unarchiveSetUp = async (req, res) => {
             { new: true }
         );
         if (!setup) {
-            return res.status(404).json({ message: 'SetUp Not Found' });
+            return res.status(404).json({ message: "SetUp Not Found" });
         }
-        res.json({ message: 'SetUp Unarchived', setup });
+        res.json({ message: "SetUp Unarchived", setup });
     } catch (err) {
-        console.error('Unarchive setup error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Unarchive setup error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 

@@ -1,11 +1,11 @@
-const express = require('express');
-const authMiddleware = require('../middleware/auth');
-const organisationController = require('../controllers/organisationController');
+const express = require("express");
+const authMiddleware = require("../middleware/auth");
+const organisationController = require("../controllers/organisationController");
 
 const router = express.Router();
 
 router.get(
-    '/me',
+    "/me",
     authMiddleware,
     organisationController.getMyOrganisation
 );

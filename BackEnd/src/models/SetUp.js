@@ -1,14 +1,14 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const SetUpSchema = new mongoose.Schema({
   organisationId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Organisation',
+    ref: "Organisation",
     required: true,
   },
   vehicleId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Vehicle',
+    ref: "Vehicle",
     required: true,
   },
   version: {type: String},
@@ -40,11 +40,11 @@ const SetUpSchema = new mongoose.Schema({
   brakeBias: {type: String},
   wingHole: {type: String},
   splitter: {type: String},
-  notes: { type: String, default: '' },
+  notes: { type: String, default: "" },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 
 SetUpSchema.index({ organisationId: 1, vehicleId: 1 });
 
 
-module.exports = mongoose.model('SetUp', SetUpSchema);
+module.exports = mongoose.model("SetUp", SetUpSchema);

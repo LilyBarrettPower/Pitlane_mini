@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native';
-import { apiFetch } from '../assets/api';
-import { useAuth } from '../context/AuthContext';
-import { globalStyles } from '../constants/styles';
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, StyleSheet } from "react-native";
+import { apiFetch } from "../assets/api";
+import { useAuth } from "../context/AuthContext";
+import { globalStyles } from "../constants/styles";
 
 export type SetUp = {
     _id: string;
@@ -40,27 +40,27 @@ export default function SetupModal({
 }: Props) {
     const { token } = useAuth();
 
-    const [version, setVersion] = useState('');
-    const [springFront, setSpringFront] = useState('');
-    const [springRear, setSpringRear] = useState('');
-    const [arbFront, setArbFront] = useState('');
-    const [arbRear, setArbRear] = useState('');
-    const [rideHeightFront, setRideHeightFront] = useState('');
-    const [rideHeightRear, setRideHeightRear] = useState('');
-    const [camberFront, setCamberFront] = useState('');
-    const [camberRear, setCamberRear] = useState('');
-    const [toeFront, setToeFront] = useState('');
-    const [toeRear, setToeRear] = useState('');
-    const [packersFront, setPackersFront] = useState('');
-    const [packersRear, setPackersRear] = useState('');
-    const [diffPreload, setDiffPreload] = useState('');
-    const [brakeBias, setBrakeBias] = useState('');
-    const [wingHole, setWingHole] = useState('');
-    const [splitter, setSplitter] = useState('');
-    const [notes, setNotes] = useState('');
+    const [version, setVersion] = useState("");
+    const [springFront, setSpringFront] = useState("");
+    const [springRear, setSpringRear] = useState("");
+    const [arbFront, setArbFront] = useState("");
+    const [arbRear, setArbRear] = useState("");
+    const [rideHeightFront, setRideHeightFront] = useState("");
+    const [rideHeightRear, setRideHeightRear] = useState("");
+    const [camberFront, setCamberFront] = useState("");
+    const [camberRear, setCamberRear] = useState("");
+    const [toeFront, setToeFront] = useState("");
+    const [toeRear, setToeRear] = useState("");
+    const [packersFront, setPackersFront] = useState("");
+    const [packersRear, setPackersRear] = useState("");
+    const [diffPreload, setDiffPreload] = useState("");
+    const [brakeBias, setBrakeBias] = useState("");
+    const [wingHole, setWingHole] = useState("");
+    const [splitter, setSplitter] = useState("");
+    const [notes, setNotes] = useState("");
 
     const [isSaving, setIsSaving] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState("");
 
     const isEditing = !!setup;
 
@@ -68,53 +68,53 @@ export default function SetupModal({
         if (!visible) return;
 
         if (setup) {
-            setVersion(setup.version || '');
-            setSpringFront(setup.springNm?.front ? String(setup.springNm.front) : '');
-            setSpringRear(setup.springNm?.rear ? String(setup.springNm.rear) : '');
-            setArbFront(setup.arbPos?.front ? String(setup.arbPos.front) : '');
-            setArbRear(setup.arbPos?.rear ? String(setup.arbPos.rear) : '');
-            setRideHeightFront(setup.rideHeight?.front ? String(setup.rideHeight.front) : '');
-            setRideHeightRear(setup.rideHeight?.rear ? String(setup.rideHeight.rear) : '');
-            setCamberFront(setup.camber?.front || '');
-            setCamberRear(setup.camber?.rear || '');
-            setToeFront(setup.toe?.front || '');
-            setToeRear(setup.toe?.rear || '');
-            setPackersFront(setup.packers?.front || '');
-            setPackersRear(setup.packers?.rear || '');
-            setDiffPreload(setup.diffPreload ? String(setup.diffPreload) : '');
-            setBrakeBias(setup.brakeBias || '');
-            setWingHole(setup.wingHole || '');
-            setSplitter(setup.splitter || '');
-            setNotes(setup.notes || '');
+            setVersion(setup.version || "");
+            setSpringFront(setup.springNm?.front ? String(setup.springNm.front) : "");
+            setSpringRear(setup.springNm?.rear ? String(setup.springNm.rear) : "");
+            setArbFront(setup.arbPos?.front ? String(setup.arbPos.front) : "");
+            setArbRear(setup.arbPos?.rear ? String(setup.arbPos.rear) : "");
+            setRideHeightFront(setup.rideHeight?.front ? String(setup.rideHeight.front) : "");
+            setRideHeightRear(setup.rideHeight?.rear ? String(setup.rideHeight.rear) : "");
+            setCamberFront(setup.camber?.front || "");
+            setCamberRear(setup.camber?.rear || "");
+            setToeFront(setup.toe?.front || "");
+            setToeRear(setup.toe?.rear || "");
+            setPackersFront(setup.packers?.front || "");
+            setPackersRear(setup.packers?.rear || "");
+            setDiffPreload(setup.diffPreload ? String(setup.diffPreload) : "");
+            setBrakeBias(setup.brakeBias || "");
+            setWingHole(setup.wingHole || "");
+            setSplitter(setup.splitter || "");
+            setNotes(setup.notes || "");
         } else {
             clearForm();
         }
     }, [visible, setup]);
 
     function clearForm() {
-        setVersion('');
-        setSpringFront('');
-        setSpringRear('');
-        setArbFront('');
-        setArbRear('');
-        setRideHeightFront('');
-        setRideHeightRear('');
-        setCamberFront('');
-        setCamberRear('');
-        setToeFront('');
-        setToeRear('');
-        setPackersFront('');
-        setPackersRear('');
-        setDiffPreload('');
-        setBrakeBias('');
-        setWingHole('');
-        setSplitter('');
-        setNotes('');
-        setErrorMessage('');
+        setVersion("");
+        setSpringFront("");
+        setSpringRear("");
+        setArbFront("");
+        setArbRear("");
+        setRideHeightFront("");
+        setRideHeightRear("");
+        setCamberFront("");
+        setCamberRear("");
+        setToeFront("");
+        setToeRear("");
+        setPackersFront("");
+        setPackersRear("");
+        setDiffPreload("");
+        setBrakeBias("");
+        setWingHole("");
+        setSplitter("");
+        setNotes("");
+        setErrorMessage("");
     }
 
     function getNextSetupVersionName(originalVersion: string) {
-        const baseName = originalVersion.replace(/\.\d+$/, '');
+        const baseName = originalVersion.replace(/\.\d+$/, "");
 
         const matchingVersions = existingSetups
             .map((item) => item.version)
@@ -135,7 +135,7 @@ export default function SetupModal({
 
     async function handleSave(saveAsNewVersion = false) {
         if (!version) {
-            setErrorMessage('Setup version is required');
+            setErrorMessage("Setup version is required");
             return;
         }
 
@@ -181,17 +181,17 @@ export default function SetupModal({
 
         try {
             setIsSaving(true);
-            setErrorMessage('');
+            setErrorMessage("");
 
             if (setup && !saveAsNewVersion) {
                 await apiFetch(`/setups/${setup._id}`, {
-                    method: 'PATCH',
+                    method: "PATCH",
                     headers: { Authorization: `Bearer ${token}` },
                     body: JSON.stringify(payload),
                 });
             } else {
-                await apiFetch('/setups', {
-                    method: 'POST',
+                await apiFetch("/setups", {
+                    method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: JSON.stringify(payload),
                 });
@@ -201,7 +201,7 @@ export default function SetupModal({
             onSaved();
             onClose();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Failed to save setup');
+            setErrorMessage(error instanceof Error ? error.message : "Failed to save setup");
         } finally {
             setIsSaving(false);
         }
@@ -217,7 +217,7 @@ export default function SetupModal({
 
 
                     <Text style={globalStyles.modalTitle}>
-                        {isEditing ? 'Edit Setup' : 'Create Setup'}
+                        {isEditing ? "Edit Setup" : "Create Setup"}
                     </Text>
 
                     {errorMessage ? <Text style={globalStyles.errorText}>{errorMessage}</Text> : null}
@@ -273,7 +273,7 @@ export default function SetupModal({
                     <Text style={globalStyles.label}>Notes</Text>
                     <TextInput style={globalStyles.input} value={notes} onChangeText={setNotes} />
 
-                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+                    <View style={{ flexDirection: "row", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
                         <Pressable
                             style={globalStyles.buttonDanger}
                             onPress={() => {

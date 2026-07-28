@@ -1,4 +1,4 @@
-const Vehicle = require('../models/Vehicle');
+const Vehicle = require("../models/Vehicle");
 
 //POST Vehicle (create a vehicle)
 
@@ -6,7 +6,7 @@ exports.createVehicle = async (req, res) => {
     try {
         const { name, racingNumber, make, model, year, owner, odo, chassisNumber, notes } = req.body; // Need to update this when you update model 
         if (!name) {
-            return res.Status(400).json({ message: 'Vehicle name is required' });
+            return res.Status(400).json({ message: "Vehicle name is required" });
         }
 
         const vehicle = await Vehicle.create({
@@ -23,8 +23,8 @@ exports.createVehicle = async (req, res) => {
         });
         res.status(201).json({ vehicle });
     } catch (err) {
-        console.error('createVehicle error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createVehicle error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -38,8 +38,8 @@ exports.getVehicles = async (req, res) => {
 
         res.json({ vehicles });
     } catch (err) {
-        console.error('getVehicle error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getVehicle error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -53,36 +53,14 @@ exports.getVehicleById = async (req, res) => {
             organisationId: req.user.organisationId,
         });
         if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' }) // Add a page display here for this error on the front end 
+            return res.status(404).json({ message: "Vehicle not found" }) // Add a page display here for this error on the front end 
         }
         res.json({ vehicle });
     } catch (err) {
-        console.error('getVehicleById error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getVehicleById error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
-
-// PATCH vehicle (update a vehicle based on their id)
-
-// exports.updateVehicle = async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const vehicle = await Vehicle.findOneAndUpdate(
-//             { _id: id, organisationId: req.user.organisationId },
-//             req.body,
-//             { new: true } // whats this do?
-//         );
-
-//         if (!vehicle) {
-//             return res.status(404).json({ message: 'Vehicle not found' });
-//         }
-
-//         res.json({ vehicle });
-//     } catch (err) {
-//         console.error('UpdateVehicle Error', err);
-//         res.status(500).json({ message: 'Server error' });
-//     }
-// };
 
 exports.updateVehicle = async (req, res) => {
     try {
@@ -127,27 +105,6 @@ exports.updateVehicle = async (req, res) => {
     }
 };
 
-// DELETE Vehicle 
-
-// exports.deleteVehicle = async (req, res) => {
-//     try {
-//         const { id } = req.params;
-
-//         const vehicle = await Vehicle.findOneAndUpdate(
-//             { _id: id, organisationId: req.user.organisationId },
-//             { isActive: false },
-//             { new: true },
-//         );
-
-//         if (!vehicle) {
-//             return res.status(404).json({ message: 'Vehicle not found' });
-//         }
-//         res.json({ message: 'Vehicle archived', vehicle });
-//     } catch (err) {
-//         console.error('Delete Vehicle error'.err);
-//         res.status(500).json({ message: 'Server error' });
-//     }
-// };
 
 exports.deleteVehicle = async(req,res) => {
     try {
@@ -191,15 +148,15 @@ exports.unarchiveVehicle = async (req, res) => {
         );
 
         if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
+            return res.status(404).json({ message: "Vehicle not found" });
         }
 
         res.json({
-            message: 'Vehicle Unarchived',
+            message: "Vehicle Unarchived",
             vehicle,
         });
     } catch (err) {
-        console.error('unarchive Vehicle error', err);
-        res.status(500).json({ message: 'Server error ' });
+        console.error("unarchive Vehicle error", err);
+        res.status(500).json({ message: "Server error " });
     }
 };

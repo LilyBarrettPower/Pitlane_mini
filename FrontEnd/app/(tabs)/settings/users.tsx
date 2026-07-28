@@ -1,25 +1,25 @@
-import { Pressable, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, ScrollView } from 'react-native';
-import SettingsShell from '../../../components/settingsShell';
-import { useAuth } from '../../../context/AuthContext';
-import {apiFetch} from '../../../assets/api';
-import {useState, useEffect} from 'react';
+import { Pressable, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, ScrollView } from "react-native";
+import SettingsShell from "../../../components/settingsShell";
+import { useAuth } from "../../../context/AuthContext";
+import {apiFetch} from "../../../assets/api";
+import {useState, useEffect} from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { globalStyles } from '../../../constants/styles';
+import { globalStyles } from "../../../constants/styles";
 
 export default function UsersPage() {
   const { user, organisation, token } = useAuth();
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
 
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'engineer' | 'mechanic' | 'viewer'>('viewer');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"admin" | "engineer" | "mechanic" | "viewer">("viewer");
 
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [users, setUsers] = useState<
@@ -32,8 +32,8 @@ export default function UsersPage() {
     try {
       setIsUsersLoading(false);
 
-      const data = await apiFetch('/auth/users', {
-        method: 'GET',
+      const data = await apiFetch("/auth/users", {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -41,7 +41,7 @@ export default function UsersPage() {
 
       setUsers(data.users || []);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load users';
+      const message = error instanceof Error ? error.message : "Failed to load users";
       setErrorMessage(message);
     } finally {
       setIsUsersLoading(false);
@@ -56,12 +56,12 @@ export default function UsersPage() {
 
   async function handleCreateUser() {
     try {
-        setErrorMessage('');
-        setSuccessMessage('');
+        setErrorMessage("");
+        setSuccessMessage("");
         setIsLoading(true);
 
-        const data = await apiFetch('/auth/create-user', {
-            method: 'POST',
+        const data = await apiFetch("/auth/create-user", {
+            method: "POST",
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -78,18 +78,18 @@ export default function UsersPage() {
         await fetchUsers();
         // I believe this here is where my error of a white screen after creating a user is coming from
 
-        setName('');
-        setEmail('');
-        setPassword('');
-        setRole('viewer');
+        setName("");
+        setEmail("");
+        setPassword("");
+        setRole("viewer");
 
         setTimeout(() => {
             setShowCreateModal(false);
-            setSuccessMessage('');
+            setSuccessMessage("");
         }, 1000);
     } catch (error) {
         const message = 
-            error instanceof Error ? error.message : 'Failed to create user';
+            error instanceof Error ? error.message : "Failed to create user";
         setErrorMessage(message);
     } finally {
         setIsLoading(false);
@@ -162,7 +162,7 @@ export default function UsersPage() {
                               <Text style={globalStyles.label}>Name</Text>
                               <TextInput  
                                   value={name}
-                                  placeholder='Name'
+                                  placeholder="Name"
                                   onChangeText={setName}
                                   style={globalStyles.input}
                                   />
@@ -172,7 +172,7 @@ export default function UsersPage() {
                               <Text style={globalStyles.label}>Email</Text>
                               <TextInput
                                   value={email}
-                                  placeholder='Email'
+                                  placeholder="Email"
                                   onChangeText={setEmail}
                                   autoCapitalize="none"
                                   keyboardType="email-address"
@@ -185,7 +185,7 @@ export default function UsersPage() {
                               <Text style={globalStyles.label}>Password</Text>
                               <TextInput
                                   value={password}
-                                  placeholder='Password'
+                                  placeholder="Password"
                                   onChangeText={setPassword}
                                   secureTextEntry
                                   style={globalStyles.input}
@@ -195,7 +195,7 @@ export default function UsersPage() {
                           <View>
                               <Text style={globalStyles.label}>Role</Text>
                               <View style={styles.roleRow}>
-                                  {(['admin', 'engineer', 'mechanic', 'viewer'] as const).map((roleOption)=> (
+                                  {(["admin", "engineer", "mechanic", "viewer"] as const).map((roleOption)=> (
                                       <Pressable
                                           key={roleOption}
                                           style={[
@@ -239,7 +239,7 @@ export default function UsersPage() {
                                   disabled={isLoading}
                               >
                                   {isLoading ? (
-                                      <ActivityIndicator color='#ffffff'/>
+                                      <ActivityIndicator color="#ffffff"/>
                                   ) : (
                                       <Text style={globalStyles.buttonPrimaryText}>Create User</Text>
                                   )}
@@ -265,26 +265,26 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   helper: {
-    color: '#9ca3af',
+    color: "#9ca3af",
     fontSize: 14,
     marginTop: 10,
   },
   userCard: {
-    backgroundColor: '#1f2937',
+    backgroundColor: "#1f2937",
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: "#374151",
   },
   userName: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 6,
   },
   userMeta: {
-    color: '#d1d5db',
+    color: "#d1d5db",
     fontSize: 14,
     marginBottom: 2,
   },
@@ -292,33 +292,33 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   roleRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   roleButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: '#111827',
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: "#374151",
   },
   roleButtonActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: "#2563eb",
+    borderColor: "#2563eb",
   },
   roleButtonText: {
-    color: '#d1d5db',
+    color: "#d1d5db",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   roleButtonTextActive: {
-    color: '#ffffff',
+    color: "#ffffff",
   },
   modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     gap: 12,
     marginTop: 8,
   },

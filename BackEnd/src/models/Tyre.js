@@ -1,15 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const TyreSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         vehicleId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Vehicle',
+            ref: "Vehicle",
             required: true,
         },
         brand: { type: String, required: true, trim: true },
@@ -22,7 +22,7 @@ const TyreSchema = new mongoose.Schema(
         heatCycles: { type: Number, default: 0, min: 0 },
         kmTotal: { type: Number, default: 0, min: 0 },
         notes: {
-            type: String, default: ''
+            type: String, default: ""
         },
         isActive: {
             type: Boolean,
@@ -37,4 +37,4 @@ TyreSchema.index(
     { unique: true, sparse: true }
 )
 
-module.exports = mongoose.model('Tyre', TyreSchema);
+module.exports = mongoose.model("Tyre", TyreSchema);

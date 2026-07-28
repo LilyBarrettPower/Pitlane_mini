@@ -1,4 +1,4 @@
-const Driver = require('../models/Driver');
+const Driver = require("../models/Driver");
 
 //POST to create a driver 
 
@@ -7,7 +7,7 @@ exports.createDriver = async (req, res) => {
         const { name, experience, notes, email, phoneNumber } = req.body;
         
         if (!name) {
-            return res.status(400).json({ message: 'Driver name is required' });
+            return res.status(400).json({ message: "Driver name is required" });
         }
 
         const driver = await Driver.create({
@@ -15,14 +15,14 @@ exports.createDriver = async (req, res) => {
             name,
             email: email || "",
             phoneNumber: phoneNumber || "",
-            experience: experience || '',
-            notes: notes || '',
+            experience: experience || "",
+            notes: notes || "",
         });
 
         res.status(201).json({ driver });
     } catch (err) {
-        console.error('Create Driver error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Create Driver error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -37,7 +37,7 @@ exports.getDrivers = async (req, res) => {
 
         res.json({ drivers });
     } catch (err) {
-        console.error('Get Drivers error', err);
+        console.error("Get Drivers error", err);
         res.status(500).json({ message: "Server error" });
     }
 };
@@ -53,13 +53,13 @@ exports.getDriver = async (req, res) => {
         });
 
         if (!driver) {
-            return res.status(400).json({ message: 'Driver not found' });
+            return res.status(400).json({ message: "Driver not found" });
         }
 
         res.json({ driver });
     } catch (err) {
-        console.error('Get Driver By ID error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Get Driver By ID error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -75,12 +75,12 @@ exports.updateDriver = async (req, res) => {
             { new: true },
         );
         if (!driver) {
-            return res.status(400).json({ message: 'Driver not found' });
+            return res.status(400).json({ message: "Driver not found" });
         }
         res.json({ driver });
     } catch (err) {
-        console.error('Update Driver error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Update Driver error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -104,15 +104,15 @@ exports.deleteDriver = async (req, res) => {
         );
 
         if (!driver) {
-            return res.status(404).json({ message: 'Driver not found' });
+            return res.status(404).json({ message: "Driver not found" });
         }
         res.json({
-            message: 'Driver archived',
+            message: "Driver archived",
             driver,
         });
     } catch (err) {
-        console.error('Delete driver error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Delete driver error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -130,15 +130,15 @@ exports.unarchiveDriver = async (req, res) => {
         );
 
         if (!driver) {
-            return res.status(404).json({ message: 'Driver not found' });
+            return res.status(404).json({ message: "Driver not found" });
         }
         res.json({
-            message: 'Driver unarchived',
+            message: "Driver unarchived",
             driver,
         });
     } catch (err) {
-        console.error('Unarchive driver error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Unarchive driver error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 

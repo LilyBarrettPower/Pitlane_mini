@@ -1,15 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const RunSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         eventVehicleId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'EventVehicle',
+            ref: "EventVehicle",
             required: true,
         },
         name: { type: String, default: "", trim: true },
@@ -35,4 +35,4 @@ const RunSchema = new mongoose.Schema(
 
 
 
-module.exports = mongoose.model('Run', RunSchema);
+module.exports = mongoose.model("Run", RunSchema);

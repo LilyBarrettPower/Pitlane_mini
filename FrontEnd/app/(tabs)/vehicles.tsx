@@ -11,7 +11,7 @@ import {
     TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { globalStyles } from '../../constants/styles';
+import { globalStyles } from "../../constants/styles";
 import { apiFetch } from "../../assets/api";
 import { useAuth } from "../../context/AuthContext";
 
@@ -158,7 +158,7 @@ export default function VehiclesPage() {
                             style={globalStyles.card}
                             onPress={() =>
                                 router.push({
-                                    pathname: '/vehicles/[id]',
+                                    pathname: "/vehicles/[id]",
                                     params: { id: vehicle._id },
                                 })
                             }

@@ -1,6 +1,6 @@
 // Controller for organisation route
 
-const Organisation = require('../models/Organisation');
+const Organisation = require("../models/Organisation");
 
 exports.getMyOrganisation = async (req, res) => {
     try {
@@ -8,11 +8,11 @@ exports.getMyOrganisation = async (req, res) => {
         if (!org) {
             return res
                 .status(404)
-                .json({ message: 'Organisation not found' });
+                .json({ message: "Organisation not found" });
         }
         res.json({ organisation: org });
     } catch (err) {
-        console.error('getMyOrganisation error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getMyOrganisation error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

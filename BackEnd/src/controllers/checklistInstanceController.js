@@ -1,5 +1,5 @@
-const ChecklistInstance = require('../models/ChecklistInstance');
-const ChecklistTemplate = require('../models/ChecklistTemplate');
+const ChecklistInstance = require("../models/ChecklistInstance");
+const ChecklistTemplate = require("../models/ChecklistTemplate");
 
 // POST - create checklist instance from checklist template
 
@@ -17,7 +17,7 @@ exports.createChecklistInstanceFromTemplate = async (req, res) => {
 
         if (!checklistTemplateId) {
             return res.status(400).json({
-                message: 'checklistTemplateId is required',
+                message: "checklistTemplateId is required",
             });
         }
 
@@ -29,7 +29,7 @@ exports.createChecklistInstanceFromTemplate = async (req, res) => {
 
         if (!checklistTemplate) {
             return res.status(404).json({
-                message: 'Checklist template not found',
+                message: "Checklist template not found",
             });
         }
 
@@ -37,27 +37,27 @@ exports.createChecklistInstanceFromTemplate = async (req, res) => {
             organisationId,
             checklistTemplateId: checklistTemplate._id,
             name: name || checklistTemplate.name,
-            category: checklistTemplate.category || 'general',
-            appliesTo: checklistTemplate.appliesTo || 'general',
+            category: checklistTemplate.category || "general",
+            appliesTo: checklistTemplate.appliesTo || "general",
             eventId: eventId || null,
             vehicleId: vehicleId || null,
             runId: runId || null,
             items: checklistTemplate.items.map((item) => ({
                 label: item.label,
-                notes: item.notes || '',
+                notes: item.notes || "",
                 sortOrder: item.sortOrder ?? 0,
                 isRequired: item.isRequired ?? true,
                 done: false,
-                answer: '',
+                answer: "",
                 doneAt: null,
             })),
-            status: 'open',
+            status: "open",
         });
 
         res.status(201).json({ checklistInstance });
     } catch (err) {
-        console.error('createChecklistInstanceFromTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createChecklistInstanceFromTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -80,7 +80,7 @@ exports.createChecklistInstance = async (req, res) => {
 
         if (!name || !items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({
-                message: 'Name and at least one checklist item are required',
+                message: "Name and at least one checklist item are required",
             });
         }
 
@@ -88,27 +88,27 @@ exports.createChecklistInstance = async (req, res) => {
             organisationId,
             checklistTemplateId: checklistTemplateId || null,
             name,
-            category: category || 'general',
-            appliesTo: appliesTo || 'general',
+            category: category || "general",
+            appliesTo: appliesTo || "general",
             eventId: eventId || null,
             vehicleId: vehicleId || null,
             runId: runId || null,
             items: items.map((item) => ({
                 label: item.label,
-                notes: item.notes || '',
+                notes: item.notes || "",
                 sortOrder: item.sortOrder ?? 0,
                 isRequired: item.isRequired ?? true,
                 done: item.done ?? false,
-                answer: item.answer || '',
+                answer: item.answer || "",
                 doneAt: item.doneAt || null,
             })),
-            status: 'open',
+            status: "open",
         });
 
         res.status(201).json({ checklistInstance });
     } catch (err) {
-        console.error('createChecklistInstance error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createChecklistInstance error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -134,8 +134,8 @@ exports.getChecklistInstances = async (req, res) => {
 
         res.json({ checklistInstances });
     } catch (err) {
-        console.error('getChecklistInstances error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getChecklistInstances error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -153,13 +153,13 @@ exports.getChecklistInstanceById = async (req, res) => {
         });
 
         if (!checklistInstance) {
-            return res.status(404).json({ message: 'Checklist instance not found' });
+            return res.status(404).json({ message: "Checklist instance not found" });
         }
 
         res.json({ checklistInstance });
     } catch (err) {
-        console.error('getChecklistInstanceById error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getChecklistInstanceById error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -172,7 +172,7 @@ exports.updateChecklistInstance = async (req, res) => {
 
         const updateData = { ...req.body };
 
-        if (updateData.status === 'completed' && !updateData.completedAt) {
+        if (updateData.status === "completed" && !updateData.completedAt) {
             updateData.completedAt = new Date();
         }
 
@@ -183,13 +183,13 @@ exports.updateChecklistInstance = async (req, res) => {
         );
 
         if (!checklistInstance) {
-            return res.status(404).json({ message: 'Checklist instance not found' });
+            return res.status(404).json({ message: "Checklist instance not found" });
         }
 
         res.json({ checklistInstance });
     } catch (err) {
-        console.error('updateChecklistInstance error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("updateChecklistInstance error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -202,21 +202,21 @@ exports.archiveChecklistInstance = async (req, res) => {
 
         const checklistInstance = await ChecklistInstance.findOneAndUpdate(
             { _id: id, organisationId },
-            { isActive: false, status: 'archived' },
+            { isActive: false, status: "archived" },
             { new: true }
         );
 
         if (!checklistInstance) {
-            return res.status(404).json({ message: 'Checklist instance not found' });
+            return res.status(404).json({ message: "Checklist instance not found" });
         }
 
         res.json({
-            message: 'Checklist instance archived',
+            message: "Checklist instance archived",
             checklistInstance,
         });
     } catch (err) {
-        console.error('archiveChecklistInstance error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("archiveChecklistInstance error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -229,20 +229,20 @@ exports.unarchiveChecklistInstance = async (req, res) => {
 
         const checklistInstance = await ChecklistInstance.findOneAndUpdate(
             { _id: id, organisationId },
-            { isActive: true, status: 'open' },
+            { isActive: true, status: "open" },
             { new: true }
         );
 
         if (!checklistInstance) {
-            return res.status(404).json({ message: 'Checklist instance not found' });
+            return res.status(404).json({ message: "Checklist instance not found" });
         }
 
         res.json({
-            message: 'Checklist instance unarchived',
+            message: "Checklist instance unarchived",
             checklistInstance,
         });
     } catch (err) {
-        console.error('unarchiveChecklistInstance error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("unarchiveChecklistInstance error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

@@ -1,25 +1,25 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const VehicleDriverSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         vehicleId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Vehicle',
+            ref: "Vehicle",
             required: true,
         },
         driverId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Driver',
+            ref: "Driver",
             required: true,
         },
         role: {
             type: String,
-            default: '',
+            default: "",
             trim: true,
         },
         isActive: {
@@ -37,4 +37,4 @@ VehicleDriverSchema.index(
      }
 );
 
-module.exports = mongoose.model('VehicleDriver', VehicleDriverSchema);
+module.exports = mongoose.model("VehicleDriver", VehicleDriverSchema);

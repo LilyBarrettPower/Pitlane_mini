@@ -10,7 +10,7 @@ import {
     View
 } from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
-import { globalStyles } from '../../constants/styles';
+import { globalStyles } from "../../constants/styles";
 import {apiFetch} from "../../assets/api";
 import {useAuth} from "../../context/AuthContext";
 
@@ -179,10 +179,10 @@ export default function DriversPage() {
                     drivers.map((driver) => (
                         <View key={driver._id} style={globalStyles.card}>
                             <Text style={globalStyles.cardTitle}>{driver.name}</Text>
-                            <Text style={globalStyles.cardText}>Experience: {driver.experience || '-'}</Text>
+                            <Text style={globalStyles.cardText}>Experience: {driver.experience || "-"}</Text>
                             <Text style={globalStyles.cardText}>Email: {driver.email}</Text> 
                             <Text style={globalStyles.cardText}>Phone: {driver.phoneNumber}</Text> 
-                            <Text style={globalStyles.cardText}>Notes: {driver.notes || '-'}</Text>
+                            <Text style={globalStyles.cardText}>Notes: {driver.notes || "-"}</Text>
 
                             <View style={styles.actionRow}>
                                 <Pressable style={globalStyles.smallButton} onPress={() => openEditModal(driver)}>
@@ -205,7 +205,7 @@ export default function DriversPage() {
                 <View style={globalStyles.modalOverlay}>
                     <View style={globalStyles.modalCard}>
                         <Text style={globalStyles.modalTitle}>
-                            {editingDriver ? 'Edit Driver' : 'Create Driver'}
+                            {editingDriver ? "Edit Driver" : "Create Driver"}
                         </Text>
                         <Text style={globalStyles.label}>Name</Text>
                         <TextInput
@@ -255,7 +255,7 @@ export default function DriversPage() {
 
                             <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveDriver}>
                                 <Text style={globalStyles.buttonPrimaryText}>
-                                    {editingDriver ? 'Save Changes' : 'Create'}
+                                    {editingDriver ? "Save Changes" : "Create"}
                                 </Text>
                             </Pressable>
                         </View>
@@ -317,10 +317,10 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
     },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  actionRow: { flexDirection: "row", gap: 10, marginTop: 14 },
   modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     gap: 12,
     marginTop: 8,
   },

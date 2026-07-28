@@ -1,10 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const VehicleSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             require: true,
         },
         name: {
@@ -33,4 +33,4 @@ const VehicleSchema = new mongoose.Schema(
     {timestamps: true}
 );
 
-module.exports = mongoose.model('Vehicle', VehicleSchema);
+module.exports = mongoose.model("Vehicle", VehicleSchema);

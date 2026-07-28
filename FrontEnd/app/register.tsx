@@ -1,5 +1,5 @@
-import {useState, useEffect} from 'react';
-import {router} from 'expo-router';
+import {useState, useEffect} from "react";
+import {router} from "expo-router";
 import {
     ActivityIndicator, 
     Pressable,
@@ -7,28 +7,28 @@ import {
     Text,
     TextInput,
     View,
-} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import { globalStyles } from '../constants/styles';
-import { apiFetch } from '../assets/api';
-import { useAuth } from '../context/AuthContext';
+} from "react-native";
+import {SafeAreaView} from "react-native-safe-area-context";
+import { globalStyles } from "../constants/styles";
+import { apiFetch } from "../assets/api";
+import { useAuth } from "../context/AuthContext";
 
 
 export default function RegisterPage() {
     const {login, token, isLoading: authLoading} = useAuth();
 
-    const [orgName, setOrgName] = useState('');
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [orgName, setOrgName] = useState("");
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
-    const [errorMessage, setErrorMessage] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!authLoading && token) {
-            router.replace('/(tabs)/dashboard');
+            router.replace("/(tabs)/dashboard");
         }
     }, [token, authLoading]);
 
@@ -36,12 +36,12 @@ export default function RegisterPage() {
 
     async function handleRegister() {
         try {
-            setErrorMessage('');
-            setSuccessMessage('');
+            setErrorMessage("");
+            setSuccessMessage("");
             setIsLoading(true);
 
-            const data = await apiFetch('/auth/register-organisation', {
-                method: 'POST',
+            const data = await apiFetch("/auth/register-organisation", {
+                method: "POST",
                 body: JSON.stringify({
                     orgName, 
                     name, 
@@ -57,11 +57,11 @@ export default function RegisterPage() {
             );
 
             setTimeout(() => {
-                router.replace('/dashboard');
+                router.replace("/dashboard");
             }, 1500);
         } catch (error) {
             const message = 
-                error instanceof Error ? error.message : 'Registration failed';
+                error instanceof Error ? error.message : "Registration failed";
             setErrorMessage(message);
         } finally {
             setIsLoading(false);

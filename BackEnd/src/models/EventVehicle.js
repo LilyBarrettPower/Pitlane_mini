@@ -1,25 +1,25 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const EventVehicleSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         vehicleId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Vehicle',
+            ref: "Vehicle",
             required: true,
         },
         eventId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Event',
+            ref: "Event",
             required: true,
         },
         type: {
             type: String,
-            default: '',
+            default: "",
             trim: true,
         },
         isActive: {
@@ -35,4 +35,4 @@ EventVehicleSchema.index(
     { unique: true }
 );
 
-module.exports = mongoose.model('Event Vehicle', EventVehicleSchema);
+module.exports = mongoose.model("Event Vehicle", EventVehicleSchema);

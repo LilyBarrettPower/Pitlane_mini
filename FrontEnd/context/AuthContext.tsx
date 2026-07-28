@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {createContext, ReactNode, useContext, useEffect, useState} from 'react';
-import { AuthOrganisation, AuthUser, LoginResponse } from '../assets/auth';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {createContext, ReactNode, useContext, useEffect, useState} from "react";
+import { AuthOrganisation, AuthUser, LoginResponse } from "../assets/auth";
 
 type AuthContextType = {
     token: string | null,
@@ -14,9 +14,9 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'pitlane_token';
-const USER_KEY = 'pitlane_user';
-const ORG_KEY = 'pitlane_organisation';
+const TOKEN_KEY = "pitlane_token";
+const USER_KEY = "pitlane_user";
+const ORG_KEY = "pitlane_organisation";
 
 export function AuthProvider({children}: {children: ReactNode}) {
     const [token, setToken] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
             if(storedUser) setUser(JSON.parse(storedUser));
             if(storedOrganisation) setOrganisation(JSON.parse(storedOrganisation));
         } catch (error) {
-            console.error('Failed to load auth from storage:', error);
+            console.error("Failed to load auth from storage:", error);
         } finally {
             setIsLoading(false);
         }
@@ -54,7 +54,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
             await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
             await AsyncStorage.setItem(ORG_KEY, JSON.stringify(data.organisation));
         } catch (error) {
-            console.error('Failed to store auth', error);
+            console.error("Failed to store auth", error);
             throw error;
         } 
     }
@@ -69,7 +69,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
             await AsyncStorage.removeItem(USER_KEY);
             await AsyncStorage.removeItem(ORG_KEY);
         } catch (error) {
-            console.error('Failed to clear auth', error);
+            console.error("Failed to clear auth", error);
             throw error;
         }
     }
@@ -95,7 +95,7 @@ export function useAuth() {
     const context = useContext(AuthContext);
 
     if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
+        throw new Error("useAuth must be used within an AuthProvider");
     }
 
     return context;

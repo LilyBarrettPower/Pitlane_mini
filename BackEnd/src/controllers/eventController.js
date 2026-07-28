@@ -1,4 +1,4 @@
-const Event = require('../models/Event');
+const Event = require("../models/Event");
 
 // POST - create an event 
 
@@ -6,7 +6,7 @@ exports.createEvent = async (req, res) => {
     try {
         const { name, type, startDate, endDate, trackId, notes } = req.body;
         if (!name || !type || !startDate || !endDate) {
-            return res.status(400).json({ message: 'Name, Type, Start Date and End Date are required' });
+            return res.status(400).json({ message: "Name, Type, Start Date and End Date are required" });
         }
 
         const organisationId = req.user.organisationId;
@@ -18,13 +18,13 @@ exports.createEvent = async (req, res) => {
             startDate,
             endDate,
             trackId: trackId || null,
-            notes: notes || '',
+            notes: notes || "",
         });
 
         res.status(201).json({ event });
     } catch (err) {
-        console.error('createEvent error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createEvent error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -47,8 +47,8 @@ exports.getEvents = async (req, res) => {
         const events = await Event.find(filter).sort({ startDate: 1 });
         res.json({ events });
     } catch (err) {
-        console.error('getEvents error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getEvents error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -66,13 +66,13 @@ exports.getEventById = async (req, res) => {
         });
 
         if (!event) {
-            return res.status(404).json({ message: 'Event not found' });
+            return res.status(404).json({ message: "Event not found" });
         }
 
         res.json({ event });
     } catch (err) {
-        console.error('get EventById error', err);
-        res.status(500).json({message: 'Server error'})
+        console.error("get EventById error", err);
+        res.status(500).json({message: "Server error"})
     }
 }
 
@@ -90,12 +90,12 @@ exports.updateEvent = async (req, res) => {
         );
 
         if (!event) {
-            return res.status(404).json({ message: 'Event Not Found' });
+            return res.status(404).json({ message: "Event Not Found" });
         }
         res.json({ event });
     } catch (err) {
-        console.error('Update Event error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Update Event error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -113,12 +113,12 @@ exports.archiveEvent = async (req, res) => {
             { new: true }
         );
         if (!event) {
-            return res.status(404).json({ message: 'Event Not Found' });
+            return res.status(404).json({ message: "Event Not Found" });
         }
-        res.json({ message: 'Event Archived', event });
+        res.json({ message: "Event Archived", event });
     } catch (err) {
-        console.error('Archive event error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Archive event error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -136,12 +136,12 @@ exports.unarchiveEvent = async (req, res) => {
             { new: true }
         );
         if (!event) {
-            return res.status(404).json({ message: 'Event Not Found' });
+            return res.status(404).json({ message: "Event Not Found" });
         }
-        res.json({ message: 'Event Unarchived', event });
+        res.json({ message: "Event Unarchived", event });
     } catch (err) {
-        console.error('Unarchive event error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Unarchive event error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 

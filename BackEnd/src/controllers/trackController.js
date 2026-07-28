@@ -1,4 +1,4 @@
-const Track = require('../models/Track');
+const Track = require("../models/Track");
 
 // POST - create a track
 
@@ -6,7 +6,7 @@ exports.createTrack = async (req, res) => {
     try {
         const { name, distanceKms, country, notes } = req.body;
         if (!name || !country ) {
-            return res.status(400).json({ message: 'Name and country are required' });
+            return res.status(400).json({ message: "Name and country are required" });
         }
 
         const organisationId = req.user.organisationId;
@@ -16,16 +16,16 @@ exports.createTrack = async (req, res) => {
             name,
             distanceKms: distanceKms ?? null,
             country,
-            notes: notes || '',
+            notes: notes || "",
         });
 
         res.status(201).json({ track });
     } catch (err) {
-        console.error('createTrack error:', err);
+        console.error("createTrack error:", err);
         if (err.code === 11000) {
-            return res.status(409).json({ message: 'Track name already exists' });
+            return res.status(409).json({ message: "Track name already exists" });
         }
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -48,8 +48,8 @@ exports.getTracks = async (req, res) => {
         const tracks = await Track.find(filter).sort({ name: 1 });
         res.json({ tracks });
     } catch (err) {
-        console.error('getTracks error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getTracks error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -67,13 +67,13 @@ exports.getTrackById = async (req, res) => {
         });
 
         if (!track) {
-            return res.status(404).json({ message: 'Track not found' });
+            return res.status(404).json({ message: "Track not found" });
         }
 
         res.json({ track });
     } catch (err) {
-        console.error('get TrackById error', err);
-        res.status(500).json({ message: 'Server error' })
+        console.error("get TrackById error", err);
+        res.status(500).json({ message: "Server error" })
     }
 }
 
@@ -92,12 +92,12 @@ exports.updateTrack = async (req, res) => {
         );
 
         if (!track) {
-            return res.status(404).json({ message: 'Track Not Found' });
+            return res.status(404).json({ message: "Track Not Found" });
         }
         res.json({ track});
     } catch (err) {
-        console.error('Update Track error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Update Track error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -115,12 +115,12 @@ exports.archiveTrack = async (req, res) => {
             { new: true }
         );
         if (!track) {
-            return res.status(404).json({ message: 'Track Not Found' });
+            return res.status(404).json({ message: "Track Not Found" });
         }
-        res.json({ message: 'Track Archived', track });
+        res.json({ message: "Track Archived", track });
     } catch (err) {
-        console.error('Archive track error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Archive track error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -138,11 +138,11 @@ exports.unarchiveTrack = async (req, res) => {
             { new: true }
         );
         if (!track) {
-            return res.status(404).json({ message: 'Track Not Found' });
+            return res.status(404).json({ message: "Track Not Found" });
         }
-        res.json({ message: 'Track Unarchived', track });
+        res.json({ message: "Track Unarchived", track });
     } catch (err) {
-        console.error('Unarchive track error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Unarchive track error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };

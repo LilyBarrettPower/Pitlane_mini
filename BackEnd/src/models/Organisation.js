@@ -1,6 +1,6 @@
 // Authentication model for organisations used for logging in to correct business 
 
-const mongoose = require('mongoose'); // import mongoose into this file 
+const mongoose = require("mongoose"); // import mongoose into this file 
 
 const OrganisationSchema = new mongoose.Schema(
     {
@@ -10,4 +10,4 @@ const OrganisationSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model('Organisation', OrganisationSchema);
+module.exports = mongoose.model("Organisation", OrganisationSchema);

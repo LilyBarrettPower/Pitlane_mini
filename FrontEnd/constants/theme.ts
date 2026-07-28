@@ -1,17 +1,17 @@
 export const colors = {
-  background: '#111827',
-  card: '#1f2937',
-  primary: '#2563eb',
-  danger: '#dc2626',
-  success: '#34d399',
-  error: '#f87171',
+  background: "#111827",
+  card: "#1f2937",
+  primary: "#2563eb",
+  danger: "#dc2626",
+  success: "#34d399",
+  error: "#f87171",
 
-  textPrimary: '#ffffff',
-  textSecondary: '#d1d5db',
-  textMuted: '#9ca3af',
+  textPrimary: "#ffffff",
+  textSecondary: "#d1d5db",
+  textMuted: "#9ca3af",
 
-  border: '#6b7280',
-  borderDark: '#374151',
+  border: "#6b7280",
+  borderDark: "#374151",
 };
 
 export const spacing = {
@@ -30,19 +30,19 @@ export const spacing = {
 export const typography = {
   title: {
     fontSize: 36,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
   },
   pageTitle: {
     fontSize: 30,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
   },
   heading: {
     fontSize: 24,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
   },
   body: {
     fontSize: 16,

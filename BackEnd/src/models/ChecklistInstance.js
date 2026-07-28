@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const ChecklistInstanceItemSchema = new mongoose.Schema(
     {
@@ -9,7 +9,7 @@ const ChecklistInstanceItemSchema = new mongoose.Schema(
         },
         notes: {
             type: String,
-            default: '',
+            default: "",
         },
         sortOrder: {
             type: Number,
@@ -25,7 +25,7 @@ const ChecklistInstanceItemSchema = new mongoose.Schema(
         },
         answer: {
             type: String,
-            default: '',
+            default: "",
         },
         doneAt: {
             type: Date,
@@ -39,12 +39,12 @@ const ChecklistInstanceSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         checklistTemplateId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'ChecklistTemplate',
+            ref: "ChecklistTemplate",
             required: false,
         },
         name: {
@@ -55,32 +55,32 @@ const ChecklistInstanceSchema = new mongoose.Schema(
         category: {
             type: String,
             trim: true,
-            default: 'general',
+            default: "general",
         },
         appliesTo: {
             type: String,
-            enum: ['event', 'vehicle', 'run', 'general'],
-            default: 'general',
+            enum: ["event", "vehicle", "run", "general"],
+            default: "general",
         },
         eventId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Event',
+            ref: "Event",
             required: false,
         },
         vehicleId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Vehicle',
+            ref: "Vehicle",
             required: false,
         },
         runId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Run',
+            ref: "Run",
             required: false,
         },
         status: {
             type: String,
-            enum: ['open', 'completed', 'archived'],
-            default: 'open',
+            enum: ["open", "completed", "archived"],
+            default: "open",
         },
         items: {
             type: [ChecklistInstanceItemSchema],
@@ -89,7 +89,7 @@ const ChecklistInstanceSchema = new mongoose.Schema(
                 validator: function(items) {
                     return items.length > 0;
                 },
-                message: 'At least one checklist item is required',
+                message: "At least one checklist item is required",
             },
         },
         completedAt: {
@@ -104,4 +104,4 @@ const ChecklistInstanceSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model('ChecklistInstance', ChecklistInstanceSchema);
+module.exports = mongoose.model("ChecklistInstance", ChecklistInstanceSchema);

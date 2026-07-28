@@ -1,5 +1,5 @@
-const ChecklistTemplate = require('../models/ChecklistTemplate');
-const ChecklistBaseTemplate = require('../models/ChecklistBaseTemplate');
+const ChecklistTemplate = require("../models/ChecklistTemplate");
+const ChecklistBaseTemplate = require("../models/ChecklistBaseTemplate");
 
 // POST - create a checklist template from scratch
 
@@ -18,7 +18,7 @@ exports.createChecklistTemplate = async (req, res) => {
 
         if (!name || !items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({
-                message: 'Name and at least one checklist item are required',
+                message: "Name and at least one checklist item are required",
             });
         }
 
@@ -26,16 +26,16 @@ exports.createChecklistTemplate = async (req, res) => {
             organisationId,
             baseTemplateId: baseTemplateId || null,
             name,
-            category: category || 'general',
-            appliesTo: appliesTo || 'general',
-            description: description || '',
+            category: category || "general",
+            appliesTo: appliesTo || "general",
+            description: description || "",
             items,
         });
 
         res.status(201).json({ checklistTemplate });
     } catch (err) {
-        console.error('createChecklistTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createChecklistTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -54,7 +54,7 @@ exports.createChecklistTemplateFromBaseTemplate = async (req, res) => {
 
         if (!baseTemplateId) {
             return res.status(400).json({
-                message: 'baseTemplateId is required',
+                message: "baseTemplateId is required",
             });
         }
 
@@ -65,7 +65,7 @@ exports.createChecklistTemplateFromBaseTemplate = async (req, res) => {
 
         if (!baseTemplate) {
             return res.status(404).json({
-                message: 'Checklist base template not found',
+                message: "Checklist base template not found",
             });
         }
 
@@ -75,10 +75,10 @@ exports.createChecklistTemplateFromBaseTemplate = async (req, res) => {
             name: name || baseTemplate.name,
             category: category || baseTemplate.category,
             appliesTo: appliesTo || baseTemplate.appliesTo,
-            description: description || baseTemplate.description || '',
+            description: description || baseTemplate.description || "",
             items: baseTemplate.items.map((item) => ({
                 label: item.label,
-                notes: item.notes || '',
+                notes: item.notes || "",
                 sortOrder: item.sortOrder ?? 0,
                 isRequired: item.isRequired ?? true,
             })),
@@ -86,8 +86,8 @@ exports.createChecklistTemplateFromBaseTemplate = async (req, res) => {
 
         res.status(201).json({ checklistTemplate });
     } catch (err) {
-        console.error('createChecklistTemplateFromBaseTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createChecklistTemplateFromBaseTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -111,8 +111,8 @@ exports.getChecklistTemplates = async (req, res) => {
 
         res.json({ checklistTemplates });
     } catch (err) {
-        console.error('getChecklistTemplates error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getChecklistTemplates error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -130,13 +130,13 @@ exports.getChecklistTemplateById = async (req, res) => {
         });
 
         if (!checklistTemplate) {
-            return res.status(404).json({ message: 'Checklist template not found' });
+            return res.status(404).json({ message: "Checklist template not found" });
         }
 
         res.json({ checklistTemplate });
     } catch (err) {
-        console.error('getChecklistTemplateById error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getChecklistTemplateById error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -154,13 +154,13 @@ exports.updateChecklistTemplate = async (req, res) => {
         );
 
         if (!checklistTemplate) {
-            return res.status(404).json({ message: 'Checklist template not found' });
+            return res.status(404).json({ message: "Checklist template not found" });
         }
 
         res.json({ checklistTemplate });
     } catch (err) {
-        console.error('updateChecklistTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("updateChecklistTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -178,16 +178,16 @@ exports.archiveChecklistTemplate = async (req, res) => {
         );
 
         if (!checklistTemplate) {
-            return res.status(404).json({ message: 'Checklist template not found' });
+            return res.status(404).json({ message: "Checklist template not found" });
         }
 
         res.json({
-            message: 'Checklist template archived',
+            message: "Checklist template archived",
             checklistTemplate,
         });
     } catch (err) {
-        console.error('archiveChecklistTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("archiveChecklistTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -205,15 +205,15 @@ exports.unarchiveChecklistTemplate = async (req, res) => {
         );
 
         if (!checklistTemplate) {
-            return res.status(404).json({ message: 'Checklist template not found' });
+            return res.status(404).json({ message: "Checklist template not found" });
         }
 
         res.json({
-            message: 'Checklist template unarchived',
+            message: "Checklist template unarchived",
             checklistTemplate,
         });
     } catch (err) {
-        console.error('unarchiveChecklistTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("unarchiveChecklistTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

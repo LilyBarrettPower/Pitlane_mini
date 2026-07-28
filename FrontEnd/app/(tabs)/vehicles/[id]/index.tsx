@@ -1,11 +1,11 @@
-import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
-import { useEffect, useState, useCallback } from 'react';
-import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput, SectionList } from 'react-native';
+import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
+import { useEffect, useState, useCallback } from "react";
+import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput, SectionList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiFetch } from '../../../../assets/api';
-import { useAuth } from '../../../../context/AuthContext';
-import { globalStyles } from '../../../../constants/styles';
-import SetupModal from '../../../../components/SetupModal';
+import { apiFetch } from "../../../../assets/api";
+import { useAuth } from "../../../../context/AuthContext";
+import { globalStyles } from "../../../../constants/styles";
+import SetupModal from "../../../../components/SetupModal";
 
 
 type Vehicle = {
@@ -76,26 +76,6 @@ export default function VehicleDetailPage() {
 
   const [setups, setSetups] = useState<SetUp[]>([]);
   const [showSetupModal, setShowSetupModal] = useState(false);
-  // const [setupVersion, setSetupVersion] = useState('');
-  // const [springFront, setSpringFront] = useState('');
-  // const [springRear, setSpringRear] = useState('');
-  // const [arbFront, setArbFront] = useState('');
-  // const [arbRear, setArbRear] = useState('');
-  // const [rideHeightFront, setRideHeightFront] = useState('');
-  // const [rideHeightRear, setRideHeightRear] = useState('');
-  // const [camberFront, setCamberFront] = useState('');
-  // const [camberRear, setCamberRear] = useState('');
-  // const [toeFront, setToeFront] = useState('');
-  // const [toeRear, setToeRear] = useState('');
-  // const [packersFront, setPackersFront] = useState('');
-  // const [packersRear, setPackersRear] = useState('');
-  // const [diffPreload, setDiffPreload] = useState('');
-  // const [brakeBias, setBrakeBias] = useState('');
-  // const [wingHole, setWingHole] = useState('');
-  // const [splitter, setSplitter] = useState('');
-  // const [setupNotes, setSetupNotes] = useState('');
-  // const [isSavingSetup, setIsSavingSetup] = useState(false);
-
   const [editingSetup, setEditingSetup] = useState<SetUp | null>(null);
 
   const [showEditVehicleModal, setShowEditVehicleModal] = useState(false);
@@ -903,7 +883,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     paddingBottom: 2,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: "#374151",
   },
   driverRow: {
     marginBottom: 10,

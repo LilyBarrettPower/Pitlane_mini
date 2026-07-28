@@ -1,6 +1,6 @@
-const Run = require('../models/Run');
-const Tyre = require('../models/Tyre');
-const TyreRun = require('../models/TyreRun');
+const Run = require("../models/Run");
+const Tyre = require("../models/Tyre");
+const TyreRun = require("../models/TyreRun");
 
 // POST - create a tyre run
 
@@ -18,7 +18,7 @@ exports.createTyreRun = async (req, res) => {
             hotTempC = {},
             distanceKm = {},
             heatCycleIncrement = {},
-            notes = '',
+            notes = "",
         } = req.body;
 
         if (
@@ -30,14 +30,14 @@ exports.createTyreRun = async (req, res) => {
             !tyres.RR
         ) {
             return res.status(400).json({
-                message: 'runId and tyres LF, RF, LR, RR are required',
+                message: "runId and tyres LF, RF, LR, RR are required",
             });
         }
 
         // Safety: ensure run belongs to this org
         const run = await Run.findOne({ _id: runId, organisationId, isActive: true });
         if (!run) {
-            return res.status(404).json({ message: 'Run not found' });
+            return res.status(404).json({ message: "Run not found" });
         }
 
         // Safety: ensure all tyres belong to this org
@@ -49,7 +49,7 @@ exports.createTyreRun = async (req, res) => {
         });
 
         if (foundTyres.length !== 4) {
-            return res.status(404).json({ message: 'One or more tyres not found' });
+            return res.status(404).json({ message: "One or more tyres not found" });
         }
 
         const tyreRun = await TyreRun.create({
@@ -72,7 +72,7 @@ exports.createTyreRun = async (req, res) => {
                 LR: heatCycleIncrement?.LR ?? 1,
                 RR: heatCycleIncrement?.RR ?? 1,
             },
-            notes: notes || '',
+            notes: notes || "",
         });
 
         // Update tyre totals
@@ -118,15 +118,15 @@ exports.createTyreRun = async (req, res) => {
 
         res.status(201).json({ tyreRun });
     } catch (err) {
-        console.error('createTyreRun error', err);
+        console.error("createTyreRun error", err);
 
         if (err.code === 11000) {
             return res.status(409).json({
-                message: 'A tyre run already exists for this run',
+                message: "A tyre run already exists for this run",
             });
         }
 
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -149,8 +149,8 @@ exports.getTyreRuns = async (req, res) => {
         const tyreRuns = await TyreRun.find(filter).sort({ createdAt: -1 });
         res.json({ tyreRuns });
     } catch (err) {
-        console.error('getTyreRuns error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getTyreRuns error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -168,13 +168,13 @@ exports.getTyreRunById = async (req, res) => {
         });
 
         if (!tyreRun) {
-            return res.status(404).json({ message: 'Tyre Run not found' });
+            return res.status(404).json({ message: "Tyre Run not found" });
         }
 
         res.json({ tyreRun});
     } catch (err) {
-        console.error('get TyreRunById error', err);
-        res.status(500).json({ message: 'Server error' })
+        console.error("get TyreRunById error", err);
+        res.status(500).json({ message: "Server error" })
     }
 }
 
@@ -192,12 +192,12 @@ exports.updateTyreRun = async (req, res) => {
         );
 
         if (!tyreRun) {
-            return res.status(404).json({ message: 'Tyre Run Not Found' });
+            return res.status(404).json({ message: "Tyre Run Not Found" });
         }
         res.json({ tyreRun });
     } catch (err) {
-        console.error('Update Tyre Run error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Update Tyre Run error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -215,12 +215,12 @@ exports.archiveTyreRun = async (req, res) => {
             { new: true }
         );
         if (!tyreRun) {
-            return res.status(404).json({ message: 'Tyre Run Not Found' });
+            return res.status(404).json({ message: "Tyre Run Not Found" });
         }
-        res.json({ message: 'Tyre Run Archived', tyreRun });
+        res.json({ message: "Tyre Run Archived", tyreRun });
     } catch (err) {
-        console.error('Archive tyre run error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Archive tyre run error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -238,11 +238,11 @@ exports.unarchiveTyreRun = async (req, res) => {
             { new: true }
         );
         if (!tyreRun) {
-            return res.status(404).json({ message: 'Tyre  Run Not Found' });
+            return res.status(404).json({ message: "Tyre  Run Not Found" });
         }
-        res.json({ message: 'Tyre Run Unarchived', tyreRun });
+        res.json({ message: "Tyre Run Unarchived", tyreRun });
     } catch (err) {
-        console.error('Unarchive tyre run error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Unarchive tyre run error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };

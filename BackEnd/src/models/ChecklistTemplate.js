@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const ChecklistTemplateItemSchema = new mongoose.Schema(
     {
@@ -9,7 +9,7 @@ const ChecklistTemplateItemSchema = new mongoose.Schema(
         },
         notes: {
             type: String,
-            default: '',
+            default: "",
         },
         sortOrder: {
             type: Number,
@@ -27,12 +27,12 @@ const ChecklistTemplateSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         baseTemplateId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'ChecklistBaseTemplate',
+            ref: "ChecklistBaseTemplate",
             required: false,
         },
         name: {
@@ -43,16 +43,16 @@ const ChecklistTemplateSchema = new mongoose.Schema(
         category: {
             type: String,
             trim: true,
-            default: 'general',
+            default: "general",
         },
         appliesTo: {
             type: String,
-            enum: ['event', 'vehicle', 'run', 'general'],
-            default: 'general',
+            enum: ["event", "vehicle", "run", "general"],
+            default: "general",
         },
         description: {
             type: String,
-            default: '',
+            default: "",
         },
         items: {
             type: [ChecklistTemplateItemSchema],
@@ -61,7 +61,7 @@ const ChecklistTemplateSchema = new mongoose.Schema(
                 validator: function(items) {
                     return items.length > 0;
                 },
-                message: 'At least one checklist item is required',
+                message: "At least one checklist item is required",
             },
         },
         isActive: {
@@ -72,4 +72,4 @@ const ChecklistTemplateSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model('ChecklistTemplate', ChecklistTemplateSchema);
+module.exports = mongoose.model("ChecklistTemplate", ChecklistTemplateSchema);

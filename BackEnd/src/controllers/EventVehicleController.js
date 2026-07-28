@@ -1,6 +1,6 @@
-const EventVehicle = require('../models/EventVehicle');
-const Vehicle = require('../models/Vehicle');
-const Event = require('../models/Event');
+const EventVehicle = require("../models/EventVehicle");
+const Vehicle = require("../models/Vehicle");
+const Event = require("../models/Event");
 
 
 // Create an event vehicle:
@@ -12,47 +12,47 @@ exports.createAssignment = async (req, res) => {
         if (!vehicleId || !eventId) {
             return res
                 .status(400)
-                .json({ message: 'VehicleId and EventId are required' });
+                .json({ message: "VehicleId and EventId are required" });
         }
         const organisationId = req.user.organisationId;
 
-        console.log('createAssignment body:', {
+        console.log("createAssignment body:", {
             organisationId: req.user.organisationId,
             vehicleId,
             eventId,
         });
 
         const vehicle = await Vehicle.findOne({ _id: vehicleId, organisationId });
-        console.log('Found the vehicle', vehicle);
+        console.log("Found the vehicle", vehicle);
 
         if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
+            return res.status(404).json({ message: "Vehicle not found" });
         }
 
         let event = await Event.findOne({ _id: eventId, organisationId });
-        console.log('Found the event:', event);
+        console.log("Found the event:", event);
 
         if (!event) {
-            return res.status(404).json({ message: 'Event not found' });
+            return res.status(404).json({ message: "Event not found" });
         }
 
         const assignment = await EventVehicle.create({
             organisationId,
             vehicleId,
             eventId,
-            type: type || '', 
+            type: type || "", 
         });
 
         res.status(201).json({ assignment });
     } catch (err) {
-        console.error('Create assignment error', err);
+        console.error("Create assignment error", err);
         if (err.code == 11000) {
             return res
                 .status(409)
-                .json({ message: 'This event is already assigned to this vehicle' });
+                .json({ message: "This event is already assigned to this vehicle" });
         }
 
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -68,13 +68,13 @@ exports.getVehicleForEvent = async (req, res) => {
             eventId,
             isActive: true,
         })
-            .populate('vehicleId')
+            .populate("vehicleId")
             .sort({ createdAt: 1 });
 
         res.json({ assignments });
     } catch (err) {
-        console.error('Get vehicle for event error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Get vehicle for event error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -91,13 +91,13 @@ exports.getEventForVehicle = async (req, res) => {
             vehicleId,
             isActive: true,
         })
-            .populate('eventId')
+            .populate("eventId")
             .sort({ createdAt: 1 });
 
         res.json({ assignments });
     } catch (err) {
-        console.error('Get Events for vehicle error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Get Events for vehicle error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -112,13 +112,13 @@ exports.archiveAssignment = async (req, res) => {
             { new: true },
         );
         if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found' });
+            return res.status(404).json({ message: "Assignment not found" });
         }
 
-        res.json({ message: 'Assignment archived', assignment });
+        res.json({ message: "Assignment archived", assignment });
     } catch (err) {
-        console.error('Archive assignment error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Archive assignment error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -133,12 +133,12 @@ exports.unArchiveAssignment = async (req, res) => {
             { new: true },
         );
         if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found' });
+            return res.status(404).json({ message: "Assignment not found" });
         }
 
-        res.json({ message: 'Assignment unarchived', assignment });
+        res.json({ message: "Assignment unarchived", assignment });
     } catch (err) {
-        console.error('Unarchive assignment error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Unarchive assignment error", err);
+        res.status(500).json({ message: "Server error" });
     }
 }

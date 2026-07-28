@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 export default function TabsLayout() {
@@ -8,7 +8,7 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1f2937',
+          backgroundColor: "#1f2937",
           borderTopWidth: 0,
           height: 70,
           paddingBottom: 10,
@@ -21,21 +21,21 @@ export default function TabsLayout() {
           marginVertical: 6,
         },
 
-        tabBarActiveBackgroundColor: '#2563eb',
+        tabBarActiveBackgroundColor: "#2563eb",
 
-        tabBarActiveTintColor: '#ffffff',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: "#ffffff",
+        tabBarInactiveTintColor: "#9ca3af",
 
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontWeight: "600",
         },
       }}
     >
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Dashboard',
+          title: "Dashboard",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="speedometer" size={size} color={color} />
           ),
@@ -45,7 +45,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="vehicles"
         options={{
-          title: 'Vehicles',
+          title: "Vehicles",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="car-sport" size={size} color={color} />
           ),
@@ -75,7 +75,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="drivers"
         options={{
-          title: 'Drivers',
+          title: "Drivers",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="id-card" size={size} color={color} />
           ),
@@ -87,7 +87,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: "Settings",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),

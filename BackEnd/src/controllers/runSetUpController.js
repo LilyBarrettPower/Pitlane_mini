@@ -1,6 +1,6 @@
-const RunSetUp = require('../models/RunSetUp');
-const Run = require('../models/Run');
-const SetUp = require('../models/SetUp');
+const RunSetUp = require("../models/RunSetUp");
+const Run = require("../models/Run");
+const SetUp = require("../models/SetUp");
 
 // Create Run Set Up
 
@@ -12,28 +12,28 @@ exports.createAssignment = async (req, res) => {
         if (!runId || !setUpId) {
             return res
                 .status(400)
-                .json({ message: 'RunId and setUpId are required' });
+                .json({ message: "RunId and setUpId are required" });
         }
         const organisationId = req.user.organisationId;
 
-        console.log('createAssignment body:', {
+        console.log("createAssignment body:", {
             organisationId: req.user.organisationId,
             runId,
             setUpId,
         });
 
         const run = await Run.findOne({ _id: runId, organisationId });
-        console.log('Found the run', run);
+        console.log("Found the run", run);
 
         if (!run) {
-            return res.status(404).json({ message: 'Run not found' });
+            return res.status(404).json({ message: "Run not found" });
         }
 
         let setUp = await SetUp.findOne({ _id: setUpId, organisationId });
-        console.log('Found the setUp:', setUp);
+        console.log("Found the setUp:", setUp);
 
         if (!setUp) {
-            return res.status(404).json({ message: 'SetUp not found' });
+            return res.status(404).json({ message: "SetUp not found" });
         }
 
         const assignment = await RunSetUp.create({
@@ -44,14 +44,14 @@ exports.createAssignment = async (req, res) => {
 
         res.status(201).json({ assignment });
     } catch (err) {
-        console.error('Create assignment error', err);
+        console.error("Create assignment error", err);
         if (err.code == 11000) {
             return res
                 .status(409)
-                .json({ message: 'This setup has already been assigned to this run' });
+                .json({ message: "This setup has already been assigned to this run" });
         }
 
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -67,13 +67,13 @@ exports.getSetUpForRun = async (req, res) => {
             runId,
             isActive: true,
         })
-            .populate('setUpId')
+            .populate("setUpId")
             .sort({ createdAt: 1 });
 
         res.json({ assignments });
     } catch (err) {
-        console.error('Get Setup for run error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Get Setup for run error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -89,13 +89,13 @@ exports.getRunsForSetUp = async (req, res) => {
             setUpId,
             isActive: true,
         })
-            .populate('runId')
+            .populate("runId")
             .sort({ createdAt: 1 });
 
         res.json({ assignments });
     } catch (err) {
-        console.error('Get Runs for setUp error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Get Runs for setUp error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -110,13 +110,13 @@ exports.archiveAssignment = async (req, res) => {
             { new: true },
         );
         if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found' });
+            return res.status(404).json({ message: "Assignment not found" });
         }
 
-        res.json({ message: 'Assignment archived', assignment });
+        res.json({ message: "Assignment archived", assignment });
     } catch (err) {
-        console.error('Archive assignment error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Archive assignment error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -131,12 +131,12 @@ exports.unArchiveAssignment = async (req, res) => {
             { new: true },
         );
         if (!assignment) {
-            return res.status(404).json({ message: 'Assignment not found' });
+            return res.status(404).json({ message: "Assignment not found" });
         }
 
-        res.json({ message: 'Assignment unarchived', assignment });
+        res.json({ message: "Assignment unarchived", assignment });
     } catch (err) {
-        console.error('Unarchive assignment error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Unarchive assignment error", err);
+        res.status(500).json({ message: "Server error" });
     }
 }

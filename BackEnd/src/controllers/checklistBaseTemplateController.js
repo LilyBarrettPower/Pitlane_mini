@@ -1,4 +1,4 @@
-const ChecklistBaseTemplate = require('../models/ChecklistBaseTemplate');
+const ChecklistBaseTemplate = require("../models/ChecklistBaseTemplate");
 
 // POST - create a base checklist template
 
@@ -14,22 +14,22 @@ exports.createChecklistBaseTemplate = async (req, res) => {
 
         if (!name || !items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({
-                message: 'Name and at least one checklist item are required',
+                message: "Name and at least one checklist item are required",
             });
         }
 
         const checklistBaseTemplate = await ChecklistBaseTemplate.create({
             name,
-            category: category || 'general',
-            appliesTo: appliesTo || 'general',
-            description: description || '',
+            category: category || "general",
+            appliesTo: appliesTo || "general",
+            description: description || "",
             items,
         });
 
         res.status(201).json({ checklistBaseTemplate });
     } catch (err) {
-        console.error('createChecklistBaseTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createChecklistBaseTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -51,8 +51,8 @@ exports.getChecklistBaseTemplates = async (req, res) => {
 
         res.json({ checklistBaseTemplates });
     } catch (err) {
-        console.error('getChecklistBaseTemplates error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getChecklistBaseTemplates error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -68,13 +68,13 @@ exports.getChecklistBaseTemplateById = async (req, res) => {
         });
 
         if (!checklistBaseTemplate) {
-            return res.status(404).json({ message: 'Checklist base template not found' });
+            return res.status(404).json({ message: "Checklist base template not found" });
         }
 
         res.json({ checklistBaseTemplate });
     } catch (err) {
-        console.error('getChecklistBaseTemplateById error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getChecklistBaseTemplateById error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -91,13 +91,13 @@ exports.updateChecklistBaseTemplate = async (req, res) => {
         );
 
         if (!checklistBaseTemplate) {
-            return res.status(404).json({ message: 'Checklist base template not found' });
+            return res.status(404).json({ message: "Checklist base template not found" });
         }
 
         res.json({ checklistBaseTemplate });
     } catch (err) {
-        console.error('updateChecklistBaseTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("updateChecklistBaseTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -114,16 +114,16 @@ exports.archiveChecklistBaseTemplate = async (req, res) => {
         );
 
         if (!checklistBaseTemplate) {
-            return res.status(404).json({ message: 'Checklist base template not found' });
+            return res.status(404).json({ message: "Checklist base template not found" });
         }
 
         res.json({
-            message: 'Checklist base template archived',
+            message: "Checklist base template archived",
             checklistBaseTemplate,
         });
     } catch (err) {
-        console.error('archiveChecklistBaseTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("archiveChecklistBaseTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -140,15 +140,15 @@ exports.unarchiveChecklistBaseTemplate = async (req, res) => {
         );
 
         if (!checklistBaseTemplate) {
-            return res.status(404).json({ message: 'Checklist base template not found' });
+            return res.status(404).json({ message: "Checklist base template not found" });
         }
 
         res.json({
-            message: 'Checklist base template unarchived',
+            message: "Checklist base template unarchived",
             checklistBaseTemplate,
         });
     } catch (err) {
-        console.error('unarchiveChecklistBaseTemplate error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("unarchiveChecklistBaseTemplate error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

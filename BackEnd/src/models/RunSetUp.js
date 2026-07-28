@@ -1,20 +1,20 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const RunSetUpSchema = new mongoose.Schema(
     {
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organisation',
+            ref: "Organisation",
             required: true,
         },
         runId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Run',
+            ref: "Run",
             required: true,
         },
         setUpId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'SetUp',
+            ref: "SetUp",
             required: true,
         },
         isActive: {
@@ -30,4 +30,4 @@ RunSetUpSchema.index(
     { unique: true }
 );
 
-module.exports = mongoose.model('Run SetUp', RunSetUpSchema);
+module.exports = mongoose.model("Run SetUp", RunSetUpSchema);

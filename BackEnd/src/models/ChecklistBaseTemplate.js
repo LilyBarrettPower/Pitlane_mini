@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const ChecklistItemSchema = new mongoose.Schema(
     {
@@ -9,7 +9,7 @@ const ChecklistItemSchema = new mongoose.Schema(
         },
         notes: {
             type: String,
-            default: '',
+            default: "",
         },
         sortOrder: {
             type: Number,
@@ -33,16 +33,16 @@ const ChecklistBaseTemplateSchema = new mongoose.Schema(
         category: {
             type: String,
             trim: true,
-            default: 'general',
+            default: "general",
         },
         appliesTo: {
             type: String,
-            enum: ['event', 'vehicle', 'run', 'general'],
-            default: 'general',
+            enum: ["event", "vehicle", "run", "general"],
+            default: "general",
         },
         description: {
             type: String,
-            default: '',
+            default: "",
         },
         items: {
             type: [ChecklistItemSchema],
@@ -51,7 +51,7 @@ const ChecklistBaseTemplateSchema = new mongoose.Schema(
                 validator: function(items) {
                     return items.length > 0;
                 },
-                message: 'At least one checklist item is required',
+                message: "At least one checklist item is required",
             },
         },
         isActive: {
@@ -62,4 +62,4 @@ const ChecklistBaseTemplateSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model('ChecklistBaseTemplate', ChecklistBaseTemplateSchema);
+module.exports = mongoose.model("ChecklistBaseTemplate", ChecklistBaseTemplateSchema);

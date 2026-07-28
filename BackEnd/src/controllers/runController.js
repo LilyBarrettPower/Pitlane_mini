@@ -1,5 +1,5 @@
-const Run = require('../models/Run');
-const EventVehicle = require('../models/EventVehicle');
+const Run = require("../models/Run");
+const EventVehicle = require("../models/EventVehicle");
 const LapTime = require("../models/LapTimes");
 
 exports.carIn = async (req, res) => {
@@ -100,7 +100,7 @@ exports.createRun = async (req, res) => {
             fuelStart == null
         ) {
             return res.status(400).json({
-                message: 'EventVehicleId and fuelStart are required'
+                message: "EventVehicleId and fuelStart are required"
             });
         }
 
@@ -121,8 +121,8 @@ exports.createRun = async (req, res) => {
 
         res.status(201).json({ run });
     } catch (err) {
-        console.error('createRun error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("createRun error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -146,8 +146,8 @@ exports.getRuns = async (req, res) => {
         const runs = await Run.find(filter).sort({ createdAt: -1 });
         res.json({ runs });
     } catch (err) {
-        console.error('getRuns error', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("getRuns error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -165,13 +165,13 @@ exports.getRunById = async (req, res) => {
         });
 
         if (!run) {
-            return res.status(404).json({ message: 'Run not found' });
+            return res.status(404).json({ message: "Run not found" });
         }
 
         res.json({ run });
     } catch (err) {
-        console.error('get RunById error', err);
-        res.status(500).json({ message: 'Server error' })
+        console.error("get RunById error", err);
+        res.status(500).json({ message: "Server error" })
     }
 }
 
@@ -189,7 +189,7 @@ exports.updateRun = async (req, res) => {
         });
 
         if (!run) {
-            return res.status(404).json({ message: 'Run Not Found' });
+            return res.status(404).json({ message: "Run Not Found" });
         }
 
         Object.assign(run, req.body);
@@ -203,8 +203,8 @@ exports.updateRun = async (req, res) => {
         
         res.json({ run });
     } catch (err) {
-        console.error('Update Run error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Update Run error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -222,12 +222,12 @@ exports.archiveRun = async (req, res) => {
             { new: true }
         );
         if (!run) {
-            return res.status(404).json({ message: 'Run Not Found' });
+            return res.status(404).json({ message: "Run Not Found" });
         }
-        res.json({ message: 'Run Archived', run });
+        res.json({ message: "Run Archived", run });
     } catch (err) {
-        console.error('Archive run error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Archive run error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };
 
@@ -245,11 +245,11 @@ exports.unarchiveRun = async (req, res) => {
             { new: true }
         );
         if (!run) {
-            return res.status(404).json({ message: 'Run Not Found' });
+            return res.status(404).json({ message: "Run Not Found" });
         }
-        res.json({ message: 'Run Unarchived', run });
+        res.json({ message: "Run Unarchived", run });
     } catch (err) {
-        console.error('Unarchive run error', err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Unarchive run error", err);
+        res.status(500).json({ message: "Server Error" });
     }
 };

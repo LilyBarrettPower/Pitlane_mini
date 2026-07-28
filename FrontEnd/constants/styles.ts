@@ -1,5 +1,5 @@
-import { StyleSheet } from 'react-native';
-import { colors, spacing } from './theme';
+import { StyleSheet } from "react-native";
+import { colors, spacing } from "./theme";
 
 export const globalStyles = StyleSheet.create({
   container: {
@@ -10,15 +10,15 @@ export const globalStyles = StyleSheet.create({
   content: {
     padding: spacing.lg,
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     maxWidth: 520,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
 
   centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   card: {
@@ -46,7 +46,7 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: spacing.radiusMd,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   buttonSecondary: {
@@ -54,7 +54,7 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: spacing.radiusMd,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   buttonDanger: {
@@ -62,14 +62,14 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: spacing.radiusMd,
-    alignItems: 'center',
+    alignItems: "center",
   },
     buttonDangerSmall: {
     backgroundColor: colors.danger,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   buttonDisabled: {
@@ -81,7 +81,7 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   smallButtonText: {
@@ -91,14 +91,14 @@ export const globalStyles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: spacing.lg,
   },
 
   modalCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
     backgroundColor: colors.card,
     borderRadius: spacing.radiusModal,
@@ -140,27 +140,27 @@ export const globalStyles = StyleSheet.create({
 
   ButtonSecondaryText: {
     color: colors.textPrimary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   errorText: {
-    color: '#f87171',
+    color: "#f87171",
     fontSize: 14,
   },
   successText: {
-    color: '#34d399',
+    color: "#34d399",
     fontSize: 14,
   },
   title: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: "700",
     color: "#ffffff",
     marginBottom: 8,
   },
   subTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: '#d1d5db',
+    color: "#d1d5db",
     marginBottom: 28,
   },
   form: {
@@ -171,14 +171,14 @@ export const globalStyles = StyleSheet.create({
   },
 
   sectionTitle: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 15,
   },
 
   subText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 13,
   },
 
