@@ -18,7 +18,7 @@ function createToken(user) {
             role: user.role,
         },
         process.env.JWT_SECRET,
-        { expiresIn: "1hr" }
+        { expiresIn: "24hr" }
     );
 }
 
