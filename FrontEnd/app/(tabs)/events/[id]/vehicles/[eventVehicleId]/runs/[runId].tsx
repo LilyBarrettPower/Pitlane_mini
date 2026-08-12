@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable, Modal, TextInput } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -47,11 +47,13 @@ type CornerValues = {
 
 type Tyre = {
     _id: string;
+    vehicleId: string;
     brand?: string;
     spec?: string;
     currentSet?: string;
     position?: string;
     fiaSerial?: string;
+    condition?: string;
 };
 
 type TyreRun = {
@@ -77,9 +79,35 @@ type TyrePressureCheck = {
     notes?: string;
 };
 
+type EventVehicle = {
+    _id: string;
+    vehicleId:
+    | string
+    | {
+        _id: string;
+        name?: string;
+        make?: string;
+        model?: string;
+    };
+};
+
+type TyreSetOption = {
+    key: string;
+    currentSet: string;
+    brand?: string;
+    spec?: string;
+
+    tyres: {
+        LF: Tyre;
+        RF: Tyre;
+        LR: Tyre;
+        RR: Tyre;
+    };
+};
+
 
 export default function RunDetailPage() {
-    const { runId } = useLocalSearchParams<{
+    const { runId, eventVehicleId } = useLocalSearchParams<{
         id: string;
         eventVehicleId: string;
         runId: string;
@@ -110,6 +138,12 @@ export default function RunDetailPage() {
 
     const [tyreRun, setTyreRun] = useState<TyreRun | null>(null);
     const [pressureChecks, setPressureChecks] = useState<TyrePressureCheck[]>([]);
+
+    const [eventVehicle, setEventVehicle] = useState<EventVehicle | null>(null);
+    const [availableTyres, setAvailableTyres] = useState<Tyre[]>([]);
+    const [showAssignTyreSetModal, setShowAssignTyreSetModal] = useState(false);
+    const [selectedTyreSetKey, setSelectedTyreSetKey] = useState("");
+    const [isAssigningTyreSet, setIsAssigningTyreSet] = useState(false);
 
     const [showPressureModal, setShowPressureModal] = useState(false);
     const [isSavingPressure, setIsSavingPressure] = useState(false);
@@ -206,6 +240,55 @@ export default function RunDetailPage() {
         setPressureChecks(data.pressureChecks || []);
     }
 
+    async function fetchEventVehicle() {
+        if (!eventVehicleId) return null;
+
+        const data = await apiFetch(
+            `/event-vehicles/${eventVehicleId}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        const loadedEventVehicle =
+            data.eventVehicle || data;
+
+        setEventVehicle(loadedEventVehicle);
+
+        return loadedEventVehicle;
+    }
+
+    function getVehicleId(
+        selectedEventVehicle: EventVehicle
+    ) {
+        return typeof selectedEventVehicle.vehicleId === "string"
+            ? selectedEventVehicle.vehicleId
+            : selectedEventVehicle.vehicleId._id;
+    }
+
+    async function fetchAvailableTyres(
+        selectedEventVehicle: EventVehicle
+    ) {
+        const vehicleId = getVehicleId(
+            selectedEventVehicle
+        );
+
+        const data = await apiFetch(
+            `/tyres?vehicleId=${vehicleId}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        setAvailableTyres(data.tyres || []);
+    }
+
 
     useEffect(() => {
         setRun(null);
@@ -223,6 +306,13 @@ export default function RunDetailPage() {
                     fetchLapTimes(),
                 ]);
 
+                const loadedEventVehicle =
+                    await fetchEventVehicle();
+
+                if (loadedEventVehicle) {
+                    await fetchAvailableTyres(loadedEventVehicle);
+                }
+
                 const loadedTyreRun = await fetchTyreRun();
 
                 if (loadedTyreRun?._id) {
@@ -238,7 +328,140 @@ export default function RunDetailPage() {
         }
 
         loadPage();
-    }, [runId, token]);
+    }, [runId, eventVehicleId, token]);
+
+    const tyreSetOptions =
+        useMemo<TyreSetOption[]>(() => {
+            const groups = new Map<string, Tyre[]>();
+
+            availableTyres.forEach((tyre) => {
+                if (!tyre.currentSet?.trim()) return;
+
+                const setName = tyre.currentSet.trim();
+                const key = setName.toLowerCase();
+
+                const existing = groups.get(key) || [];
+
+                existing.push(tyre);
+
+                groups.set(key, existing);
+            });
+
+            const completeSets: TyreSetOption[] = [];
+
+            groups.forEach((tyres, key) => {
+                const LF = tyres.find(
+                    (tyre) =>
+                        tyre.position?.toUpperCase() ===
+                        "LF"
+                );
+
+                const RF = tyres.find(
+                    (tyre) =>
+                        tyre.position?.toUpperCase() ===
+                        "RF"
+                );
+
+                const LR = tyres.find(
+                    (tyre) =>
+                        tyre.position?.toUpperCase() ===
+                        "LR"
+                );
+
+                const RR = tyres.find(
+                    (tyre) =>
+                        tyre.position?.toUpperCase() ===
+                        "RR"
+                );
+
+                if (!LF || !RF || !LR || !RR) {
+                    return;
+                }
+
+                completeSets.push({
+                    key,
+                    currentSet:
+                        tyres[0].currentSet || "Unnamed Set",
+                    brand: tyres[0].brand,
+                    spec: tyres[0].spec,
+
+                    tyres: {
+                        LF,
+                        RF,
+                        LR,
+                        RR,
+                    },
+                });
+            });
+
+            return completeSets;
+        }, [availableTyres]);
+
+    async function handleAssignTyreSet() {
+        if (!selectedTyreSetKey) {
+            setErrorMessage(
+                "Please select a tyre set"
+            );
+            return;
+        }
+
+        const selectedSet = tyreSetOptions.find(
+            (set) =>
+                set.key === selectedTyreSetKey
+        );
+
+        if (!selectedSet) {
+            setErrorMessage(
+                "Selected tyre set could not be found"
+            );
+            return;
+        }
+
+        try {
+            setIsAssigningTyreSet(true);
+            setErrorMessage("");
+
+            await apiFetch("/tyre-runs", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    runId,
+
+                    tyres: {
+                        LF: selectedSet.tyres.LF._id,
+                        RF: selectedSet.tyres.RF._id,
+                        LR: selectedSet.tyres.LR._id,
+                        RR: selectedSet.tyres.RR._id,
+                    },
+
+                    notes: "",
+                }),
+            });
+
+            setSelectedTyreSetKey("");
+            setShowAssignTyreSetModal(false);
+
+            const loadedTyreRun =
+                await fetchTyreRun();
+
+            if (loadedTyreRun?._id) {
+                await fetchPressureChecks(
+                    loadedTyreRun._id
+                );
+            }
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to assign tyre set"
+            );
+        } finally {
+            setIsAssigningTyreSet(false);
+        }
+    }
 
     async function handleCarOut() {
         await apiFetch(`/runs/${runId}`, {
@@ -652,6 +875,10 @@ export default function RunDetailPage() {
 
 
 
+
+
+
+
     if (isLoading) {
         return (
             <SafeAreaView style={globalStyles.container}>
@@ -793,9 +1020,30 @@ export default function RunDetailPage() {
                     </Text>
 
                     {!tyreRun ? (
-                        <Text style={globalStyles.text}>
-                            No tyre set assigned to this run
-                        </Text>
+                        <>
+                            <Text style={globalStyles.text}>
+                                No tyre set assigned to this run
+                            </Text>
+
+                            <View style={styles.actionRow}>
+                                <Pressable
+                                    style={globalStyles.buttonPrimary}
+                                    onPress={() => {
+                                        setErrorMessage("");
+                                        setSelectedTyreSetKey("");
+                                        setShowAssignTyreSetModal(true);
+                                    }}
+                                >
+                                    <Text
+                                        style={
+                                            globalStyles.buttonPrimaryText
+                                        }
+                                    >
+                                        Assign Tyre Set
+                                    </Text>
+                                </Pressable>
+                            </View>
+                        </>
                     ) : (
                         <>
                             <View style={styles.pressureActionRow}>
@@ -1493,6 +1741,146 @@ export default function RunDetailPage() {
                     </ScrollView>
                 </Modal>
 
+                <Modal
+                    visible={showAssignTyreSetModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() =>
+                        setShowAssignTyreSetModal(false)
+                    }
+                >
+                    <View style={globalStyles.modalOverlay}>
+                        <View style={globalStyles.modalCard}>
+                            <Text style={globalStyles.modalTitle}>
+                                Assign Tyre Set
+                            </Text>
+
+                            {tyreSetOptions.length === 0 ? (
+                                <Text style={globalStyles.text}>
+                                    No complete tyre sets are available
+                                    for this vehicle.
+                                </Text>
+                            ) : (
+                                <View style={styles.tyreSetList}>
+                                    {tyreSetOptions.map((set) => {
+                                        const isSelected =
+                                            selectedTyreSetKey ===
+                                            set.key;
+
+                                        return (
+                                            <Pressable
+                                                key={set.key}
+                                                style={[
+                                                    styles.tyreSetOption,
+                                                    isSelected &&
+                                                    styles.tyreSetOptionSelected,
+                                                ]}
+                                                onPress={() =>
+                                                    setSelectedTyreSetKey(
+                                                        set.key
+                                                    )
+                                                }
+                                            >
+                                                <View>
+                                                    <Text
+                                                        style={
+                                                            globalStyles.cardText
+                                                        }
+                                                    >
+                                                        {set.currentSet}
+                                                    </Text>
+
+                                                    <Text
+                                                        style={
+                                                            globalStyles.subText
+                                                        }
+                                                    >
+                                                        {set.brand || "-"}
+                                                        {set.spec
+                                                            ? ` ${set.spec}`
+                                                            : ""}
+                                                    </Text>
+
+                                                    <Text
+                                                        style={
+                                                            globalStyles.subText
+                                                        }
+                                                    >
+                                                        LF · RF · LR · RR
+                                                    </Text>
+                                                </View>
+
+                                                <Text
+                                                    style={
+                                                        styles.tyreSetCount
+                                                    }
+                                                >
+                                                    4/4
+                                                </Text>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+                            )}
+
+                            {errorMessage ? (
+                                <Text style={globalStyles.errorText}>
+                                    {errorMessage}
+                                </Text>
+                            ) : null}
+
+                            <View style={styles.modalActions}>
+                                <Pressable
+                                    style={globalStyles.buttonDanger}
+                                    onPress={() => {
+                                        setSelectedTyreSetKey("");
+                                        setErrorMessage("");
+                                        setShowAssignTyreSetModal(
+                                            false
+                                        );
+                                    }}
+                                    disabled={isAssigningTyreSet}
+                                >
+                                    <Text
+                                        style={
+                                            globalStyles.buttonPrimaryText
+                                        }
+                                    >
+                                        Cancel
+                                    </Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={[
+                                        globalStyles.buttonPrimary,
+                                        isAssigningTyreSet &&
+                                        globalStyles.buttonDisabled,
+                                    ]}
+                                    onPress={handleAssignTyreSet}
+                                    disabled={
+                                        isAssigningTyreSet ||
+                                        !selectedTyreSetKey
+                                    }
+                                >
+                                    {isAssigningTyreSet ? (
+                                        <ActivityIndicator
+                                            color="#ffffff"
+                                        />
+                                    ) : (
+                                        <Text
+                                            style={
+                                                globalStyles.buttonPrimaryText
+                                            }
+                                        >
+                                            Assign Set
+                                        </Text>
+                                    )}
+                                </Pressable>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+
             </ScrollView>
         </SafeAreaView >
     )
@@ -1544,136 +1932,164 @@ const styles = StyleSheet.create({
     },
 
     modalActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 16,
-    flexWrap: "wrap",
-},
+        flexDirection: "row",
+        gap: 10,
+        marginTop: 16,
+        flexWrap: "wrap",
+    },
 
-pressureActionRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 16,
-},
+    pressureActionRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginTop: 12,
+        marginBottom: 16,
+    },
 
-stageButtonRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-},
+    stageButtonRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 12,
+    },
 
-stageButton: {
-    flex: 1,
-    minWidth: 80,
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#4b5563",
-    borderRadius: 10,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    alignItems: "center",
-},
+    stageButton: {
+        flex: 1,
+        minWidth: 80,
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#4b5563",
+        borderRadius: 10,
+        paddingVertical: 11,
+        paddingHorizontal: 14,
+        alignItems: "center",
+    },
 
-stageButtonSelected: {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
-},
+    stageButtonSelected: {
+        backgroundColor: "#2563eb",
+        borderColor: "#2563eb",
+    },
 
-stageButtonText: {
-    color: "#d1d5db",
-    fontWeight: "700",
-},
+    stageButtonText: {
+        color: "#d1d5db",
+        fontWeight: "700",
+    },
 
-stageButtonTextSelected: {
-    color: "#ffffff",
-},
+    stageButtonTextSelected: {
+        color: "#ffffff",
+    },
 
-cornerInputGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 16,
-},
+    cornerInputGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 10,
+        marginBottom: 16,
+    },
 
-cornerInput: {
-    flexGrow: 1,
-    flexBasis: "45%",
-},
+    cornerInput: {
+        flexGrow: 1,
+        flexBasis: "45%",
+    },
 
-pressureCheckCard: {
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#374151",
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 12,
-    gap: 10,
-},
+    pressureCheckCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 12,
+        gap: 10,
+    },
 
-pressureCheckHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-},
+    pressureCheckHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 10,
+    },
 
-pressureCheckTitle: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "800",
-},
+    pressureCheckTitle: {
+        color: "#ffffff",
+        fontSize: 16,
+        fontWeight: "800",
+    },
 
-pressureCheckLap: {
-    color: "#9ca3af",
-    fontSize: 13,
-    fontWeight: "600",
-},
+    pressureCheckLap: {
+        color: "#9ca3af",
+        fontSize: 13,
+        fontWeight: "600",
+    },
 
-pressureGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-},
+    pressureGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+    },
 
-pressureCornerCard: {
-    flexGrow: 1,
-    flexBasis: "45%",
-    backgroundColor: "#1f2937",
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#374151",
-},
+    pressureCornerCard: {
+        flexGrow: 1,
+        flexBasis: "45%",
+        backgroundColor: "#1f2937",
+        borderRadius: 10,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: "#374151",
+    },
 
-cornerLabel: {
-    color: "#ffffff",
-    fontSize: 17,
-    fontWeight: "800",
-    marginBottom: 5,
-},
+    cornerLabel: {
+        color: "#ffffff",
+        fontSize: 17,
+        fontWeight: "800",
+        marginBottom: 5,
+    },
 
-pressureValue: {
-    color: "#f3f4f6",
-    fontSize: 15,
-    fontWeight: "700",
-},
+    pressureValue: {
+        color: "#f3f4f6",
+        fontSize: 15,
+        fontWeight: "700",
+    },
 
-rimTempValue: {
-    color: "#9ca3af",
-    fontSize: 13,
-    marginTop: 3,
-},
+    rimTempValue: {
+        color: "#9ca3af",
+        fontSize: 13,
+        marginTop: 3,
+    },
 
-pressureNotes: {
-    color: "#d1d5db",
-    fontSize: 13,
-    marginTop: 4,
-},
+    pressureNotes: {
+        color: "#d1d5db",
+        fontSize: 13,
+        marginTop: 4,
+    },
 
-pressureNotesInput: {
-    minHeight: 90,
-},
+    pressureNotesInput: {
+        minHeight: 90,
+    },
+    tyreSetList: {
+        gap: 10,
+        marginTop: 12,
+        marginBottom: 12,
+    },
+
+    tyreSetOption: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+    },
+
+    tyreSetOptionSelected: {
+        backgroundColor: "#1d4ed8",
+        borderColor: "#2563eb",
+    },
+
+    tyreSetCount: {
+        color: "#ffffff",
+        fontSize: 13,
+        fontWeight: "700",
+    },
 });

@@ -101,6 +101,35 @@ exports.getEventForVehicle = async (req, res) => {
     }
 };
 
+exports.getEventVehicleById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const organisationId = req.user.organisationId;
+
+        const eventVehicle = await EventVehicle.findOne({
+            _id: id,
+            organisationId,
+            isActive: true,
+        })
+            .populate("vehicleId")
+            .populate("eventId");
+
+        if (!eventVehicle) {
+            return res.status(404).json({
+                message: "Event vehicle assignment not found",
+            });
+        }
+
+        res.json({ eventVehicle });
+    } catch (err) {
+        console.error("Get event vehicle by ID error", err);
+
+        res.status(500).json({
+            message: "Server error",
+        });
+    }
+};
+
 exports.archiveAssignment = async (req, res) => {
     try {
         const { id } = req.params;

@@ -11,6 +11,8 @@ router.post("/", EventVehicleController.createAssignment);
 router.get("/event/:vehicleId", EventVehicleController.getEventForVehicle);
 //  Get a list of vehicles that are attending/ did attend an event
 router.get("/vehicle/:eventId", EventVehicleController.getVehicleForEvent);
+// Get one specific EventVehicle assignment
+router.get("/:id", EventVehicleController.getEventVehicleById);
 router.delete("/:id", EventVehicleController.archiveAssignment);
 router.patch("/:id/unarchive", EventVehicleController.unArchiveAssignment);
 
