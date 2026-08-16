@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable, Modal, TextInput } from "react-native";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -47,6 +47,30 @@ type Run = {
     notes?: string;
 };
 
+type Tyre = {
+    _id: string;
+    vehicleId: string;
+    brand: string;
+    spec?: string;
+    currentSet?: string;
+    position?: string;
+    fiaSerial?: string;
+    condition?: string;
+};
+
+type TyreSetOption = {
+    key: string;
+    currentSet: string;
+    brand: string;
+    spec?: string;
+    tyres: {
+        LF: Tyre;
+        RF: Tyre;
+        LR: Tyre;
+        RR: Tyre;
+    };
+};
+
 export default function EventVehicleDetailPage() {
     const { id: eventId, eventVehicleId } = useLocalSearchParams<{
         id: string;
@@ -77,6 +101,10 @@ export default function EventVehicleDetailPage() {
     // const [bestLapS, setBestLapS] = useState("");
     const [notes, setNotes] = useState("");
     // Do you need to add anything else here? ^ ANd what about stuff that's supposed to autopopulate
+
+    const [availableTyres, setAvailableTyres] = useState<Tyre[]>([]);
+    const [selectedTyreSetKey, setSelectedTyreSetKey] = useState("");
+    const [isLoadingTyres, setIsLoadingTyres] = useState(false);
 
 
     async function fetchEventVehicle() {
@@ -125,6 +153,35 @@ export default function EventVehicleDetailPage() {
         setRuns(data.runs || []);
     }
 
+    async function fetchAvailableTyres() {
+        const vehicleId = getVehicleId();
+        if (!vehicleId || !token) {
+            setAvailableTyres([]);
+            return;
+        }
+
+        try {
+            setIsLoadingTyres(true);
+            setErrorMessage("");
+
+            const data = await apiFetch(
+                `/tyres?vehicleId=${vehicleId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setAvailableTyres(data.tyres || []);
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to load tyre sets");
+        } finally {
+            setIsLoadingTyres(false);
+        }
+    }
+
     useEffect(() => {
         if (eventId && eventVehicleId && token) {
             fetchEventVehicle();
@@ -155,38 +212,217 @@ export default function EventVehicleDetailPage() {
         setTrackCondition("");
         setFuelStart("");
         setNotes("");
+        setSelectedTyreSetKey("");
+        setAvailableTyres([]);
     }
 
     async function handleCreateRun() {
+        if (!name.trim()) {
+            setErrorMessage("Run name is required");
+            return;
+        }
+
+        if (!fuelStart) {
+            setErrorMessage("Fuel start is required");
+            return;
+        }
+
+        if (!selectedTyreSetKey) {
+            setErrorMessage("Please select a tyre set");
+            return;
+        }
+
+        const selectedSet = tyreSetOptions.find(
+            (set) =>
+                set.key === selectedTyreSetKey
+        );
+
+        if (!selectedSet) {
+            setErrorMessage(
+                "Selected tyre set could not be found"
+            );
+            return;
+        }
+
         try {
             setIsSavingRun(true);
             setErrorMessage("");
 
-            await apiFetch("/runs", {
+            // 1. Create the Run
+            const runData = await apiFetch("/runs", {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     eventVehicleId,
                     name: name.trim(),
                     weather,
-                    trackTemp: trackTemp ? Number(trackTemp) : undefined,
+                    trackTemp: trackTemp
+                        ? Number(trackTemp)
+                        : undefined,
                     trackCondition,
-                    fuelStart: fuelStart ? Number(fuelStart) : undefined,
+                    fuelStart: Number(fuelStart),
                     notes,
+                }),
+            });
+
+            const createdRun =
+                runData.run || runData;
+
+            if (!createdRun?._id) {
+                throw new Error(
+                    "Run was created but no Run ID was returned"
+                );
+            }
+
+            // 2. Create the TyreRun using the selected set
+            await apiFetch("/tyre-runs", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    runId: createdRun._id,
+
+                    tyres: {
+                        LF: selectedSet.tyres.LF._id,
+                        RF: selectedSet.tyres.RF._id,
+                        LR: selectedSet.tyres.LR._id,
+                        RR: selectedSet.tyres.RR._id,
+                    },
+
+                    notes: "",
                 }),
             });
 
             clearRunForm();
             setShowRunModal(false);
+
             await fetchRuns();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Failed to create run");
+            setErrorMessage(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to create run"
+            );
         } finally {
             setIsSavingRun(false);
         }
     }
+
+    // async function handleCreateRun() {
+    //     try {
+    //         setIsSavingRun(true);
+    //         setErrorMessage("");
+
+    //         await apiFetch("/runs", {
+    //             method: "POST",
+    //             headers: {
+    //                 Authorization: `Bearer ${token}`,
+    //             },
+    //             body: JSON.stringify({
+    //                 eventVehicleId,
+    //                 name: name.trim(),
+    //                 weather,
+    //                 trackTemp: trackTemp ? Number(trackTemp) : undefined,
+    //                 trackCondition,
+    //                 fuelStart: fuelStart ? Number(fuelStart) : undefined,
+    //                 notes,
+    //             }),
+    //         });
+
+    //         clearRunForm();
+    //         setShowRunModal(false);
+    //         await fetchRuns();
+    //     } catch (error) {
+    //         setErrorMessage(error instanceof Error ? error.message : "Failed to create run");
+    //     } finally {
+    //         setIsSavingRun(false);
+    //     }
+    // }
+
+    function getVehicleId() {
+        if (!eventVehicle) return "";
+        return typeof eventVehicle.vehicleId === "string"
+            ? eventVehicle.vehicleId
+            : eventVehicle.vehicleId._id;
+    }
+
+
+    const tyreSetOptions = useMemo<TyreSetOption[]>(() => {
+        const groups = new Map<string, Tyre[]>();
+
+        availableTyres.forEach((tyre) => {
+            const setName = tyre.currentSet?.trim();
+
+            if (!setName) return;
+
+            const key = setName.toLowerCase();
+
+            const existing = groups.get(key) || [];
+
+            existing.push(tyre);
+            groups.set(key, existing);
+        });
+
+        const completeSets: TyreSetOption[] = [];
+
+        groups.forEach((tyres, key) => {
+            const LF = tyres.find(
+                (tyre) =>
+                    tyre.position?.toUpperCase() === "LF"
+            );
+
+            const RF = tyres.find(
+                (tyre) =>
+                    tyre.position?.toUpperCase() === "RF"
+            );
+
+            const LR = tyres.find(
+                (tyre) =>
+                    tyre.position?.toUpperCase() === "LR"
+            );
+
+            const RR = tyres.find(
+                (tyre) =>
+                    tyre.position?.toUpperCase() === "RR"
+            );
+
+            // Only allow complete 4-tyre sets
+            if (!LF || !RF || !LR || !RR) {
+                return;
+            }
+
+            completeSets.push({
+                key,
+                currentSet:
+                    tyres[0].currentSet || "Unnamed Set",
+                brand: tyres[0].brand,
+                spec: tyres[0].spec,
+                tyres: {
+                    LF,
+                    RF,
+                    LR,
+                    RR,
+                },
+            });
+        });
+
+        return completeSets;
+    }, [availableTyres]);
+
+    async function openCreateRunModal() {
+        clearRunForm();
+
+        setSelectedTyreSetKey("");
+        setShowRunModal(true);
+
+        await fetchAvailableTyres();
+    }
+
 
     if (isLoading) {
         return (
@@ -278,7 +514,9 @@ export default function EventVehicleDetailPage() {
                     )}
 
                     <View style={styles.actionRow}>
-                        <Pressable style={globalStyles.buttonPrimary} onPress={() => setShowRunModal(true)}>
+                        <Pressable
+                            style={globalStyles.buttonPrimary}
+                            onPress={openCreateRunModal}>
                             <Text style={globalStyles.buttonPrimaryText}>Create Run</Text>
                         </Pressable>
                     </View>
@@ -343,6 +581,61 @@ export default function EventVehicleDetailPage() {
                                     onChangeText={setFuelStart}
                                     keyboardType="numeric"
                                 />
+
+                                <Text style={globalStyles.label}>Tyre Set</Text>
+                                {isLoadingTyres ? (
+                                    <ActivityIndicator color="#ffffff" />
+                                ) : tyreSetOptions.length === 0 ? (
+                                    <Text style={globalStyles.subText}>
+                                        No complete tyre sets available for this vehicle
+                                    </Text>
+                                ) : (
+                                    <View style={styles.tyreSetList}>
+                                        {tyreSetOptions.map((set) => {
+                                            const isSelected =
+                                                selectedTyreSetKey === set.key;
+
+                                            return (
+                                                <Pressable
+                                                    key={set.key}
+                                                    style={[
+                                                        styles.tyreSetCard,
+                                                        isSelected &&
+                                                        styles.tyreSetCardSelected,
+                                                    ]}
+                                                    onPress={() =>
+                                                        setSelectedTyreSetKey(set.key)
+                                                    }
+                                                >
+                                                    <View style={styles.tyreSetHeader}>
+                                                        <Text
+                                                            style={globalStyles.cardText}
+                                                        >
+                                                            {set.currentSet}
+                                                        </Text>
+
+                                                        <Text
+                                                            style={globalStyles.subText}
+                                                        >
+                                                            4/4
+                                                        </Text>
+                                                    </View>
+
+                                                    <Text style={globalStyles.subText}>
+                                                        {set.brand}
+                                                        {set.spec
+                                                            ? ` ${set.spec}`
+                                                            : ""}
+                                                    </Text>
+
+                                                    <Text style={globalStyles.subText}>
+                                                        LF · RF · LR · RR
+                                                    </Text>
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                )}
 
                                 <Text style={globalStyles.label}>Notes</Text>
                                 <TextInput
@@ -425,6 +718,30 @@ const styles = StyleSheet.create({
         padding: 14,
         marginTop: 10,
 
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    tyreSetList: {
+        gap: 10,
+        marginTop: 8,
+        marginBottom: 12,
+    },
+
+    tyreSetCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+    },
+
+    tyreSetCardSelected: {
+        backgroundColor: "#1d4ed8",
+        borderColor: "#2563eb",
+    },
+
+    tyreSetHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
