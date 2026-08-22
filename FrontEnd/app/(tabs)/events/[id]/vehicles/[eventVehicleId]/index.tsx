@@ -71,6 +71,45 @@ type TyreSetOption = {
     };
 };
 
+type CornerValues = {
+    LF?: number;
+    RF?: number;
+    LR?: number;
+    RR?: number;
+};
+
+type PressureCheck = {
+    _id: string;
+    stage: "start" | "mid" | "end";
+    lapNumber?: number;
+    pressurePsi: CornerValues;
+    rimTempC: CornerValues;
+    recordedAt?: string;
+    notes?: string;
+};
+
+type EventTyreHistoryItem = {
+    run: {
+        _id: string;
+        name: string;
+        lapsDone?: number;
+        outTime?: string;
+        inTime?: string;
+    };
+
+    tyreRun: {
+        _id: string;
+        tyres: {
+            LF: Tyre;
+            RF: Tyre;
+            LR: Tyre;
+            RR: Tyre;
+        };
+    };
+
+    pressureChecks: PressureCheck[];
+}
+
 export default function EventVehicleDetailPage() {
     const { id: eventId, eventVehicleId } = useLocalSearchParams<{
         id: string;
@@ -105,6 +144,8 @@ export default function EventVehicleDetailPage() {
     const [availableTyres, setAvailableTyres] = useState<Tyre[]>([]);
     const [selectedTyreSetKey, setSelectedTyreSetKey] = useState("");
     const [isLoadingTyres, setIsLoadingTyres] = useState(false);
+
+    const [tyreHistory, setTyreHistory] = useState<EventTyreHistoryItem[]>([]);
 
 
     async function fetchEventVehicle() {
@@ -182,11 +223,28 @@ export default function EventVehicleDetailPage() {
         }
     }
 
+    async function fetchTyreHistory() {
+        if (!eventVehicleId || !token) return;
+
+        const data = await apiFetch(
+            `/tyre-runs/event-vehicle/${eventVehicleId}/history`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        setTyreHistory(data.history || []);
+    }
+
     useEffect(() => {
         if (eventId && eventVehicleId && token) {
             fetchEventVehicle();
             fetchEvent();
             fetchRuns();
+            fetchTyreHistory();
         }
     }, [eventId, eventVehicleId, token]);
 
@@ -194,6 +252,7 @@ export default function EventVehicleDetailPage() {
         useCallback(() => {
             if (eventVehicleId && token) {
                 fetchRuns();
+                fetchTyreHistory();
             }
         }, [eventVehicleId, token])
     );
@@ -526,8 +585,242 @@ export default function EventVehicleDetailPage() {
                     <Text style={globalStyles.text}>Coming later... </Text>
                 </View>
                 <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Tyres</Text>
-                    <Text style={globalStyles.text}>Coming Later...</Text>
+                    <Text style={globalStyles.sectionTitle}>
+                        Tyres
+                    </Text>
+
+                    {tyreHistory.length === 0 ? (
+                        <Text style={globalStyles.text}>
+                            No tyre sets have been used at this event yet.
+                        </Text>
+                    ) : (
+                        tyreHistory.map((item) => {
+                            const firstTyre =
+                                item.tyreRun.tyres.LF;
+
+                            const setName =
+                                firstTyre?.currentSet ||
+                                "Unknown Set";
+
+                            const brand =
+                                firstTyre?.brand || "-";
+
+                            const spec =
+                                firstTyre?.spec || "";
+
+                            return (
+                                <View
+                                    key={item.tyreRun._id}
+                                    style={styles.tyreHistoryCard}
+                                >
+                                    <View style={styles.tyreHistoryHeader}>
+                                        <View>
+                                            <Text style={styles.runTitle}>
+                                                {item.run.name ||
+                                                    "Unnamed Run"}
+                                            </Text>
+
+                                            <Text
+                                                style={
+                                                    globalStyles.subText
+                                                }
+                                            >
+                                                {setName} · {brand}
+                                                {spec
+                                                    ? ` ${spec}`
+                                                    : ""}
+                                            </Text>
+                                        </View>
+
+                                        <Text
+                                            style={
+                                                styles.tyreHistoryLaps
+                                            }
+                                        >
+                                            {item.run.lapsDone ?? 0} laps
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.assignedTyresGrid}>
+                                        {(
+                                            ["LF", "RF", "LR", "RR"] as const
+                                        ).map((corner) => {
+                                            const tyre =
+                                                item.tyreRun.tyres[
+                                                corner
+                                                ];
+
+                                            return (
+                                                <View
+                                                    key={corner}
+                                                    style={
+                                                        styles.assignedTyreCard
+                                                    }
+                                                >
+                                                    <Text
+                                                        style={
+                                                            styles.tyreCorner
+                                                        }
+                                                    >
+                                                        {corner}
+                                                    </Text>
+
+                                                    <Text
+                                                        style={
+                                                            globalStyles.subText
+                                                        }
+                                                    >
+                                                        FIA:{" "}
+                                                        {tyre?.fiaSerial ||
+                                                            "-"}
+                                                    </Text>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+
+                                    <View
+                                        style={
+                                            styles.pressureSection
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                styles.pressureSectionTitle
+                                            }
+                                        >
+                                            Pressure Checks
+                                        </Text>
+
+                                        {item.pressureChecks.length ===
+                                            0 ? (
+                                            <Text
+                                                style={
+                                                    globalStyles.subText
+                                                }
+                                            >
+                                                No pressure checks recorded
+                                            </Text>
+                                        ) : (
+                                            item.pressureChecks.map(
+                                                (check) => (
+                                                    <View
+                                                        key={check._id}
+                                                        style={
+                                                            styles.pressureCheckCard
+                                                        }
+                                                    >
+                                                        <View
+                                                            style={
+                                                                styles.pressureCheckHeader
+                                                            }
+                                                        >
+                                                            <Text
+                                                                style={
+                                                                    styles.pressureCheckTitle
+                                                                }
+                                                            >
+                                                                {check.stage.toUpperCase()}
+                                                            </Text>
+
+                                                            <Text
+                                                                style={
+                                                                    globalStyles.subText
+                                                                }
+                                                            >
+                                                                {check.lapNumber !=
+                                                                    null
+                                                                    ? `Lap ${check.lapNumber}`
+                                                                    : ""}
+                                                            </Text>
+                                                        </View>
+
+                                                        <View
+                                                            style={
+                                                                styles.pressureGrid
+                                                            }
+                                                        >
+                                                            {(
+                                                                [
+                                                                    "LF",
+                                                                    "RF",
+                                                                    "LR",
+                                                                    "RR",
+                                                                ] as const
+                                                            ).map(
+                                                                (
+                                                                    corner
+                                                                ) => (
+                                                                    <View
+                                                                        key={
+                                                                            corner
+                                                                        }
+                                                                        style={
+                                                                            styles.pressureCorner
+                                                                        }
+                                                                    >
+                                                                        <Text
+                                                                            style={
+                                                                                styles.tyreCorner
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                corner
+                                                                            }
+                                                                        </Text>
+
+                                                                        <Text
+                                                                            style={
+                                                                                styles.pressureValue
+                                                                            }
+                                                                        >
+                                                                            {check
+                                                                                .pressurePsi?.[
+                                                                                corner
+                                                                            ] ??
+                                                                                "-"}{" "}
+                                                                            psi
+                                                                        </Text>
+
+                                                                        <Text
+                                                                            style={
+                                                                                globalStyles.subText
+                                                                            }
+                                                                        >
+                                                                            Rim:{" "}
+                                                                            {check
+                                                                                .rimTempC?.[
+                                                                                corner
+                                                                            ] ??
+                                                                                "-"}
+                                                                            °C
+                                                                        </Text>
+                                                                    </View>
+                                                                )
+                                                            )}
+                                                        </View>
+
+                                                        {check.notes ? (
+                                                            <Text
+                                                                style={
+                                                                    globalStyles.subText
+                                                                }
+                                                            >
+                                                                Notes:{" "}
+                                                                {
+                                                                    check.notes
+                                                                }
+                                                            </Text>
+                                                        ) : null}
+                                                    </View>
+                                                )
+                                            )
+                                        )}
+                                    </View>
+                                </View>
+                            );
+                        })
+                    )}
                 </View>
 
                 <Modal
@@ -745,5 +1038,106 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+    },
+    tyreHistoryCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 12,
+        gap: 12,
+    },
+
+    tyreHistoryHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: 12,
+    },
+
+    runTitle: {
+        color: "#ffffff",
+        fontSize: 17,
+        fontWeight: "800",
+    },
+
+    tyreHistoryLaps: {
+        color: "#9ca3af",
+        fontSize: 12,
+        fontWeight: "700",
+    },
+
+    assignedTyresGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+    },
+
+    assignedTyreCard: {
+        flexGrow: 1,
+        flexBasis: "45%",
+        backgroundColor: "#1f2937",
+        borderRadius: 8,
+        padding: 10,
+    },
+
+    tyreCorner: {
+        color: "#ffffff",
+        fontSize: 14,
+        fontWeight: "800",
+    },
+
+    pressureSection: {
+        borderTopWidth: 1,
+        borderTopColor: "#374151",
+        paddingTop: 12,
+        gap: 8,
+    },
+
+    pressureSectionTitle: {
+        color: "#d1d5db",
+        fontSize: 14,
+        fontWeight: "700",
+    },
+
+    pressureCheckCard: {
+        backgroundColor: "#1f2937",
+        borderRadius: 10,
+        padding: 12,
+        gap: 8,
+    },
+
+    pressureCheckHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+
+    pressureCheckTitle: {
+        color: "#ffffff",
+        fontSize: 14,
+        fontWeight: "800",
+    },
+
+    pressureGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+    },
+
+    pressureCorner: {
+        flexGrow: 1,
+        flexBasis: "45%",
+        backgroundColor: "#111827",
+        borderRadius: 8,
+        padding: 9,
+    },
+
+    pressureValue: {
+        color: "#f3f4f6",
+        fontSize: 13,
+        fontWeight: "700",
+        marginTop: 3,
     },
 });

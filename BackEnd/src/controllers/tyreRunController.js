@@ -341,3 +341,67 @@ exports.getTyreSetHistory = async (req, res) => {
         });
     }
 };
+
+exports.getTyreHistoryForEventVehicle = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+        const {eventVehicleId} = req.params;
+
+        const runs = await Run.find({
+            organisationId,
+            eventVehicleId,
+            isActive: true,
+        }).sort({ createdAt: 1});
+
+        const history = [];
+
+        for (const run of runs) {
+            const tyreRun = await TyreRun.findOne({
+                organisationId,
+                runId: run._id,
+                isActive: true,
+            })
+                .populate("tyres.LF")
+                .populate("tyres.RF")
+                .populate("tyres.LR")
+                .populate("tyres.RR")
+
+            if (!tyreRun) {
+                continue;
+            }
+
+            const pressureChecks = 
+                await TyrePressureCheck.find({
+                    organisationId,
+                    tyreRunId: tyreRun._id,
+                    isActive: true,
+                }).sort({
+                    recordedAt: 1,
+                    createdAt: 1,
+                });
+            
+            history.push({
+                run: {
+                    _id: run._id,
+                    name: run.name,
+                    lapsDone: run.lapsDone,
+                    outTime: run.outTime,
+                    inTime: run.inTime,
+                },
+
+                tyreRun: {
+                    _id: tyreRun._id,
+                    tyres: tyreRun.tyres,
+                },
+                pressureChecks,
+            });
+        }
+
+        res.json({ history });
+    } catch (err) {
+        console.error("GetTyreHistoryForEventVehicle error", err);
+        res.status(500).json({
+            message: "Server error",
+        });
+    }
+};

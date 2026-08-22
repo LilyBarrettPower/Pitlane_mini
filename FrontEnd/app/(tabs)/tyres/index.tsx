@@ -401,7 +401,7 @@ export default function TyresPage() {
                                         ]}
                                         onPress={(event) => {
                                             event.stopPropagation();
-                                                                                        router.push({
+                                            router.push({
                                                 pathname: "/tyres/[tyreId]",
                                                 params: {
                                                     tyreId: tyre._id,
@@ -417,9 +417,9 @@ export default function TyresPage() {
                                             <Text
                                                 style={[
                                                     styles.conditionBadge,
-                                                    tyre.condition === "new" &&
+                                                    tyre.condition === "New" &&
                                                     styles.conditionNew,
-                                                    tyre.condition === "used" &&
+                                                    tyre.condition === "Used" &&
                                                     styles.conditionUsed,
                                                 ]}
                                             >
@@ -616,8 +616,8 @@ export default function TyresPage() {
 
                                 <View style={styles.optionGrid}>
                                     {[
-                                        { label: "New", value: "new" },
-                                        { label: "Used", value: "used" },
+                                        { label: "New", value: "New" },
+                                        { label: "Used", value: "Used" },
                                     ].map((item) => {
                                         const isSelected =
                                             condition === item.value;

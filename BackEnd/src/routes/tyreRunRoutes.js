@@ -9,6 +9,7 @@ router.use(authMiddleware);
 router.post("/", tyreRunController.createTyreRun);
 router.get("/", tyreRunController.getTyreRuns);
 router.get("/history", tyreRunController.getTyreSetHistory);
+router.get("/event-vehicle/:eventVehicleId/history", tyreRunController.getTyreHistoryForEventVehicle);
 router.get("/:id", tyreRunController.getTyreRunById);
 router.patch("/:id", tyreRunController.updateTyreRun);
 router.delete("/:id", tyreRunController.archiveTyreRun);
