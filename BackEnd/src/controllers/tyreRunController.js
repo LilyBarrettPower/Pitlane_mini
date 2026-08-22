@@ -1,6 +1,9 @@
 const Run = require("../models/Run");
 const Tyre = require("../models/Tyre");
 const TyreRun = require("../models/TyreRun");
+const EventVehicle = require("../models/EventVehicle");
+const Event = require("../models/Event");
+const TyrePressureCheck = require("../models/TyrePressureCheck");
 
 // POST - create a tyre run
 
@@ -171,7 +174,7 @@ exports.getTyreRunById = async (req, res) => {
             return res.status(404).json({ message: "Tyre Run not found" });
         }
 
-        res.json({ tyreRun});
+        res.json({ tyreRun });
     } catch (err) {
         console.error("get TyreRunById error", err);
         res.status(500).json({ message: "Server error" })
@@ -244,5 +247,97 @@ exports.unarchiveTyreRun = async (req, res) => {
     } catch (err) {
         console.error("Unarchive tyre run error", err);
         res.status(500).json({ message: "Server Error" });
+    }
+};
+
+exports.getTyreSetHistory = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+        const { vehicleId, currentSet } = req.query;
+
+        if (!vehicleId || !currentSet) {
+            return res.status(400).json({
+                message: "vehicleId and currentSet are required",
+            });
+        }
+
+        const tyres = await Tyre.find({
+            organisationId,
+            vehicleId,
+            currentSet,
+        });
+        if (tyres.length === 0) {
+            return res.json({ history: [] });
+        }
+        const tyreIds = tyres.map((tyre) =>
+            String(tyre._id)
+        );
+
+        const tyreRuns = await TyreRun.find({
+            organisationId,
+            isActive: true,
+            $or: [
+                { "tyres.LF": { $in: tyreIds } },
+                { "tyres.RF": { $in: tyreIds } },
+                { "tyres.LR": { $in: tyreIds } },
+                { "tyres.RR": { $in: tyreIds } },
+            ],
+        });
+
+        const history = [];
+
+        for (const tyreRun of tyreRuns) {
+            const run = await Run.findOne({
+                _id: tyreRun.runId,
+                organisationId,
+            });
+
+            if (!run) continue;
+
+            const eventVehicle = await EventVehicle.findOne({
+                _id: run.eventVehicleId,
+                organisationId,
+            }).populate("eventId");
+
+            if (!eventVehicle) continue;
+
+            const pressureChecks =
+                await TyrePressureCheck.find({
+                    organisationId,
+                    tyreRunId: tyreRun._id,
+                    isActive: true,
+                }).sort({
+                    recordedAt: 1,
+                    createdAt: 1,
+                });
+            history.push({
+                eventName:
+                    eventVehicle.eventId?.name ||
+                    "Unknown Event",
+
+                eventId:
+                    eventVehicle.eventId?._id,
+
+                runName:
+                    run.name || "Unnamed Run",
+
+                runId:
+                    run._id,
+
+                lapsDone:
+                    run.lapsDone ?? 0,
+
+                tyreRunId:
+                    tyreRun._id,
+
+                pressureChecks,
+            });
+        }
+        res.json({ history });
+    } catch (err) {
+        console.error("getTyreSetHistory error", err);
+        res.status(500).json({
+            message: "Server error",
+        });
     }
 };
