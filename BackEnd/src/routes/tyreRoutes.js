@@ -8,6 +8,7 @@ router.use(authMiddleware);
 
 router.post("/", tyreController.createTyre);
 router.get("/", tyreController.getTyres);
+router.delete("/set", tyreController.archiveTyreSet);
 router.get("/:id", tyreController.getTyreById);
 router.patch("/:id", tyreController.updateTyre);
 router.delete("/:id", tyreController.archiveTyre);

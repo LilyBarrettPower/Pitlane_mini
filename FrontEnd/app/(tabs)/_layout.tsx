@@ -134,6 +134,11 @@ export default function TabsLayout() {
         options={{ href: null }}
       />
 
+      <Tabs.Screen
+        name="tyres/sets/[vehicleId]/[setName]"
+        options={{ href: null }}
+      />
+
 
     </Tabs>
   );

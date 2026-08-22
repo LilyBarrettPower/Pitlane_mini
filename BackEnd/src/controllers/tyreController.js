@@ -165,3 +165,57 @@ exports.unarchiveTyre = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+exports.archiveTyreSet = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+        const {vehicleId, currentSet} = req.body;
+
+        if (!vehicleId || !currentSet) {
+            return res.status(400).json({
+                message: "vehicleId and currentSet are required",
+            });
+        }
+
+        const tyres = await Tyre.find({
+            organisationId,
+            vehicleId,
+            currentSet: {
+                $regex: `^${currentSet}$`,
+                $options: "i",
+            },
+            isActive: true,
+        });
+
+        if (tyres.length === 0) {
+            return res.status(404).json({
+                message: "No active tyres found in this set",
+            });
+        }
+
+        const result = await Tyre.updateMany(
+            {
+                organisationId,
+                vehicleId,
+                currentSet,
+                isActive: true,
+            },
+            {
+                $set: {
+                    isActive: false,
+                },
+            }
+        );
+
+        res.json({
+            message: "Tyre set archived",
+            archivedCount: XPathResult.modifiedCount,
+        });
+    } catch (err) {
+        console.error("archiveTyreSet error", err);
+
+        res.status(500).json({
+            message: "Server error",
+        });
+    }
+};

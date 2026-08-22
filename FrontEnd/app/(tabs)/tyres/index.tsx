@@ -33,6 +33,7 @@ type Tyre = {
 
 type TyreSetGroup = {
     key: string;
+    vehicleId: string;
     currentSet: string;
     vehicleName: string;
     brand: string;
@@ -272,6 +273,7 @@ export default function TyresPage() {
 
             groups.set(groupKey, {
                 key: groupKey,
+                vehicleId,
                 currentSet: setName,
                 vehicleName: getVehicleName(tyre),
                 brand: tyre.brand,
@@ -340,65 +342,6 @@ export default function TyresPage() {
                 ) : null}
 
 
-                {/* 
-                {filteredTyres.length === 0 ? (
-                    <View style={globalStyles.card}>
-                        <Text style={globalStyles.text}>
-                            {tyres.length === 0
-                                ? "No tyres have been created yet"
-                                : "No tyres match your search"}
-                        </Text>
-                    </View>
-                ) : (
-                    filteredTyres.map((tyre) => (
-                        <Pressable
-                            key={tyre._id}
-                            style={globalStyles.card}
-                            onPress={() => router.push(`/tyres/${tyre._id}`)
-                            }
-                        >
-                            <Text style={globalStyles.sectionTitle}>
-                                {tyre.currentSet} - {tyre.brand}
-                                {tyre.spec ? ` ${tyre.spec}` : ""}
-                            </Text>
-
-                            <Text style={globalStyles.cardText}>
-                                Vehicle: {getVehicleName(tyre)}
-                            </Text>
-
-                            <Text style={globalStyles.cardText}>
-                                Size: {tyre.size || "-"}
-                            </Text>
-
-                            <Text style={globalStyles.cardText}>
-                                Position: {tyre.position || "-"}
-                            </Text>
-
-                            <Text style={globalStyles.cardText}>
-                                FIA Serial: {tyre.fiaSerial || "-"}
-                            </Text>
-
-                            <Text style={globalStyles.cardText}>
-                                Condition: {tyre.condition || "-"}
-                            </Text>
-
-                            <Text style={globalStyles.cardText}>
-                                Heat Cycles: {tyre.heatCycles ?? 0}
-                            </Text>
-
-                            <Text style={globalStyles.cardText}>
-                                Distance: {tyre.kmTotal ?? 0} km
-                            </Text>
-
-                            {tyre.notes ? (
-                                <Text style={globalStyles.subText}>
-                                    Notes: {tyre.notes}
-                                </Text>
-                            ) : null}
-                        </Pressable>
-                    ))
-                )} */}
-
                 {filteredTyres.length === 0 ? (
                     <View style={globalStyles.card}>
                         <Text style={globalStyles.text}>
@@ -409,9 +352,21 @@ export default function TyresPage() {
                     </View>
                 ) : (
                     groupedTyreSets.map((group) => (
-                        <View
+                        <Pressable
                             key={group.key}
-                            style={styles.tyreSetCard}
+                            style={({ pressed }) => [
+                                styles.tyreSetCard,
+                                pressed && styles.tyreSetCardPressed,
+                            ]}
+                            onPress={() =>
+                                router.push({
+                                    pathname: "/tyres/sets/[vehicleId]/[setName]",
+                                    params: {
+                                        vehicleId: group.vehicleId,
+                                        setName: group.currentSet,
+                                    },
+                                })
+                            }
                         >
                             <View style={styles.tyreSetHeader}>
                                 <View style={styles.tyreSetHeaderText}>
@@ -444,14 +399,15 @@ export default function TyresPage() {
                                             styles.tyreCard,
                                             pressed && styles.tyreCardPressed,
                                         ]}
-                                        onPress={() =>
-                                            router.push({
+                                        onPress={(event) => {
+                                            event.stopPropagation();
+                                                                                        router.push({
                                                 pathname: "/tyres/[tyreId]",
                                                 params: {
                                                     tyreId: tyre._id,
                                                 },
                                             })
-                                        }
+                                        }}
                                     >
                                         <View style={styles.tyreCardHeader}>
                                             <Text style={styles.tyrePosition}>
@@ -520,7 +476,7 @@ export default function TyresPage() {
                                     </Pressable>
                                 ))}
                             </View>
-                        </View>
+                        </Pressable>
                     ))
                 )}
 
@@ -964,4 +920,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 5,
     },
+    tyreSetCardPressed: {
+        opacity: 0.8,
+    }
 })

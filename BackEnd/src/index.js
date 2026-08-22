@@ -86,7 +86,7 @@ app.use("/checklist-base-templates", checklistBaseTemplateRoutes);
 app.use("/checklist-templates", checklistTemplateRoutes);
 app.use("/checklist-instance", checklistInstanceRoutes);
 app.use("/lap-times", lapTimeRoutes);
-app.use("/tyre-pressure-check", tyrePressureCheckRoutes);
+app.use("/tyre-pressure-checks", tyrePressureCheckRoutes);
 
 app.get("/", (req, res) => {
     res.json({ message: "Pitlane Mini API" });
