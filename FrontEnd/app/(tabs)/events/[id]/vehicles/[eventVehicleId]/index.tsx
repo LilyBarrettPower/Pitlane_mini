@@ -147,6 +147,12 @@ export default function EventVehicleDetailPage() {
 
     const [tyreHistory, setTyreHistory] = useState<EventTyreHistoryItem[]>([]);
 
+    const [tyreSelectionMode, setTyreSelectionMode] = useState<"set" | "custom">("set");
+    const [selectedLF, setSelectedLF] = useState("");
+    const [selectedRF, setSelectedRF] = useState("");
+    const [selectedLR, setSelectedLR] = useState("");
+    const [selectedRR, setSelectedRR] = useState("");
+
 
     async function fetchEventVehicle() {
         try {
@@ -271,8 +277,22 @@ export default function EventVehicleDetailPage() {
         setTrackCondition("");
         setFuelStart("");
         setNotes("");
+        setTyreSelectionMode("set");
         setSelectedTyreSetKey("");
+        setSelectedLF("");
+        setSelectedLR("");
+        setSelectedRF("");
+        setSelectedRR("");
         setAvailableTyres([]);
+    }
+
+    function getTyresForCorner(
+        corner: "LF" | "RF" | "LR" | "RR"
+    ) {
+        return availableTyres.filter(
+            (tyre) =>
+                tyre.position?.toUpperCase() === corner
+        );
     }
 
     async function handleCreateRun() {
@@ -286,21 +306,73 @@ export default function EventVehicleDetailPage() {
             return;
         }
 
-        if (!selectedTyreSetKey) {
-            setErrorMessage("Please select a tyre set");
-            return;
-        }
+        // if (!selectedTyreSetKey) {
+        //     setErrorMessage("Please select a tyre set");
+        //     return;
+        // }
 
-        const selectedSet = tyreSetOptions.find(
-            (set) =>
-                set.key === selectedTyreSetKey
-        );
+        // const selectedSet = tyreSetOptions.find(
+        //     (set) =>
+        //         set.key === selectedTyreSetKey
+        // );
 
-        if (!selectedSet) {
-            setErrorMessage(
-                "Selected tyre set could not be found"
+        // if (!selectedSet) {
+        //     setErrorMessage(
+        //         "Selected tyre set could not be found"
+        //     );
+        //     return;
+        // }
+
+        let selectedTyres: {
+            LF: string;
+            RF: string;
+            LR: string;
+            RR: string;
+        };
+
+        if (tyreSelectionMode === "set") {
+            if (!selectedTyreSetKey) {
+                setErrorMessage("Please select a tyre set");
+                return;
+            }
+
+            const selectedSet = tyreSetOptions.find(
+                (set) =>
+                    set.key === selectedTyreSetKey
             );
-            return;
+
+            if (!selectedSet) {
+                setErrorMessage(
+                    "Selected tyre set could not be found"
+                );
+                return;
+            }
+
+            selectedTyres = {
+                LF: selectedSet.tyres.LF._id,
+                RF: selectedSet.tyres.RF._id,
+                LR: selectedSet.tyres.LR._id,
+                RR: selectedSet.tyres.RR._id,
+            };
+        } else {
+            if (
+                !selectedLF ||
+                !selectedRF ||
+                !selectedLR ||
+                !selectedRR
+            ) {
+                setErrorMessage(
+                    "Please select a tyre for all four corners"
+                );
+                return;
+            }
+
+            selectedTyres = {
+                LF: selectedLF,
+                RF: selectedRF,
+                LR: selectedLR,
+                RR: selectedRR,
+            };
         }
 
         try {
@@ -346,12 +418,7 @@ export default function EventVehicleDetailPage() {
                 body: JSON.stringify({
                     runId: createdRun._id,
 
-                    tyres: {
-                        LF: selectedSet.tyres.LF._id,
-                        RF: selectedSet.tyres.RF._id,
-                        LR: selectedSet.tyres.LR._id,
-                        RR: selectedSet.tyres.RR._id,
-                    },
+                    tyres: selectedTyres,
 
                     notes: "",
                 }),
@@ -876,7 +943,185 @@ export default function EventVehicleDetailPage() {
                                 />
 
                                 <Text style={globalStyles.label}>Tyre Set</Text>
-                                {isLoadingTyres ? (
+                                <View style={styles.tyreModeRow}>
+                                    <Pressable
+                                        style={[
+                                            styles.tyreModeButton,
+                                            tyreSelectionMode === "set" &&
+                                            styles.tyreModeButtonSelected,
+                                        ]}
+                                        onPress={() => setTyreSelectionMode("set")}
+                                    >
+                                        <Text style={styles.tyreModeText}>
+                                            Full Set
+                                        </Text>
+                                    </Pressable>
+
+                                    <Pressable
+                                        style={[
+                                            styles.tyreModeButton,
+                                            tyreSelectionMode === "custom" &&
+                                            styles.tyreModeButtonSelected,
+                                        ]}
+                                        onPress={() => setTyreSelectionMode("custom")}
+                                    >
+                                        <Text style={styles.tyreModeText}>
+                                            Custom Corners
+                                        </Text>
+                                    </Pressable>
+                                </View>
+
+                                {tyreSelectionMode === "set" ? (
+                                    <>
+                                        <Text style={globalStyles.label}>
+                                            Tyre Set
+                                        </Text>
+
+                                        {isLoadingTyres ? (
+                                            <ActivityIndicator color="#ffffff" />
+                                        ) : tyreSetOptions.length === 0 ? (
+                                            <Text style={globalStyles.subText}>
+                                                No complete tyre sets available for this vehicle
+                                            </Text>
+                                        ) : (
+                                            <View style={styles.tyreSetList}>
+                                                {tyreSetOptions.map((set) => {
+                                                    const isSelected =
+                                                        selectedTyreSetKey === set.key;
+
+                                                    return (
+                                                        <Pressable
+                                                            key={set.key}
+                                                            style={[
+                                                                styles.tyreSetCard,
+                                                                isSelected &&
+                                                                styles.tyreSetCardSelected,
+                                                            ]}
+                                                            onPress={() =>
+                                                                setSelectedTyreSetKey(set.key)
+                                                            }
+                                                        >
+                                                            <View style={styles.tyreSetHeader}>
+                                                                <Text style={globalStyles.cardText}>
+                                                                    {set.currentSet}
+                                                                </Text>
+
+                                                                <Text style={globalStyles.subText}>
+                                                                    4/4
+                                                                </Text>
+                                                            </View>
+
+                                                            <Text style={globalStyles.subText}>
+                                                                {set.brand}
+                                                                {set.spec ? ` ${set.spec}` : ""}
+                                                            </Text>
+
+                                                            <Text style={globalStyles.subText}>
+                                                                LF · RF · LR · RR
+                                                            </Text>
+                                                        </Pressable>
+                                                    );
+                                                })}
+                                            </View>
+                                        )}
+                                    </>
+                                ) : (
+                                    <View style={styles.customTyreSection}>
+                                        {(["LF", "RF", "LR", "RR"] as const).map(
+                                            (corner) => {
+                                                const tyresForCorner =
+                                                    getTyresForCorner(corner);
+
+                                                const selectedId =
+                                                    corner === "LF"
+                                                        ? selectedLF
+                                                        : corner === "RF"
+                                                            ? selectedRF
+                                                            : corner === "LR"
+                                                                ? selectedLR
+                                                                : selectedRR;
+
+                                                const setSelected = (id: string) => {
+                                                    if (corner === "LF") {
+                                                        setSelectedLF(id);
+                                                    } else if (corner === "RF") {
+                                                        setSelectedRF(id);
+                                                    } else if (corner === "LR") {
+                                                        setSelectedLR(id);
+                                                    } else {
+                                                        setSelectedRR(id);
+                                                    }
+                                                };
+
+                                                return (
+                                                    <View
+                                                        key={corner}
+                                                        style={styles.customCornerCard}
+                                                    >
+                                                        <Text style={styles.customCornerTitle}>
+                                                            {corner}
+                                                        </Text>
+
+                                                        {tyresForCorner.length === 0 ? (
+                                                            <Text style={globalStyles.subText}>
+                                                                No tyres available
+                                                            </Text>
+                                                        ) : (
+                                                            tyresForCorner.map((tyre) => {
+                                                                const isSelected =
+                                                                    selectedId === tyre._id;
+
+                                                                return (
+                                                                    <Pressable
+                                                                        key={tyre._id}
+                                                                        style={[
+                                                                            styles.customTyreOption,
+                                                                            isSelected &&
+                                                                            styles.customTyreOptionSelected,
+                                                                        ]}
+                                                                        onPress={() =>
+                                                                            setSelected(tyre._id)
+                                                                        }
+                                                                    >
+                                                                        <Text
+                                                                            style={
+                                                                                globalStyles.cardText
+                                                                            }
+                                                                        >
+                                                                            {tyre.currentSet ||
+                                                                                "No Set"}
+                                                                        </Text>
+
+                                                                        <Text
+                                                                            style={
+                                                                                globalStyles.subText
+                                                                            }
+                                                                        >
+                                                                            {tyre.brand}
+                                                                            {tyre.spec
+                                                                                ? ` ${tyre.spec}`
+                                                                                : ""}
+                                                                        </Text>
+
+                                                                        <Text
+                                                                            style={
+                                                                                globalStyles.subText
+                                                                            }
+                                                                        >
+                                                                            FIA:{" "}
+                                                                            {tyre.fiaSerial || "-"}
+                                                                        </Text>
+                                                                    </Pressable>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </View>
+                                                );
+                                            }
+                                        )}
+                                    </View>
+                                )}
+                                {/* {isLoadingTyres ? (
                                     <ActivityIndicator color="#ffffff" />
                                 ) : tyreSetOptions.length === 0 ? (
                                     <Text style={globalStyles.subText}>
@@ -928,7 +1173,7 @@ export default function EventVehicleDetailPage() {
                                             );
                                         })}
                                     </View>
-                                )}
+                                )} */}
 
                                 <Text style={globalStyles.label}>Notes</Text>
                                 <TextInput
@@ -1139,5 +1384,61 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: "700",
         marginTop: 3,
+    },
+    tyreModeRow: {
+        flexDirection: "row",
+        gap: 8,
+        marginBottom: 12,
+    },
+
+    tyreModeButton: {
+        flex: 1,
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 10,
+        paddingVertical: 10,
+        alignItems: "center",
+    },
+
+    tyreModeButtonSelected: {
+        backgroundColor: "#2563eb",
+        borderColor: "#2563eb",
+    },
+
+    tyreModeText: {
+        color: "#ffffff",
+        fontWeight: "700",
+    },
+
+    customTyreSection: {
+        gap: 12,
+        marginBottom: 12,
+    },
+
+    customCornerCard: {
+        backgroundColor: "#111827",
+        borderRadius: 12,
+        padding: 12,
+        gap: 8,
+    },
+
+    customCornerTitle: {
+        color: "#ffffff",
+        fontSize: 16,
+        fontWeight: "800",
+    },
+
+    customTyreOption: {
+        backgroundColor: "#1f2937",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 8,
+        padding: 10,
+    },
+
+    customTyreOptionSelected: {
+        backgroundColor: "#1d4ed8",
+        borderColor: "#2563eb",
     },
 });
