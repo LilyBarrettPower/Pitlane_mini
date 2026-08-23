@@ -41,6 +41,12 @@ type TyreSetGroup = {
     tyres: Tyre[];
 };
 
+type VehicleTyreGroup = {
+    vehicleId: string;
+    vehicleName: string;
+    sets: TyreSetGroup[];
+};
+
 
 export default function TyresPage() {
     const { token } = useAuth();
@@ -304,6 +310,38 @@ export default function TyresPage() {
 
     }, [filteredTyres, vehicles])
 
+    const groupedByVehicle = useMemo<VehicleTyreGroup[]>(() => {
+        const groups = new Map<string, VehicleTyreGroup>();
+        groupedTyreSets.forEach((set) => {
+            const existingVehicle = groups.get(set.vehicleId);
+
+            if (existingVehicle) {
+                existingVehicle.sets.push(set);
+                return;
+            }
+
+            groups.set(set.vehicleId, {
+                vehicleId: set.vehicleId,
+                vehicleName: set.vehicleName,
+                sets: [set],
+            });
+        });
+
+        return Array.from(groups.values()).map((vehicleGroup) => ({
+            ...vehicleGroup,
+            sets: [...vehicleGroup.sets].sort((a, b) =>
+                a.currentSet.localeCompare(
+                    b.currentSet,
+                    undefined,
+                    {
+                        numeric: true,
+                        sensitivity: "base",
+                    }
+                )
+            ),
+        }));
+    }, [groupedTyreSets]);
+
     if (isLoading) {
         return (
             <SafeAreaView style={globalStyles.container}>
@@ -351,133 +389,386 @@ export default function TyresPage() {
                         </Text>
                     </View>
                 ) : (
-                    groupedTyreSets.map((group) => (
-                        <Pressable
-                            key={group.key}
-                            style={({ pressed }) => [
-                                styles.tyreSetCard,
-                                pressed && styles.tyreSetCardPressed,
-                            ]}
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/tyres/sets/[vehicleId]/[setName]",
-                                    params: {
-                                        vehicleId: group.vehicleId,
-                                        setName: group.currentSet,
-                                    },
-                                })
-                            }
+                    // groupedTyreSets.map((group) => (
+                    //     <Pressable
+                    //         key={group.key}
+                    //         style={({ pressed }) => [
+                    //             styles.tyreSetCard,
+                    //             pressed && styles.tyreSetCardPressed,
+                    //         ]}
+                    //         onPress={() =>
+                    //             router.push({
+                    //                 pathname: "/tyres/sets/[vehicleId]/[setName]",
+                    //                 params: {
+                    //                     vehicleId: group.vehicleId,
+                    //                     setName: group.currentSet,
+                    //                 },
+                    //             })
+                    //         }
+                    //     >
+                    //         <View style={styles.tyreSetHeader}>
+                    //             <View style={styles.tyreSetHeaderText}>
+                    //                 <Text style={styles.tyreSetTitle}>
+                    //                     {group.currentSet}
+                    //                 </Text>
+
+                    //                 <Text style={styles.tyreSetVehicle}>
+                    //                     {group.vehicleName}
+                    //                 </Text>
+
+                    //                 <Text style={styles.tyreSetBrand}>
+                    //                     {group.brand}
+                    //                     {group.spec ? ` ${group.spec}` : ""}
+                    //                 </Text>
+                    //             </View>
+
+                    //             <View style={styles.tyreCountBadge}>
+                    //                 <Text style={styles.tyreCountText}>
+                    //                     {group.tyres.length}/4
+                    //                 </Text>
+                    //             </View>
+                    //         </View>
+
+                    //         <View style={styles.tyreGrid}>
+                    //             {group.tyres.map((tyre) => (
+                    //                 <Pressable
+                    //                     key={tyre._id}
+                    //                     style={({ pressed }) => [
+                    //                         styles.tyreCard,
+                    //                         pressed && styles.tyreCardPressed,
+                    //                     ]}
+                    //                     onPress={(event) => {
+                    //                         event.stopPropagation();
+                    //                         router.push({
+                    //                             pathname: "/tyres/[tyreId]",
+                    //                             params: {
+                    //                                 tyreId: tyre._id,
+                    //                             },
+                    //                         })
+                    //                     }}
+                    //                 >
+                    //                     <View style={styles.tyreCardHeader}>
+                    //                         <Text style={styles.tyrePosition}>
+                    //                             {tyre.position || "No Position"}
+                    //                         </Text>
+
+                    //                         <Text
+                    //                             style={[
+                    //                                 styles.conditionBadge,
+                    //                                 tyre.condition === "New" &&
+                    //                                 styles.conditionNew,
+                    //                                 tyre.condition === "Used" &&
+                    //                                 styles.conditionUsed,
+                    //                             ]}
+                    //                         >
+                    //                             {tyre.condition || "-"}
+                    //                         </Text>
+                    //                     </View>
+
+                    //                     <Text style={styles.tyreDetailLabel}>
+                    //                         FIA Serial
+                    //                     </Text>
+
+                    //                     <Text style={styles.tyreDetailValue}>
+                    //                         {tyre.fiaSerial || "-"}
+                    //                     </Text>
+
+                    //                     <Text style={styles.tyreDetailLabel}>
+                    //                         Size
+                    //                     </Text>
+
+                    //                     <Text style={styles.tyreDetailValue}>
+                    //                         {tyre.size || "-"}
+                    //                     </Text>
+
+                    //                     <View style={styles.tyreStatsRow}>
+                    //                         <View style={styles.tyreStat}>
+                    //                             <Text style={styles.tyreDetailLabel}>
+                    //                                 Cycles
+                    //                             </Text>
+
+                    //                             <Text style={styles.tyreDetailValue}>
+                    //                                 {tyre.heatCycles ?? 0}
+                    //                             </Text>
+                    //                         </View>
+
+                    //                         <View style={styles.tyreStat}>
+                    //                             <Text style={styles.tyreDetailLabel}>
+                    //                                 Distance
+                    //                             </Text>
+
+                    //                             <Text style={styles.tyreDetailValue}>
+                    //                                 {tyre.kmTotal ?? 0} km
+                    //                             </Text>
+                    //                         </View>
+                    //                     </View>
+
+                    //                     {tyre.notes ? (
+                    //                         <Text
+                    //                             style={styles.tyreNotes}
+                    //                             numberOfLines={2}
+                    //                         >
+                    //                             {tyre.notes}
+                    //                         </Text>
+                    //                     ) : null}
+                    //                 </Pressable>
+                    //             ))}
+                    //         </View>
+                    //     </Pressable>
+                    // ))
+                    groupedByVehicle.map((vehicleGroup) => (
+                        <View
+                            key={vehicleGroup.vehicleId}
+                            style={styles.vehicleSection}
                         >
-                            <View style={styles.tyreSetHeader}>
-                                <View style={styles.tyreSetHeaderText}>
-                                    <Text style={styles.tyreSetTitle}>
-                                        {group.currentSet}
-                                    </Text>
+                            <View style={styles.vehicleHeader}>
+                                <Text style={styles.vehicleTitle}>
+                                    {vehicleGroup.vehicleName}
+                                </Text>
 
-                                    <Text style={styles.tyreSetVehicle}>
-                                        {group.vehicleName}
-                                    </Text>
-
-                                    <Text style={styles.tyreSetBrand}>
-                                        {group.brand}
-                                        {group.spec ? ` ${group.spec}` : ""}
-                                    </Text>
-                                </View>
-
-                                <View style={styles.tyreCountBadge}>
-                                    <Text style={styles.tyreCountText}>
-                                        {group.tyres.length}/4
-                                    </Text>
-                                </View>
+                                <Text style={styles.vehicleSetCount}>
+                                    {vehicleGroup.sets.length}{" "}
+                                    {vehicleGroup.sets.length === 1
+                                        ? "set"
+                                        : "sets"}
+                                </Text>
                             </View>
 
-                            <View style={styles.tyreGrid}>
-                                {group.tyres.map((tyre) => (
+                            <View style={styles.vehicleSets}>
+                                {vehicleGroup.sets.map((group) => (
                                     <Pressable
-                                        key={tyre._id}
+                                        key={group.key}
                                         style={({ pressed }) => [
-                                            styles.tyreCard,
-                                            pressed && styles.tyreCardPressed,
+                                            styles.tyreSetCard,
+                                            pressed &&
+                                            styles.tyreSetCardPressed,
                                         ]}
-                                        onPress={(event) => {
-                                            event.stopPropagation();
+                                        onPress={() =>
                                             router.push({
-                                                pathname: "/tyres/[tyreId]",
+                                                pathname:
+                                                    "/tyres/sets/[vehicleId]/[setName]",
                                                 params: {
-                                                    tyreId: tyre._id,
+                                                    vehicleId:
+                                                        group.vehicleId,
+                                                    setName:
+                                                        group.currentSet,
                                                 },
                                             })
-                                        }}
+                                        }
                                     >
-                                        <View style={styles.tyreCardHeader}>
-                                            <Text style={styles.tyrePosition}>
-                                                {tyre.position || "No Position"}
-                                            </Text>
-
-                                            <Text
-                                                style={[
-                                                    styles.conditionBadge,
-                                                    tyre.condition === "New" &&
-                                                    styles.conditionNew,
-                                                    tyre.condition === "Used" &&
-                                                    styles.conditionUsed,
-                                                ]}
+                                        <View
+                                            style={styles.tyreSetHeader}
+                                        >
+                                            <View
+                                                style={
+                                                    styles.tyreSetHeaderText
+                                                }
                                             >
-                                                {tyre.condition || "-"}
-                                            </Text>
-                                        </View>
-
-                                        <Text style={styles.tyreDetailLabel}>
-                                            FIA Serial
-                                        </Text>
-
-                                        <Text style={styles.tyreDetailValue}>
-                                            {tyre.fiaSerial || "-"}
-                                        </Text>
-
-                                        <Text style={styles.tyreDetailLabel}>
-                                            Size
-                                        </Text>
-
-                                        <Text style={styles.tyreDetailValue}>
-                                            {tyre.size || "-"}
-                                        </Text>
-
-                                        <View style={styles.tyreStatsRow}>
-                                            <View style={styles.tyreStat}>
-                                                <Text style={styles.tyreDetailLabel}>
-                                                    Cycles
+                                                <Text
+                                                    style={
+                                                        styles.tyreSetTitle
+                                                    }
+                                                >
+                                                    {group.currentSet}
                                                 </Text>
 
-                                                <Text style={styles.tyreDetailValue}>
-                                                    {tyre.heatCycles ?? 0}
+                                                <Text
+                                                    style={
+                                                        styles.tyreSetBrand
+                                                    }
+                                                >
+                                                    {group.brand}
+                                                    {group.spec
+                                                        ? ` ${group.spec}`
+                                                        : ""}
                                                 </Text>
                                             </View>
 
-                                            <View style={styles.tyreStat}>
-                                                <Text style={styles.tyreDetailLabel}>
-                                                    Distance
-                                                </Text>
-
-                                                <Text style={styles.tyreDetailValue}>
-                                                    {tyre.kmTotal ?? 0} km
+                                            <View
+                                                style={
+                                                    styles.tyreCountBadge
+                                                }
+                                            >
+                                                <Text
+                                                    style={
+                                                        styles.tyreCountText
+                                                    }
+                                                >
+                                                    {group.tyres.length}/4
                                                 </Text>
                                             </View>
                                         </View>
 
-                                        {tyre.notes ? (
-                                            <Text
-                                                style={styles.tyreNotes}
-                                                numberOfLines={2}
-                                            >
-                                                {tyre.notes}
-                                            </Text>
-                                        ) : null}
+                                        <View
+                                            style={styles.tyreGrid}
+                                        >
+                                            {group.tyres.map(
+                                                (tyre) => (
+                                                    <Pressable
+                                                        key={tyre._id}
+                                                        style={({
+                                                            pressed,
+                                                        }) => [
+                                                                styles.tyreCard,
+                                                                pressed &&
+                                                                styles.tyreCardPressed,
+                                                            ]}
+                                                        onPress={(
+                                                            event
+                                                        ) => {
+                                                            event.stopPropagation();
+
+                                                            router.push({
+                                                                pathname:
+                                                                    "/tyres/[tyreId]",
+                                                                params: {
+                                                                    tyreId:
+                                                                        tyre._id,
+                                                                },
+                                                            });
+                                                        }}
+                                                    >
+                                                        <View
+                                                            style={
+                                                                styles.tyreCardHeader
+                                                            }
+                                                        >
+                                                            <Text
+                                                                style={
+                                                                    styles.tyrePosition
+                                                                }
+                                                            >
+                                                                {tyre.position ||
+                                                                    "No Position"}
+                                                            </Text>
+
+                                                            <Text
+                                                                style={[
+                                                                    styles.conditionBadge,
+                                                                    tyre.condition ===
+                                                                    "New" &&
+                                                                    styles.conditionNew,
+                                                                    tyre.condition ===
+                                                                    "Used" &&
+                                                                    styles.conditionUsed,
+                                                                ]}
+                                                            >
+                                                                {tyre.condition ||
+                                                                    "-"}
+                                                            </Text>
+                                                        </View>
+
+                                                        <Text
+                                                            style={
+                                                                styles.tyreDetailLabel
+                                                            }
+                                                        >
+                                                            FIA Serial
+                                                        </Text>
+
+                                                        <Text
+                                                            style={
+                                                                styles.tyreDetailValue
+                                                            }
+                                                        >
+                                                            {tyre.fiaSerial ||
+                                                                "-"}
+                                                        </Text>
+
+                                                        <Text
+                                                            style={
+                                                                styles.tyreDetailLabel
+                                                            }
+                                                        >
+                                                            Size
+                                                        </Text>
+
+                                                        <Text
+                                                            style={
+                                                                styles.tyreDetailValue
+                                                            }
+                                                        >
+                                                            {tyre.size ||
+                                                                "-"}
+                                                        </Text>
+
+                                                        <View
+                                                            style={
+                                                                styles.tyreStatsRow
+                                                            }
+                                                        >
+                                                            <View
+                                                                style={
+                                                                    styles.tyreStat
+                                                                }
+                                                            >
+                                                                <Text
+                                                                    style={
+                                                                        styles.tyreDetailLabel
+                                                                    }
+                                                                >
+                                                                    Cycles
+                                                                </Text>
+
+                                                                <Text
+                                                                    style={
+                                                                        styles.tyreDetailValue
+                                                                    }
+                                                                >
+                                                                    {tyre.heatCycles ??
+                                                                        0}
+                                                                </Text>
+                                                            </View>
+
+                                                            <View
+                                                                style={
+                                                                    styles.tyreStat
+                                                                }
+                                                            >
+                                                                <Text
+                                                                    style={
+                                                                        styles.tyreDetailLabel
+                                                                    }
+                                                                >
+                                                                    Distance
+                                                                </Text>
+
+                                                                <Text
+                                                                    style={
+                                                                        styles.tyreDetailValue
+                                                                    }
+                                                                >
+                                                                    {tyre.kmTotal ??
+                                                                        0}{" "}
+                                                                    km
+                                                                </Text>
+                                                            </View>
+                                                        </View>
+
+                                                        {tyre.notes ? (
+                                                            <Text
+                                                                style={
+                                                                    styles.tyreNotes
+                                                                }
+                                                                numberOfLines={
+                                                                    2
+                                                                }
+                                                            >
+                                                                {
+                                                                    tyre.notes
+                                                                }
+                                                            </Text>
+                                                        ) : null}
+                                                    </Pressable>
+                                                )
+                                            )}
+                                        </View>
                                     </Pressable>
                                 ))}
                             </View>
-                        </Pressable>
+                        </View>
                     ))
+
                 )}
 
                 <Modal
@@ -922,5 +1213,34 @@ const styles = StyleSheet.create({
     },
     tyreSetCardPressed: {
         opacity: 0.8,
-    }
+    },
+    vehicleSection: {
+        gap: 12,
+        marginTop: 8,
+    },
+
+    vehicleHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: "#4b5563",
+    },
+
+    vehicleTitle: {
+        color: "#ffffff",
+        fontSize: 22,
+        fontWeight: "800",
+    },
+
+    vehicleSetCount: {
+        color: "#9ca3af",
+        fontSize: 13,
+        fontWeight: "600",
+    },
+
+    vehicleSets: {
+        gap: 14,
+    },
 })
