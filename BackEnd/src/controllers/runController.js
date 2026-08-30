@@ -1,5 +1,7 @@
 const Run = require("../models/Run");
 const EventVehicle = require("../models/EventVehicle");
+const Event = require("../models/Event");
+const Track = require("../models/Track");
 const LapTime = require("../models/LapTimes");
 const TyreRun = require("../models/TyreRun");
 const {
@@ -18,48 +20,58 @@ exports.carIn = async (req, res) => {
         });
 
         if (!run) {
-            return res.status(404).json({message: "Run not found"});
+            return res.status(404).json({ message: "Run not found" });
         }
 
         const laps = await LapTime.find({
             organisationId,
             runId: id,
             isActive: true,
-        }).sort({lapNumber: 1});
+        }).sort({ lapNumber: 1 });
+
+        const validLaps = laps.filter(
+            (lap) => !lap.isOutLap && !lap.isInLap
+        );
 
         run.inTime = new Date();
-        // Do we want this to be valid laps or total laps?
-        run.lapsDone = laps.length;
+        // This below is all of the avlid timed laps
+        run.lapsDone = validLaps.length;
+
+        // LAP TIME CALCULATIONS:
 
         if (laps.length > 0) {
-            // const validLapTimes = laps
-            //     .map((lap) => lap.lapTimeS)
-            //     .filter((time) => Number.isFinite(time));
-
-            const validLaps = laps.filter(
-                (lap) => !lap.isOutLap && !lap.isInLap
-            );
-
-            const validLapTimes = validLaps 
+            const validLapTimes = validLaps
                 .map((lap) => lap.lapTimeS)
-                .filter((time) => Number.isFinite(time));
+                .filter((time) => 
+                    Number.isFinite(time)
+                );
 
 
             if (validLapTimes.length > 0) {
-                const totalLapTime = validLapTimes.reduce(
-                    (total, time) => total + time,
+                const totalLapTime = 
+                    validLapTimes.reduce(
+                        (total, time) =>
+                            total + time,
                     0
                 );
 
-                run.bestLapS = Math.min(...validLapTimes);
-                run.averageLapS = totalLapTime / validLapTimes.length;
+                run.bestLapS = 
+                    Math.min(...validLapTimes);
+
+                run.averageLapS = 
+                    totalLapTime / 
+                    validLapTimes.length;
             }
+        }
+        // FUEL CALCULATIONS 
 
             const lapsWithFuel = laps.filter(
-                (lap) => 
+                (lap) =>
                     lap.fuelRemaining !== undefined &&
-                lap.fuelRemaining !== null &&
-                Number.isFinite(lap.fuelRemaining)
+                    lap.fuelRemaining !== null &&
+                    Number.isFinite(
+                        lap.fuelRemaining
+                    )
             );
 
             if (
@@ -67,17 +79,85 @@ exports.carIn = async (req, res) => {
                 run.fuelStart !== undefined &&
                 run.fuelStart !== null
             ) {
-                const finalFuelReading = 
-                    lapsWithFuel[lapsWithFuel.length - 1].fuelRemaining;
+                const finalFuelReading =
+                    lapsWithFuel[
+                        lapsWithFuel.length - 1
+                    ].fuelRemaining;
 
                 run.fuelEnd = finalFuelReading;
                 run.fuelUsed = run.fuelStart - finalFuelReading;
 
-                run.fuelPerLap = 
+                run.fuelPerLap =
                     lapsWithFuel.length > 0
                         ? run.fuelUsed / lapsWithFuel.length
                         : 0;
             }
+        
+        //  TYRE MILEAGE
+
+        const eventVehicle = await EventVehicle.findOne({
+            _id: run.eventVehicleId,
+            organisationId,
+            isActive: true,
+        });
+
+        if (!eventVehicle) {
+            return res.status(404).json({
+                message: "Event Vehicle Not Found",
+            });
+        }
+
+        const event = await Event.findOne({
+            _id: eventVehicle.eventId,
+            organisationId,
+            isActive: true,
+        });
+
+        if (!event) {
+            return res.status(404).json({
+                message: "Event Not Found",
+            });
+        }
+
+        const track = await Track.findOne({
+            _id: event.trackId,
+            organisationId,
+            isActive: true,
+        });
+
+        if (!track) {
+            return res.status(404).json({
+                message: "Track Not Found",
+            });
+        }
+
+        if (
+            track.distanceKms == null || !Number.isFinite(
+                track.distanceKms
+            ) || 
+            track.distanceKms <= 0
+        ) {
+            return res.status(400).json({
+                message: "Track distance is not configured",
+            });
+        }
+
+        const tyreRun = await TyreRun.findOne({
+            organisationId,
+            runId: run._id,
+            isActive: true,
+        });
+
+        if (tyreRun) {
+            const physicalLaps = laps.length;
+
+            const runDistanceKm = physicalLaps * track.distanceKms;
+
+            await updateTyreMileageForRun(
+                tyreRun,
+                runDistanceKm,
+                organisationId,
+            );
         }
 
         await run.save();
@@ -88,7 +168,7 @@ exports.carIn = async (req, res) => {
         });
     } catch (err) {
         console.error("Car in error", err);
-        res.status(500).json({message: "Server error"});
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -146,7 +226,7 @@ exports.createRun = async (req, res) => {
 exports.getRuns = async (req, res) => {
     try {
         const organisationId = req.user.organisationId;
-        const {eventVehicleId} = req.query;
+        const { eventVehicleId } = req.query;
 
         const filter = {
             organisationId,
@@ -210,11 +290,11 @@ exports.updateRun = async (req, res) => {
 
         if (run.fuelStart != null && run.fuelEnd != null) {
             run.fuelUsed = run.fuelStart - run.fuelEnd;
-            run.fuelPerLap = 
+            run.fuelPerLap =
                 run.lapsDone && run.lapsDone > 0 ? run.fuelUsed / run.lapsDone : 0;
         }
         await run.save();
-        
+
         res.json({ run });
     } catch (err) {
         console.error("Update Run error", err);
