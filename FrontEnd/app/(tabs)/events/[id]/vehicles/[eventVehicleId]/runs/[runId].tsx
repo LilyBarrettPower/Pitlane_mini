@@ -127,6 +127,7 @@ export default function RunDetailPage() {
     const [isSavingLap, setIsSavingLap] = useState(false);
 
     const [lapNumber, setLapNumber] = useState("");
+    const [lapType, setLapType] = useState<"normal" | "out" | "in">("normal");
     const [lapTimeS, setLapTimeS] = useState("");
     const [fuelRemaining, setFuelRemaining] = useState("");
     const [trackStatus, setTrackStatus] = useState("Green");
@@ -555,6 +556,7 @@ export default function RunDetailPage() {
     function clearLapForm() {
         setEditingLap(null);
         setLapNumber("");
+        setLapType("normal");
         setLapTimeS("");
         setFuelRemaining("");
         setTrackStatus("Green");
@@ -570,6 +572,7 @@ export default function RunDetailPage() {
                 : Math.max(...lapTimes.map((lap) => lap.lapNumber)) + 1;
 
         setLapNumber(String(nextLapNumber));
+        setLapType("normal");
         setLapTimeS("");
         setFuelRemaining("");
         setTrackStatus("Green");
@@ -581,6 +584,14 @@ export default function RunDetailPage() {
         setEditingLap(lap);
 
         setLapNumber(String(lap.lapNumber));
+        setLapType(
+            lap.isOutLap
+                ? "out"
+                : lap.isInLap
+                    ? "in"
+                    : "normal"
+        );
+
         setLapTimeS(String(lap.lapTimeS));
         setFuelRemaining(
             lap.fuelRemaining != null ? String(lap.fuelRemaining) : ""
@@ -604,6 +615,8 @@ export default function RunDetailPage() {
             const payload = {
                 runId,
                 lapNumber: Number(lapNumber),
+                isOutLap: lapType === "out",
+                isInLap: lapType === "in",
                 lapTimeS: Number(lapTimeS),
                 fuelRemaining: fuelRemaining
                     ? Number(fuelRemaining)
@@ -949,7 +962,13 @@ export default function RunDetailPage() {
                             return (
                                 <View key={lap._id} style={styles.lapRow}>
                                     <Text style={globalStyles.cardText}>
-                                        Lap {lap.lapNumber}: {formatLapTime(lap.lapTimeS)}
+                                        Lap {lap.lapNumber}:{" "} 
+                                        {formatLapTime(lap.lapTimeS)}
+                                        {lap.isOutLap
+                                            ? " . OUT LAP"
+                                            : lap.isInLap
+                                                ? " . IN LAP"
+                                                : ""}
                                     </Text>
 
                                     <Text style={globalStyles.subText}>
@@ -1359,6 +1378,45 @@ export default function RunDetailPage() {
                                     onChangeText={setLapNumber}
                                     keyboardType="numeric"
                                 />
+                                <Text style={globalStyles.label}>Lap Type</Text>
+                                <View style={styles.lapTypeRow}>
+                                    {(
+                                        [
+                                            {
+                                                label: "Normal",
+                                                value: "normal",
+                                            },
+                                            {
+                                                label: "Out Lap",
+                                                value: "out",
+                                            },
+                                            {
+                                                label: "In Lap",
+                                                value: "in",
+                                            },
+                                        ] as const
+                                    ).map((item) => {
+                                        const isSelected =
+                                            lapType === item.value;
+
+                                        return (
+                                            <Pressable
+                                                key={item.value}
+                                                style={[
+                                                    styles.lapTypeButton,
+                                                    isSelected &&
+                                                    styles.lapTypeButtonSelected,
+                                                ]}
+                                                onPress={() => setLapType(item.value)}
+                                            >
+                                                <Text style={[
+                                                    styles.lapTypeButtonText, isSelected && styles.lapTypeButtonTextSelected,
+                                                ]}
+                                                >{item.label}</Text>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
 
                                 <Text style={globalStyles.label}>Lap Time Seconds</Text>
                                 <TextInput
@@ -2091,5 +2149,35 @@ const styles = StyleSheet.create({
         color: "#ffffff",
         fontSize: 13,
         fontWeight: "700",
+    },
+    lapTypeRow: {
+        flexDirection: "row",
+        gap: 8,
+        marginBottom: 12,
+    },
+
+    lapTypeButton: {
+        flex: 1,
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#4b5563",
+        borderRadius: 10,
+        paddingVertical: 11,
+        paddingHorizontal: 12,
+        alignItems: "center",
+    },
+
+    lapTypeButtonSelected: {
+        backgroundColor: "#2563eb",
+        borderColor: "#2563eb",
+    },
+
+    lapTypeButtonText: {
+        color: "#d1d5db",
+        fontWeight: "700",
+    },
+
+    lapTypeButtonTextSelected: {
+        color: "#ffffff",
     },
 });

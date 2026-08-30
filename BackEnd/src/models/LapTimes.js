@@ -50,6 +50,19 @@ const LapTimeSchema = new mongoose.Schema(
      {timestamps: true}
 );
 
+LapTimeSchema.pre("validate", function (next) {
+    if (this.isInLap && this.isOutLap) {
+        return next(
+            new Error(
+                "A lap cannot be both an in lap and an out lap"
+            )
+        );
+    }
+
+    next();
+});
+
+
 LapTimeSchema.index(
     {organisationId: 1, runId: 1, lapNumber: 1},
     {unique: true}

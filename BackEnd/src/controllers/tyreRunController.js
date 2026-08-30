@@ -5,6 +5,48 @@ const EventVehicle = require("../models/EventVehicle");
 const Event = require("../models/Event");
 const TyrePressureCheck = require("../models/TyrePressureCheck");
 
+
+async function updateTyreMileageForRun(
+    tyreRun,
+    runDistanceKm,
+    organisationId
+) {
+    const corners = ["LF", "RF", "LR", "RR"];
+
+    for (const corner of corners) {
+        const tyreId = tyreRun.tyres?.[corner];
+
+        if (!tyreId) continue;
+
+        const previousDistance = tyreRun.distanceKm?.[corner] ?? 0;
+
+        const mileageDifference = runDistanceKm - previousDistance;
+
+        if (mileageDifference === 0) {
+            continue;
+        }
+
+        await Tyre.findOneAndUpdate(
+            {
+                _id: tyreId,
+                organisationId,
+                isActive: true,
+            },
+            {
+                $inc: {
+                    kmTotal: mileageDifference,
+                },
+            }
+        );
+
+        tyreRun.distanceKm[corner] = runDistanceKm;
+    }
+
+    await tyreRun.save();
+}
+
+exports.updateTyreMileageForRun = updateTyreMileageForRun;
+
 // POST - create a tyre run
 
 exports.createTyreRun = async (req, res) => {
@@ -83,7 +125,7 @@ exports.createTyreRun = async (req, res) => {
             { _id: tyres.LF, organisationId },
             {
                 $inc: {
-                    kmTotal: distanceKm?.LF ?? 0,
+                    // kmTotal: distanceKm?.LF ?? 0,
                     heatCycles: heatCycleIncrement?.LF ?? 1,
                 },
             }
@@ -93,7 +135,7 @@ exports.createTyreRun = async (req, res) => {
             { _id: tyres.RF, organisationId },
             {
                 $inc: {
-                    kmTotal: distanceKm?.RF ?? 0,
+                    // kmTotal: distanceKm?.RF ?? 0,
                     heatCycles: heatCycleIncrement?.RF ?? 1,
                 },
             }
@@ -103,7 +145,7 @@ exports.createTyreRun = async (req, res) => {
             { _id: tyres.LR, organisationId },
             {
                 $inc: {
-                    kmTotal: distanceKm?.LR ?? 0,
+                    // kmTotal: distanceKm?.LR ?? 0,
                     heatCycles: heatCycleIncrement?.LR ?? 1,
                 },
             }
@@ -113,7 +155,7 @@ exports.createTyreRun = async (req, res) => {
             { _id: tyres.RR, organisationId },
             {
                 $inc: {
-                    kmTotal: distanceKm?.RR ?? 0,
+                    // kmTotal: distanceKm?.RR ?? 0,
                     heatCycles: heatCycleIncrement?.RR ?? 1,
                 },
             }

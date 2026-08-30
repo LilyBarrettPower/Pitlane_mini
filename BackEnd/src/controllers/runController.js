@@ -1,6 +1,10 @@
 const Run = require("../models/Run");
 const EventVehicle = require("../models/EventVehicle");
 const LapTime = require("../models/LapTimes");
+const TyreRun = require("../models/TyreRun");
+const {
+    updateTyreMileageForRun,
+} = require("./tyreRunController");
 
 exports.carIn = async (req, res) => {
     try {
@@ -24,12 +28,22 @@ exports.carIn = async (req, res) => {
         }).sort({lapNumber: 1});
 
         run.inTime = new Date();
+        // Do we want this to be valid laps or total laps?
         run.lapsDone = laps.length;
 
         if (laps.length > 0) {
-            const validLapTimes = laps
+            // const validLapTimes = laps
+            //     .map((lap) => lap.lapTimeS)
+            //     .filter((time) => Number.isFinite(time));
+
+            const validLaps = laps.filter(
+                (lap) => !lap.isOutLap && !lap.isInLap
+            );
+
+            const validLapTimes = validLaps 
                 .map((lap) => lap.lapTimeS)
                 .filter((time) => Number.isFinite(time));
+
 
             if (validLapTimes.length > 0) {
                 const totalLapTime = validLapTimes.reduce(
