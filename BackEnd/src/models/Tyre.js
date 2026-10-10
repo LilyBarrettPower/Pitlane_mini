@@ -37,4 +37,13 @@ TyreSchema.index(
     { unique: true, sparse: true }
 )
 
+TyreSchema.pre("validate", function () {
+    if (this.kmTotal > 0) {
+        this.condition = "Used";
+    }
+    if (this.condition === "New") {
+        this.kmTotal = 0;
+    }
+});
+
 module.exports = mongoose.model("Tyre", TyreSchema);

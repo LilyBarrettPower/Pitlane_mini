@@ -389,133 +389,6 @@ export default function TyresPage() {
                         </Text>
                     </View>
                 ) : (
-                    // groupedTyreSets.map((group) => (
-                    //     <Pressable
-                    //         key={group.key}
-                    //         style={({ pressed }) => [
-                    //             styles.tyreSetCard,
-                    //             pressed && styles.tyreSetCardPressed,
-                    //         ]}
-                    //         onPress={() =>
-                    //             router.push({
-                    //                 pathname: "/tyres/sets/[vehicleId]/[setName]",
-                    //                 params: {
-                    //                     vehicleId: group.vehicleId,
-                    //                     setName: group.currentSet,
-                    //                 },
-                    //             })
-                    //         }
-                    //     >
-                    //         <View style={styles.tyreSetHeader}>
-                    //             <View style={styles.tyreSetHeaderText}>
-                    //                 <Text style={styles.tyreSetTitle}>
-                    //                     {group.currentSet}
-                    //                 </Text>
-
-                    //                 <Text style={styles.tyreSetVehicle}>
-                    //                     {group.vehicleName}
-                    //                 </Text>
-
-                    //                 <Text style={styles.tyreSetBrand}>
-                    //                     {group.brand}
-                    //                     {group.spec ? ` ${group.spec}` : ""}
-                    //                 </Text>
-                    //             </View>
-
-                    //             <View style={styles.tyreCountBadge}>
-                    //                 <Text style={styles.tyreCountText}>
-                    //                     {group.tyres.length}/4
-                    //                 </Text>
-                    //             </View>
-                    //         </View>
-
-                    //         <View style={styles.tyreGrid}>
-                    //             {group.tyres.map((tyre) => (
-                    //                 <Pressable
-                    //                     key={tyre._id}
-                    //                     style={({ pressed }) => [
-                    //                         styles.tyreCard,
-                    //                         pressed && styles.tyreCardPressed,
-                    //                     ]}
-                    //                     onPress={(event) => {
-                    //                         event.stopPropagation();
-                    //                         router.push({
-                    //                             pathname: "/tyres/[tyreId]",
-                    //                             params: {
-                    //                                 tyreId: tyre._id,
-                    //                             },
-                    //                         })
-                    //                     }}
-                    //                 >
-                    //                     <View style={styles.tyreCardHeader}>
-                    //                         <Text style={styles.tyrePosition}>
-                    //                             {tyre.position || "No Position"}
-                    //                         </Text>
-
-                    //                         <Text
-                    //                             style={[
-                    //                                 styles.conditionBadge,
-                    //                                 tyre.condition === "New" &&
-                    //                                 styles.conditionNew,
-                    //                                 tyre.condition === "Used" &&
-                    //                                 styles.conditionUsed,
-                    //                             ]}
-                    //                         >
-                    //                             {tyre.condition || "-"}
-                    //                         </Text>
-                    //                     </View>
-
-                    //                     <Text style={styles.tyreDetailLabel}>
-                    //                         FIA Serial
-                    //                     </Text>
-
-                    //                     <Text style={styles.tyreDetailValue}>
-                    //                         {tyre.fiaSerial || "-"}
-                    //                     </Text>
-
-                    //                     <Text style={styles.tyreDetailLabel}>
-                    //                         Size
-                    //                     </Text>
-
-                    //                     <Text style={styles.tyreDetailValue}>
-                    //                         {tyre.size || "-"}
-                    //                     </Text>
-
-                    //                     <View style={styles.tyreStatsRow}>
-                    //                         <View style={styles.tyreStat}>
-                    //                             <Text style={styles.tyreDetailLabel}>
-                    //                                 Cycles
-                    //                             </Text>
-
-                    //                             <Text style={styles.tyreDetailValue}>
-                    //                                 {tyre.heatCycles ?? 0}
-                    //                             </Text>
-                    //                         </View>
-
-                    //                         <View style={styles.tyreStat}>
-                    //                             <Text style={styles.tyreDetailLabel}>
-                    //                                 Distance
-                    //                             </Text>
-
-                    //                             <Text style={styles.tyreDetailValue}>
-                    //                                 {tyre.kmTotal ?? 0} km
-                    //                             </Text>
-                    //                         </View>
-                    //                     </View>
-
-                    //                     {tyre.notes ? (
-                    //                         <Text
-                    //                             style={styles.tyreNotes}
-                    //                             numberOfLines={2}
-                    //                         >
-                    //                             {tyre.notes}
-                    //                         </Text>
-                    //                     ) : null}
-                    //                 </Pressable>
-                    //             ))}
-                    //         </View>
-                    //     </Pressable>
-                    // ))
                     groupedByVehicle.map((vehicleGroup) => (
                         <View
                             key={vehicleGroup.vehicleId}
@@ -645,16 +518,16 @@ export default function TyresPage() {
                                                             <Text
                                                                 style={[
                                                                     styles.conditionBadge,
-                                                                    tyre.condition ===
-                                                                    "New" &&
-                                                                    styles.conditionNew,
-                                                                    tyre.condition ===
-                                                                    "Used" &&
-                                                                    styles.conditionUsed,
+                                                                    (tyre.kmTotal ?? 0) > 0 || 
+                                                                    tyre.condition === "Used"
+                                                                        ? styles.conditionUsed
+                                                                        : styles.conditionNew,
                                                                 ]}
                                                             >
-                                                                {tyre.condition ||
-                                                                    "-"}
+                                                                {(tyre.kmTotal ?? 0) > 0 ||
+                                                                tyre.condition == "Used"
+                                                                    ? "Used"
+                                                                    : "New"}
                                                             </Text>
                                                         </View>
 

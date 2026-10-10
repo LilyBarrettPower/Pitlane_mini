@@ -26,18 +26,43 @@ async function updateTyreMileageForRun(
             continue;
         }
 
-        await Tyre.findOneAndUpdate(
+        const updatedTyre = await Tyre.findOneAndUpdate(
             {
                 _id: tyreId,
                 organisationId,
                 isActive: true,
             },
-            {
-                $inc: {
-                    kmTotal: mileageDifference,
+            [
+                {
+                    $set: {
+                        kmTotal: {
+                            $add: [
+                                {$ifNull: ["$kmTotal", 0]},
+                                mileageDifference,
+                            ],
+                        },
+                    },
                 },
-            }
+                {
+                    $set: {
+                        condition: {
+                            $cond: [
+                                {$gt: ["$kmTotal", 0]},
+                                "Used",
+                                "$condition",
+                            ],
+                        },
+                    },
+                },
+            ],
+            {new: true}
         );
+
+        if (!updatedTyre) {
+            throw new Error(
+                `Unable to update mileage for tyre ${tyreId}`
+            );
+        }
 
         tyreRun.distanceKm[corner] = runDistanceKm;
     }
