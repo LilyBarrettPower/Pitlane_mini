@@ -79,6 +79,16 @@ type TyrePressureCheck = {
     notes?: string;
 };
 
+type TyreNote = {
+    _id: string;
+    tyreId: string;
+    runId: string;
+    corner: "LF" | "RF" | "LR" | "RR";
+    category: string;
+    note: string;
+    createdAt: string;
+};
+
 type EventVehicle = {
     _id: string;
     vehicleId:
@@ -139,6 +149,15 @@ export default function RunDetailPage() {
 
     const [tyreRun, setTyreRun] = useState<TyreRun | null>(null);
     const [pressureChecks, setPressureChecks] = useState<TyrePressureCheck[]>([]);
+
+    const [tyreNotes, setTyreNotes] = useState<TyreNote[]>([]);
+    const [showTyreNoteModal, setShowTyreNoteModal] = useState(false);
+    const [isSavingTyreNote, setIsSavingTyreNote] = useState(false);
+
+    const [noteCorner, setNoteCorner] = useState<"LF" | "RF" | "LR" | "RR">("LF");
+    const [noteCategory, setNoteCategory] = useState("General");
+    const [tyreNoteText, setTyreNoteText] = useState("");
+    const [tyreNoteError, setTyreNoteError] = useState("");
 
     const [eventVehicle, setEventVehicle] = useState<EventVehicle | null>(null);
     const [availableTyres, setAvailableTyres] = useState<Tyre[]>([]);
@@ -241,6 +260,27 @@ export default function RunDetailPage() {
         setPressureChecks(data.pressureChecks || []);
     }
 
+    async function fetchTyreNotes() {
+        const data = await apiFetch(
+            `/tyre-notes?runId=${runId}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        setTyreNotes(data.tyreNotes || []);
+    }
+
+    function openTyreNoteModal() {
+        setNoteCorner("LF");
+        setNoteCategory("General");
+        setTyreNoteText("");
+        setTyreNoteError("");
+        setShowTyreNoteModal(true);
+    }
+
     async function fetchEventVehicle() {
         if (!eventVehicleId) return null;
 
@@ -297,6 +337,7 @@ export default function RunDetailPage() {
         setTyreRun(null);
         setPressureChecks([]);
         setErrorMessage("");
+        setTyreNotes([]);
 
         async function loadPage() {
             if (!runId || !token) return;
@@ -305,6 +346,7 @@ export default function RunDetailPage() {
                 await Promise.all([
                     fetchRun(),
                     fetchLapTimes(),
+                    fetchTyreNotes(),
                 ]);
 
                 const loadedEventVehicle =
@@ -886,11 +928,50 @@ export default function RunDetailPage() {
         }
     }
 
+    async function handleSaveTyreNote() {
+        if (!tyreRun) {
+            setTyreNoteError("No tyres assigned to this run");
+            return;
+        }
 
+        if (!tyreNoteText.trim()) {
+            setTyreNoteError("Please enter a tyre note");
+            return;
+        }
 
+        try {
+            setIsSavingTyreNote(true);
+            setTyreNoteError("");
 
+            await apiFetch("/tyre-notes", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    runId,
+                    corner: noteCorner,
+                    category: noteCategory,
+                    note: tyreNoteText.trim(),
+                }),
+            });
 
+            setShowTyreNoteModal(false);
+            setTyreNoteText("");
 
+            await fetchTyreNotes();
+
+        } catch (error) {
+            setTyreNoteError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to save tyre note"
+            );
+        } finally {
+            setIsSavingTyreNote(false);
+        }
+    }
 
     if (isLoading) {
         return (
@@ -962,7 +1043,7 @@ export default function RunDetailPage() {
                             return (
                                 <View key={lap._id} style={styles.lapRow}>
                                     <Text style={globalStyles.cardText}>
-                                        Lap {lap.lapNumber}:{" "} 
+                                        Lap {lap.lapNumber}:{" "}
                                         {formatLapTime(lap.lapTimeS)}
                                         {lap.isOutLap
                                             ? " . OUT LAP"
@@ -1203,9 +1284,57 @@ export default function RunDetailPage() {
                         </>
                     )}
                 </View>
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>
+                        Tyre Notes
+                    </Text>
 
+                    {tyreRun ? (
+                        <Pressable
+                            style={globalStyles.buttonPrimary}
+                            onPress={openTyreNoteModal}
+                        >
+                            <Text style={globalStyles.buttonPrimaryText}>
+                                Add Tyre Note
+                            </Text>
+                        </Pressable>
+                    ) : (
+                        <Text style={globalStyles.subText}>
+                            Assign tyres before recording tyre notes.
+                        </Text>
+                    )}
 
+                    {tyreNotes.length === 0 ? (
+                        <Text style={globalStyles.subText}>
+                            No tyre notes recorded for this run.
+                        </Text>
+                    ) : (
+                        tyreNotes.map((item) => (
+                            <View
+                                key={item._id}
+                                style={styles.tyreNoteCard}
+                            >
+                                <View style={styles.tyreNoteHeader}>
+                                    <Text style={styles.tyreNoteCorner}>
+                                        {item.corner}
+                                    </Text>
 
+                                    <Text style={styles.tyreNoteCategory}>
+                                        {item.category}
+                                    </Text>
+                                </View>
+
+                                <Text style={globalStyles.cardText}>
+                                    {item.note}
+                                </Text>
+
+                                <Text style={globalStyles.subText}>
+                                    {new Date(item.createdAt).toLocaleString("en-NZ")}
+                                </Text>
+                            </View>
+                        ))
+                    )}
+                </View>
 
 
                 {/* <View style={globalStyles.card}>
@@ -1939,6 +2068,128 @@ export default function RunDetailPage() {
                     </View>
                 </Modal>
 
+                <Modal
+                    visible={showTyreNoteModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowTyreNoteModal(false)}
+                >
+                    <ScrollView
+                        contentContainerStyle={styles.modalContent}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={globalStyles.modalOverlay}>
+                            <View style={globalStyles.modalCard}>
+                                <Text style={globalStyles.modalTitle}>
+                                    Add Tyre Note
+                                </Text>
+
+                                <Text style={globalStyles.label}>
+                                    Tyre Position
+                                </Text>
+
+                                <View style={styles.stageButtonRow}>
+                                    {(["LF", "RF", "LR", "RR"] as const).map(
+                                        (corner) => (
+                                            <Pressable
+                                                key={corner}
+                                                style={[
+                                                    styles.stageButton,
+                                                    noteCorner === corner &&
+                                                    styles.stageButtonSelected,
+                                                ]}
+                                                onPress={() => setNoteCorner(corner)}
+                                            >
+                                                <Text style={styles.stageButtonText}>
+                                                    {corner}
+                                                </Text>
+                                            </Pressable>
+                                        )
+                                    )}
+                                </View>
+
+                                <Text style={globalStyles.label}>
+                                    Category
+                                </Text>
+
+                                <View style={styles.stageButtonRow}>
+                                    {[
+                                        "General",
+                                        "Puncture",
+                                        "Flat Spot",
+                                        "Damage",
+                                        "Wear",
+                                        "Other",
+                                    ].map((category) => (
+                                        <Pressable
+                                            key={category}
+                                            style={[
+                                                styles.stageButton,
+                                                noteCategory === category &&
+                                                styles.stageButtonSelected,
+                                            ]}
+                                            onPress={() => setNoteCategory(category)}
+                                        >
+                                            <Text style={styles.stageButtonText}>
+                                                {category}
+                                            </Text>
+                                        </Pressable>
+                                    ))}
+                                </View>
+
+                                <Text style={globalStyles.label}>
+                                    Notes
+                                </Text>
+
+                                <TextInput
+                                    style={[
+                                        globalStyles.input,
+                                        styles.tyreNoteInput,
+                                    ]}
+                                    value={tyreNoteText}
+                                    onChangeText={setTyreNoteText}
+                                    placeholder="Describe the tyre issue..."
+                                    placeholderTextColor="#9ca3af"
+                                    multiline
+                                    textAlignVertical="top"
+                                />
+
+                                {tyreNoteError ? (
+                                    <Text style={globalStyles.errorText}>
+                                        {tyreNoteError}
+                                    </Text>
+                                ) : null}
+
+                                <View style={styles.modalActions}>
+                                    <Pressable
+                                        style={globalStyles.buttonDanger}
+                                        onPress={() => setShowTyreNoteModal(false)}
+                                        disabled={isSavingTyreNote}
+                                    >
+                                        <Text style={globalStyles.buttonPrimaryText}>
+                                            Cancel
+                                        </Text>
+                                    </Pressable>
+
+                                    <Pressable
+                                        style={globalStyles.buttonPrimary}
+                                        onPress={handleSaveTyreNote}
+                                        disabled={isSavingTyreNote}
+                                    >
+                                        {isSavingTyreNote ? (
+                                            <ActivityIndicator color="#ffffff" />
+                                        ) : (
+                                            <Text style={globalStyles.buttonPrimaryText}>
+                                                Save Note
+                                            </Text>
+                                        )}
+                                    </Pressable>
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </Modal>
+
             </ScrollView>
         </SafeAreaView >
     )
@@ -2179,5 +2430,36 @@ const styles = StyleSheet.create({
 
     lapTypeButtonTextSelected: {
         color: "#ffffff",
+    },
+    tyreNoteCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 12,
+        gap: 8,
+    },
+
+    tyreNoteHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+
+    tyreNoteCorner: {
+        color: "#ffffff",
+        fontSize: 17,
+        fontWeight: "800",
+    },
+
+    tyreNoteCategory: {
+        color: "#93c5fd",
+        fontSize: 13,
+        fontWeight: "700",
+    },
+
+    tyreNoteInput: {
+        minHeight: 110,
     },
 });

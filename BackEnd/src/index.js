@@ -62,6 +62,9 @@ const lapTimeRoutes = require("./routes/lapTimeRoutes");
 console.log("Uploading tyre pressure checks routes");
 const tyrePressureCheckRoutes = require("./routes/tyrePressureCheckRoutes");
 
+console.log("Uploading tyre note routes");
+const tyreNoteRoutes = require("./routes/tyreNoteRoutes");
+
 const app = express();
 
 app.use(cors());
@@ -87,6 +90,7 @@ app.use("/checklist-templates", checklistTemplateRoutes);
 app.use("/checklist-instance", checklistInstanceRoutes);
 app.use("/lap-times", lapTimeRoutes);
 app.use("/tyre-pressure-checks", tyrePressureCheckRoutes);
+app.use("/tyre-notes", tyreNoteRoutes);
 
 app.get("/", (req, res) => {
     res.json({ message: "Pitlane Mini API" });
