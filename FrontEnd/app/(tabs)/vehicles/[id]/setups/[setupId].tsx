@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Modal, Pressable } from "react-native";
+import { StyleSheet, Text, View, Modal, Pressable } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "../../../../../assets/api";
 import { useAuth } from "../../../../../context/AuthContext";
 import { globalStyles } from "../../../../../constants/styles";
+import { colors } from "../../../../../constants/theme";
 import SetupModal from "../../../../../components/SetupModal";
+import {
+    Button,
+    EmptyState,
+    ErrorBanner,
+    Field,
+    LoadingState,
+    PageHeader,
+    Panel,
+    Screen,
+    useIsWide,
+} from "../../../../../components/ui/kit";
 
 
 type SetUp = {
@@ -131,6 +143,9 @@ export default function SetupDetailPage() {
         if (id && token) fetchAllSetupsForVehicle();
     }, [id, setupId, token]);
 
+
+    const isWide = useIsWide();
+
     async function handleDeleteSetup() {
         try {
             setIsLoading(true);
@@ -145,7 +160,8 @@ export default function SetupDetailPage() {
 
             setShowDeleteModal(false);
 
-            await fetchSetup();
+            // The setup is gone, so go back to the vehicle
+            router.back();
         } catch (error) {
             setErrorMessage(
                 error instanceof Error ? error.message : "Failed to remove setup"
@@ -155,195 +171,310 @@ export default function SetupDetailPage() {
         }
     }
 
-    if (isLoading) {
+    if (isLoading && !setup) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <ActivityIndicator color="#ffffff" />
-            </SafeAreaView>
+            <Screen>
+                <LoadingState />
+            </Screen>
         );
     }
 
-    if (errorMessage || !setup) {
+    if (!setup) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <View style={styles.content}>
-                    <Text style={globalStyles.errorText}>{errorMessage || "Setup not found"}</Text>
-                </View>
-            </SafeAreaView>
+            <Screen>
+                <PageHeader title="Setup" onBack={() => router.back()} />
+                <ErrorBanner message={errorMessage || "Setup not found"} />
+            </Screen>
         );
     }
+
+    // Front / rear values shown as a two-column spec table
+    const frontRearRows: { label: string; front?: string | number; rear?: string | number; unit?: string }[] = [
+        { label: "Springs", front: setup.springNm?.front, rear: setup.springNm?.rear, unit: "N/mm" },
+        { label: "Anti-roll bar", front: setup.arbPos?.front, rear: setup.arbPos?.rear },
+        { label: "Ride height", front: setup.rideHeight?.front, rear: setup.rideHeight?.rear, unit: "mm" },
+        { label: "Camber", front: setup.camber?.front, rear: setup.camber?.rear },
+        { label: "Toe", front: setup.toe?.front, rear: setup.toe?.rear },
+        { label: "Packers", front: setup.packers?.front, rear: setup.packers?.rear },
+    ];
+
+    const showValue = (value?: string | number) =>
+        value === undefined || value === null || value === "" ? "—" : String(value);
+
+    const suspensionPanel = (
+        <Panel title="Suspension & Alignment" icon="git-compare-outline">
+            <View style={styles.tableHead}>
+                <Text style={[styles.tableHeadText, styles.colLabel]}>SETTING</Text>
+                <Text style={[styles.tableHeadText, styles.colValue]}>FRONT</Text>
+                <Text style={[styles.tableHeadText, styles.colValue]}>REAR</Text>
+            </View>
+
+            {frontRearRows.map((row, index) => (
+                <View
+                    key={row.label}
+                    style={[styles.tableRow, index === frontRearRows.length - 1 && styles.tableRowLast]}
+                >
+                    <View style={styles.colLabel}>
+                        <Text style={styles.rowLabel}>{row.label}</Text>
+                        {row.unit ? <Text style={styles.rowUnit}>{row.unit}</Text> : null}
+                    </View>
+                    <Text style={[styles.rowValue, styles.colValue]}>{showValue(row.front)}</Text>
+                    <Text style={[styles.rowValue, styles.colValue]}>{showValue(row.rear)}</Text>
+                </View>
+            ))}
+        </Panel>
+    );
+
+    const otherPanel = (
+        <Panel title="Drivetrain & Aero" icon="options-outline">
+            <View style={styles.fieldGrid}>
+                <Field label="Diff preload" value={setup.diffPreload} />
+                <Field label="Brake bias" value={setup.brakeBias} />
+                <Field label="Wing hole" value={setup.wingHole} />
+                <Field label="Splitter" value={setup.splitter} />
+            </View>
+        </Panel>
+    );
+
+    const notesPanel = (
+        <Panel title="Notes" icon="document-text-outline">
+            <Text style={setup.notes ? styles.notes : styles.muted}>
+                {setup.notes || "No notes for this setup."}
+            </Text>
+        </Panel>
+    );
+
+    const eventsPanel = (
+        <Panel title="Events Used At" icon="flag-outline">
+            {setUpEvents.length === 0 ? (
+                <EmptyState icon="flag-outline" text="Not used at any events yet." />
+            ) : (
+                setUpEvents.map((item) => (
+                    <Pressable
+                        key={item.eventId}
+                        style={({ pressed }) => [styles.eventRow, pressed && styles.pressed]}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/events/[id]" as any,
+                                params: { id: item.eventId },
+                            })
+                        }
+                    >
+                        <View style={styles.eventInfo}>
+                            <Text style={styles.eventName}>{item.eventName}</Text>
+                            <Text style={globalStyles.subText}>
+                                {[formatEventDates(item.startDate, item.endDate), item.trackName]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                            </Text>
+                            <Text style={styles.eventStats}>
+                                {item.runCount} {item.runCount === 1 ? "run" : "runs"} · {item.laps} laps · Best{" "}
+                                <Text style={styles.eventBest}>{formatLapTime(item.bestLapS)}</Text>
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </Pressable>
+                ))
+            )}
+        </Panel>
+    );
 
     return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={globalStyles.title}>Setup {setup.version}</Text>
-
-                <View style={styles.actionRow}>
-                    <Pressable style={globalStyles.smallButton}>
-                        <Text style={globalStyles.smallButtonText}
+        <Screen>
+            <PageHeader
+                eyebrow="Setup sheet"
+                title={`Setup ${setup.version}`}
+                onBack={() => router.back()}
+                backLabel="Vehicle"
+                actions={
+                    <>
+                        <Button
+                            label="Edit"
+                            icon="create-outline"
+                            variant="secondary"
                             onPress={() => setShowSetupModal(true)}
-                        >Edit setup</Text>
-                    </Pressable>
-                    <Pressable
-                        style={globalStyles.buttonDangerSmall}
-                        onPress={() => setShowDeleteModal(true)}
-                    >
-                        <Text style={globalStyles.smallButtonText}>Delete Setup</Text>
-                    </Pressable>
+                        />
+                        <Button
+                            label="Delete"
+                            icon="trash-outline"
+                            variant="ghost"
+                            onPress={() => setShowDeleteModal(true)}
+                        />
+                    </>
+                }
+            />
+
+            <ErrorBanner message={errorMessage} />
+
+            {isWide ? (
+                <View style={styles.columns}>
+                    <View style={styles.colMain}>
+                        {suspensionPanel}
+                        {eventsPanel}
+                    </View>
+                    <View style={styles.colSide}>
+                        {otherPanel}
+                        {notesPanel}
+                    </View>
                 </View>
+            ) : (
+                <>
+                    {suspensionPanel}
+                    {otherPanel}
+                    {notesPanel}
+                    {eventsPanel}
+                </>
+            )}
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Springs</Text>
-                    <Text style={globalStyles.cardText}>Front: {setup.springNm?.front || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Rear: {setup.springNm?.rear || "-"}</Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>ARB</Text>
-                    <Text style={globalStyles.cardText}>Front: {setup.arbPos?.front || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Rear: {setup.arbPos?.rear || "-"}</Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Ride Height</Text>
-                    <Text style={globalStyles.cardText}>Front: {setup.rideHeight?.front || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Rear: {setup.rideHeight?.rear || "-"}</Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Alignment</Text>
-                    <Text style={globalStyles.cardText}>Camber F/R: {setup.camber?.front || "-"} / {setup.camber?.rear || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Toe F/R: {setup.toe?.front || "-"} / {setup.toe?.rear || "-"}</Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Other</Text>
-                    <Text style={globalStyles.cardText}>Packers F/R: {setup.packers?.front || "-"} / {setup.packers?.rear || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Diff Preload: {setup.diffPreload || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Brake Bias: {setup.brakeBias || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Wing Hole: {setup.wingHole || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Splitter: {setup.splitter || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Notes: {setup.notes || "-"}</Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Events Used At</Text>
-
-                    {setUpEvents.length === 0 ? (
-                        <Text style={globalStyles.cardText}>
-                            Not used at any events yet.
+            <Modal
+                visible={showDeleteModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDeleteModal(false)}
+            >
+                <View style={globalStyles.modalOverlay}>
+                    <View style={globalStyles.modalCard}>
+                        <Text style={globalStyles.modalTitle}>Delete setup?</Text>
+                        <Text style={globalStyles.text}>
+                            Setup {setup.version} will be removed from this vehicle.
                         </Text>
-                    ) : (
-                        setUpEvents.map((item) => (
-                            <Pressable
-                                key={item.eventId}
-                                style={({ pressed }) => [
-                                    styles.eventCard,
-                                    pressed && styles.pressed,
-                                ]}
-                                onPress={() =>
-                                    router.push({
-                                        pathname: "/events/[id]" as any,
-                                        params: { id: item.eventId },
-                                    })
-                                }
-                            >
-                                <Text style={styles.eventName}>{item.eventName}</Text>
 
-                                <Text style={globalStyles.subText}>
-                                    {[
-                                        formatEventDates(item.startDate, item.endDate),
-                                        item.trackName,
-                                    ]
-                                        .filter(Boolean)
-                                        .join(" · ")}
-                                </Text>
-
-                                <Text style={globalStyles.cardText}>
-                                    {item.runCount} {item.runCount === 1 ? "run" : "runs"}
-                                    {" · "}
-                                    {item.laps} laps
-                                    {" · "}
-                                    Best {formatLapTime(item.bestLapS)}
-                                </Text>
-                            </Pressable>
-                        ))
-                    )}
-                </View>
-
-                <Modal
-                    visible={showDeleteModal}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setShowDeleteModal(false)}
-                >
-                    <View style={globalStyles.modalOverlay}>
-                        <View style={globalStyles.modalCard}>
-                            <Text style={globalStyles.modalTitle}>Delete setup?</Text>
-                            <Text style={globalStyles.text}>Are you sure you want to delete setup {setup.version}?</Text>
-
-                            <View style={styles.actionRow}>
-                                <Pressable
-                                    style={globalStyles.buttonPrimary}
-                                    onPress={() => setShowDeleteModal(false)}
-                                    disabled={isLoading}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                                </Pressable>
-                                <Pressable
-                                    style={[globalStyles.buttonDanger, isLoading && globalStyles.buttonDisabled]}
-                                    onPress={handleDeleteSetup}
-                                    disabled={isLoading}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Yes, Delete</Text>
-                                </Pressable>
-                            </View>
+                        <View style={styles.modalActions}>
+                            <Button
+                                label="Cancel"
+                                variant="secondary"
+                                onPress={() => setShowDeleteModal(false)}
+                                disabled={isLoading}
+                            />
+                            <Button label="Delete" variant="danger" onPress={handleDeleteSetup} loading={isLoading} />
                         </View>
                     </View>
-                </Modal>
+                </View>
+            </Modal>
 
-                <SetupModal 
-                    visible={showSetupModal}
-                    vehicleId={setup.vehicleId}
-                    setup={setup}
-                    existingSetups={allSetups}
-                    onClose={() => setShowSetupModal(false)}
-                    onSaved={() => {
-                        fetchSetup();
-                        fetchAllSetupsForVehicle();
-                    }}
-                    />
-
-            </ScrollView>
-        </SafeAreaView>
+            <SetupModal
+                visible={showSetupModal}
+                vehicleId={setup.vehicleId}
+                setup={setup}
+                existingSetups={allSetups}
+                onClose={() => setShowSetupModal(false)}
+                onSaved={() => {
+                    fetchSetup();
+                    fetchAllSetupsForVehicle();
+                }}
+            />
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    content: {
-        padding: 24,
-        gap: 16
-    },
-    actionRow: {
+    columns: {
         flexDirection: "row",
-        gap: 10,
-        marginTop: 14,
+        alignItems: "flex-start",
+        gap: 20,
     },
-    eventCard: {
-        backgroundColor: "#111827",
-        borderWidth: 1,
-        borderColor: "#374151",
+    colMain: {
+        flex: 3,
+        gap: 20,
+    },
+    colSide: {
+        flex: 2,
+        gap: 20,
+    },
+    tableHead: {
+        flexDirection: "row",
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderDark,
+    },
+    tableHeadText: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+    tableRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderDark,
+    },
+    tableRowLast: {
+        borderBottomWidth: 0,
+        paddingBottom: 0,
+    },
+    colLabel: {
+        flex: 1.4,
+    },
+    colValue: {
+        flex: 1,
+        textAlign: "right",
+    },
+    rowLabel: {
+        color: colors.textSecondary,
+        fontSize: 15,
+        fontWeight: "600",
+    },
+    rowUnit: {
+        color: colors.textMuted,
+        fontSize: 12,
+    },
+    rowValue: {
+        color: colors.textPrimary,
+        fontSize: 16,
+        fontWeight: "700",
+        fontVariant: ["tabular-nums"],
+    },
+    fieldGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 18,
+    },
+    notes: {
+        color: colors.textSecondary,
+        fontSize: 15,
+        lineHeight: 22,
+    },
+    muted: {
+        color: colors.textMuted,
+        fontSize: 15,
+    },
+    eventRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        backgroundColor: colors.background,
         borderRadius: 12,
         padding: 14,
-        marginTop: 12,
-        gap: 6,
+        marginBottom: 8,
+    },
+    eventInfo: {
+        flex: 1,
+        gap: 3,
     },
     eventName: {
-        color: "#ffffff",
-        fontSize: 16,
+        color: colors.textPrimary,
+        fontSize: 15,
         fontWeight: "800",
     },
+    eventStats: {
+        color: colors.textSecondary,
+        fontSize: 13,
+        marginTop: 2,
+    },
+    eventBest: {
+        color: colors.textPrimary,
+        fontWeight: "700",
+        fontVariant: ["tabular-nums"],
+    },
     pressed: {
-        opacity: 0.75,
+        opacity: 0.8,
+    },
+    modalActions: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        gap: 10,
+        marginTop: 4,
     },
 });

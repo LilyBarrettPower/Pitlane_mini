@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View, Modal, StyleSheet } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { apiFetch } from "../../../../assets/api";
 import { useAuth } from "../../../../context/AuthContext";
 import { globalStyles } from "../../../../constants/styles";
+import { colors } from "../../../../constants/theme";
+import {
+    Badge,
+    Button,
+    EmptyState,
+    ErrorBanner,
+    Field,
+    LoadingState,
+    PageHeader,
+    Panel,
+    Screen,
+    useIsWide,
+} from "../../../../components/ui/kit";
 
 type Vehicle = {
     _id: string;
@@ -55,6 +67,7 @@ type TyreNote = {
 export default function TyreDetailPage() {
     const { token } = useAuth();
     const { tyreId } = useLocalSearchParams<{ tyreId: string }>();
+    const isWide = useIsWide();
 
     const [tyre, setTyre] = useState<Tyre | null>(null);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -333,206 +346,177 @@ export default function TyreDetailPage() {
         return "Unnamed Vehicle";
     }
 
-    if (isLoading) {
+    if (isLoading && !tyre) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <ActivityIndicator color="ffffff" />
-            </SafeAreaView>
+            <Screen>
+                <LoadingState />
+            </Screen>
         );
     }
 
     if (!tyre) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <Text style={globalStyles.errorText}>
-                    {errorMessage || "Tyre not found"}
-                </Text>
-            </SafeAreaView>
+            <Screen>
+                <PageHeader title="Tyre" onBack={() => router.back()} backLabel="Tyres" />
+                <ErrorBanner message={errorMessage || "Tyre not found"} />
+            </Screen>
         );
     }
 
-    return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView
-                contentContainerStyle={styles.content}
-            >
-                <View style={styles.titleRow}>
-                    <View style={styles.titleText}>
-                        <Text style={globalStyles.title}>
-                            {tyre.currentSet || "Tyre"} - {tyre.position || "No position"}
+    const isUsed = (tyre.kmTotal ?? 0) > 0 || tyre.condition === "Used";
+
+    // Note categories, most serious first, mapped to badge colours
+    const noteTone = (category: string) =>
+        ["Puncture", "Damage", "Flat Spot"].includes(category)
+            ? "severe"
+            : category === "Wear"
+                ? "warning"
+                : "neutral";
+
+    const statTiles = (
+        <View style={styles.statRow}>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>DISTANCE</Text>
+                <Text style={styles.statValue}>
+                    {Math.round((tyre.kmTotal ?? 0) * 10) / 10}
+                    <Text style={styles.statUnit}> km</Text>
+                </Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>HEAT CYCLES</Text>
+                <Text style={styles.statValue}>{tyre.heatCycles ?? 0}</Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>CONDITION</Text>
+                <View style={styles.statBadge}>
+                    <Badge label={isUsed ? "Used" : "New"} tone={isUsed ? "warning" : "live"} />
+                </View>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>EVENTS</Text>
+                <Text style={styles.statValue}>{tyreEvents.length}</Text>
+            </View>
+        </View>
+    );
+
+    const detailsPanel = (
+        <Panel title="Details" icon="information-circle-outline">
+            <View style={styles.fieldGrid}>
+                <Field label="Set" value={tyre.currentSet} />
+                <Field label="Position" value={tyre.position} />
+                <Field label="Vehicle" value={getVehicleName(tyre)} />
+                <Field label="Brand" value={tyre.brand} />
+                <Field label="Spec" value={tyre.spec} />
+                <Field label="Size" value={tyre.size} />
+                <Field label="FIA serial" value={tyre.fiaSerial} />
+            </View>
+        </Panel>
+    );
+
+    const eventsPanel = (
+        <Panel title="Events Used At" icon="flag-outline">
+            {tyreEvents.length === 0 ? (
+                <EmptyState icon="flag-outline" text="Not used at any events yet." />
+            ) : (
+                tyreEvents.map((item) => (
+                    <Pressable
+                        key={item.eventId}
+                        style={({ pressed }) => [styles.historyRow, pressed && styles.pressed]}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/events/[id]" as any,
+                                params: { id: item.eventId },
+                            })
+                        }
+                    >
+                        <View style={styles.historyText}>
+                            <Text style={styles.historyTitle}>{item.eventName}</Text>
+                            <Text style={globalStyles.subText}>
+                                {[formatEventDates(item.startDate, item.endDate), item.trackName]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                            </Text>
+                            <Text style={styles.historyStats}>
+                                {item.corners.join(", ") || "—"} · {item.runCount}{" "}
+                                {item.runCount === 1 ? "run" : "runs"} · {item.laps} laps
+                            </Text>
+                        </View>
+                        <Text style={styles.historyKm}>
+                            {item.distanceKm}
+                            <Text style={styles.statUnit}> km</Text>
+                        </Text>
+                    </Pressable>
+                ))
+            )}
+        </Panel>
+    );
+
+    const notesPanel = (
+        <Panel title="Tyre Notes" icon="chatbox-ellipses-outline">
+            {tyreNotes.length === 0 ? (
+                <EmptyState icon="chatbox-ellipses-outline" text="No notes recorded for this tyre." />
+            ) : (
+                tyreNotes.map((item) => (
+                    <View key={item._id} style={styles.noteRow}>
+                        <View style={styles.noteHeader}>
+                            <Text style={styles.historyTitle}>
+                                {item.corner} · {item.runId?.name || "Unnamed Run"}
+                            </Text>
+                            <Badge label={item.category} tone={noteTone(item.category)} />
+                        </View>
+                        <Text style={styles.noteText}>{item.note}</Text>
+                        <Text style={globalStyles.subText}>
+                            {new Date(item.createdAt).toLocaleString("en-NZ")}
                         </Text>
                     </View>
+                ))
+            )}
+        </Panel>
+    );
+
+    return (
+        <Screen>
+            <PageHeader
+                eyebrow={tyre.currentSet ? `Set ${tyre.currentSet}` : "Tyre"}
+                title={`${tyre.position || "Tyre"}${tyre.currentSet ? ` · ${tyre.currentSet}` : ""}`}
+                subtitle={[tyre.brand, tyre.spec, getVehicleName(tyre)].filter(Boolean).join(" · ")}
+                onBack={() => router.back()}
+                backLabel="Tyres"
+                actions={
+                    <>
+                        <Button label="Edit" icon="create-outline" variant="secondary" onPress={openEditModal} />
+                        <Button
+                            label="Delete"
+                            icon="trash-outline"
+                            variant="ghost"
+                            onPress={() => {
+                                setErrorMessage("");
+                                setShowDeleteModal(true);
+                            }}
+                        />
+                    </>
+                }
+            />
+
+            {!showEditModal ? <ErrorBanner message={errorMessage} /> : null}
+
+            {statTiles}
+
+            {isWide ? (
+                <View style={styles.columns}>
+                    <View style={styles.colMain}>
+                        {eventsPanel}
+                        {notesPanel}
+                    </View>
+                    <View style={styles.colSide}>{detailsPanel}</View>
                 </View>
-
-                <View style={styles.actionRow}>
-                    <Pressable
-                        style={globalStyles.smallButton}
-                        onPress={openEditModal}
-                    >
-                        <Text
-                            style={globalStyles.smallButtonText}
-                        >
-                            Edit Tyre
-                        </Text>
-                    </Pressable>
-
-                    <Pressable
-                        style={globalStyles.buttonDangerSmall}
-                        onPress={() => {
-                            setErrorMessage("");
-                            setShowDeleteModal(true);
-                        }}
-                    >
-                        <Text
-                            style={globalStyles.smallButtonText}
-                        >
-                            Delete Tyre
-                        </Text>
-                    </Pressable>
-                </View>
-
-                {errorMessage ? (
-                    <Text style={globalStyles.errorText}>
-                        {errorMessage}
-                    </Text>
-                ) : null}
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>
-                        Set Information
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Set: {tyre.currentSet || "-"}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Vehicle: {getVehicleName(tyre)}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Brand: {tyre.brand || "-"}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Specification: {tyre.spec || "-"}
-                    </Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>
-                        Tyre Information
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Position: {tyre.position || "-"}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Size: {tyre.size || "-"}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        FIA Serial: {tyre.fiaSerial || "-"}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Condition: {tyre.condition || "-"}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Heat Cycles: {tyre.heatCycles ?? 0}
-                    </Text>
-
-                    <Text style={globalStyles.cardText}>
-                        Distance: {tyre.kmTotal ?? 0} km
-                    </Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>
-                        Events Used At
-                    </Text>
-
-                    {tyreEvents.length === 0 ? (
-                        <Text style={globalStyles.cardText}>
-                            Not used at any events yet.
-                        </Text>
-                    ) : (
-                        tyreEvents.map((item) => (
-                            <Pressable
-                                key={item.eventId}
-                                style={({ pressed }) => [
-                                    styles.tyreNoteCard,
-                                    pressed && styles.pressed,
-                                ]}
-                                onPress={() =>
-                                    router.push({
-                                        pathname: "/events/[id]" as any,
-                                        params: { id: item.eventId },
-                                    })
-                                }
-                            >
-                                <Text style={styles.tyreNoteCorner}>
-                                    {item.eventName}
-                                </Text>
-
-                                <Text style={globalStyles.subText}>
-                                    {[
-                                        formatEventDates(item.startDate, item.endDate),
-                                        item.trackName,
-                                    ]
-                                        .filter(Boolean)
-                                        .join(" · ")}
-                                </Text>
-
-                                <Text style={globalStyles.cardText}>
-                                    Corner: {item.corners.join(", ") || "-"}
-                                    {" · "}
-                                    {item.runCount} {item.runCount === 1 ? "run" : "runs"}
-                                    {" · "}
-                                    {item.laps} laps
-                                    {" · "}
-                                    {item.distanceKm} km
-                                </Text>
-                            </Pressable>
-                        ))
-                    )}
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>
-                        Tyre Notes
-                    </Text>
-
-                    {tyreNotes.length === 0 ? (
-                        <Text style={globalStyles.cardText}>
-                            No notes recorded for this tyre.
-                        </Text>
-                    ) : (
-                        tyreNotes.map((item) => (
-                            <View key={item._id} style={styles.tyreNoteCard}>
-                                <View style={styles.tyreNoteHeader}>
-                                    <Text style={styles.tyreNoteCorner}>
-                                        {item.corner} · {item.runId?.name || "Unnamed Run"}
-                                    </Text>
-
-                                    <Text style={styles.tyreNoteCategory}>
-                                        {item.category}
-                                    </Text>
-                                </View>
-
-                                <Text style={globalStyles.cardText}>
-                                    {item.note}
-                                </Text>
-
-                                <Text style={globalStyles.subText}>
-                                    {new Date(item.createdAt).toLocaleString("en-NZ")}
-                                </Text>
-                            </View>
-                        ))
-                    )}
-                </View>
+            ) : (
+                <>
+                    {detailsPanel}
+                    {eventsPanel}
+                    {notesPanel}
+                </>
+            )}
 
                 <Modal
                     visible={showEditModal}
@@ -936,8 +920,7 @@ export default function TyreDetailPage() {
                         </View>
                     </View>
                 </Modal>
-            </ScrollView>
-        </SafeAreaView>
+        </Screen>
     );
 }
 
@@ -1032,5 +1015,107 @@ const styles = StyleSheet.create({
 
     pressed: {
         opacity: 0.75,
+    },
+
+    // ----- Redesigned layout -----
+    columns: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 20,
+    },
+    colMain: {
+        flex: 3,
+        gap: 20,
+    },
+    colSide: {
+        flex: 2,
+        gap: 20,
+    },
+    statRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+    },
+    statTile: {
+        flexGrow: 1,
+        flexBasis: 150,
+        backgroundColor: colors.card,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 16,
+        gap: 8,
+    },
+    statLabel: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+    statValue: {
+        color: colors.textPrimary,
+        fontSize: 26,
+        fontWeight: "800",
+        fontVariant: ["tabular-nums"],
+    },
+    statUnit: {
+        color: colors.textMuted,
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    statBadge: {
+        paddingTop: 6,
+    },
+    fieldGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 18,
+    },
+    historyRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        backgroundColor: colors.background,
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 8,
+    },
+    historyText: {
+        flex: 1,
+        gap: 3,
+    },
+    historyTitle: {
+        color: colors.textPrimary,
+        fontSize: 15,
+        fontWeight: "800",
+        flexShrink: 1,
+    },
+    historyStats: {
+        color: colors.textSecondary,
+        fontSize: 13,
+        marginTop: 2,
+    },
+    historyKm: {
+        color: colors.textPrimary,
+        fontSize: 18,
+        fontWeight: "800",
+        fontVariant: ["tabular-nums"],
+    },
+    noteRow: {
+        backgroundColor: colors.background,
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 8,
+        gap: 6,
+    },
+    noteHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 8,
+    },
+    noteText: {
+        color: colors.textSecondary,
+        fontSize: 15,
     },
 });

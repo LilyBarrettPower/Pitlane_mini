@@ -1,11 +1,25 @@
 import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput, SectionList } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "../../../../assets/api";
 import { useAuth } from "../../../../context/AuthContext";
 import { globalStyles } from "../../../../constants/styles";
+import { colors } from "../../../../constants/theme";
 import SetupModal from "../../../../components/SetupModal";
+import {
+  Avatar,
+  Button,
+  EmptyState,
+  ErrorBanner,
+  Field,
+  LoadingState,
+  PageHeader,
+  Panel,
+  Screen,
+  SectionLabel,
+  useIsWide,
+} from "../../../../components/ui/kit";
 
 
 type Vehicle = {
@@ -142,6 +156,7 @@ export default function VehicleDetailPage() {
   const [notes, setNotes] = useState("");
 
   const isAdmin = user?.role === "admin";
+  const isWide = useIsWide();
 
   async function fetchVehicle() {
     try {
@@ -501,208 +516,225 @@ export default function VehicleDetailPage() {
     }, [id, token])
   );
 
-  if (isLoading) {
+  if (isLoading && !vehicle) {
     return (
-      <SafeAreaView style={globalStyles.container}>
-        <ActivityIndicator color="#ffffff" />
-      </SafeAreaView>
-    );
-  }
-
-
-
-  if (errorMessage) {
-    return (
-      <SafeAreaView style={globalStyles.container}>
-        <View style={styles.content}>
-          <Text style={globalStyles.errorText}>{errorMessage}</Text>
-        </View>
-      </SafeAreaView>
+      <Screen>
+        <LoadingState />
+      </Screen>
     );
   }
 
   if (!vehicle) {
     return (
-      <SafeAreaView style={globalStyles.container}>
-        <View style={styles.content}>
-          <Text style={globalStyles.text}>No vehicle found</Text>
-        </View>
-      </SafeAreaView>
-    )
+      <Screen>
+        <PageHeader title="Vehicle" onBack={() => router.back()} backLabel="Vehicles" />
+        <ErrorBanner message={errorMessage || "No vehicle found"} />
+      </Screen>
+    );
   }
 
+  const detailsPanel = (
+    <Panel title="Details" icon="information-circle-outline">
+      <View style={styles.fieldGrid}>
+        <Field label="Make" value={vehicle.make} />
+        <Field label="Model" value={vehicle.model} />
+        <Field label="Year" value={vehicle.year} />
+        <Field
+          label="Odometer"
+          value={vehicle.odo != null ? `${Math.round(vehicle.odo).toLocaleString("en-NZ")} km` : undefined}
+        />
+        <Field label="Chassis" value={vehicle.chassisNumber} />
+        <Field label="Owner" value={vehicle.owner} />
+      </View>
 
-  return (
-    <SafeAreaView style={globalStyles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={globalStyles.title}>
-          {vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""}
-          {vehicle.name}
-        </Text>
-        <View style={styles.vehicleActionRow}>
-          <Pressable
-            style={globalStyles.smallButton}
-            onPress={openEditVehicleModal}
-          >
-            <Text style={globalStyles.smallButtonText}>
-              Edit Vehicle
-            </Text>
-          </Pressable>
+      {vehicle.notes ? (
+        <View style={styles.notesBlock}>
+          <Text style={styles.notesLabel}>NOTES</Text>
+          <Text style={styles.notesText}>{vehicle.notes}</Text>
+        </View>
+      ) : null}
+    </Panel>
+  );
 
-          {isAdmin ? (
+  const eventsPanel = (
+    <Panel title="Events" icon="flag-outline">
+      <SectionLabel>Upcoming</SectionLabel>
+      {upcomingEvents.length === 0 ? (
+        <Text style={styles.emptyLine}>No upcoming events</Text>
+      ) : (
+        upcomingEvents.map((entry) => renderEventRow(entry, true))
+      )}
+
+      <SectionLabel spaced>Past</SectionLabel>
+      {pastEvents.length === 0 ? (
+        <Text style={styles.emptyLine}>No past events</Text>
+      ) : (
+        <>
+          {visiblePastEvents.map((entry) => renderEventRow(entry, false))}
+
+          {pastEvents.length > PAST_EVENTS_PREVIEW ? (
             <Pressable
-              style={globalStyles.buttonDangerSmall}
-              onPress={() => {
-                setErrorMessage("");
-                setShowDeleteVehicleModal(true);
-              }}
+              style={styles.showAllButton}
+              onPress={() => setShowAllPastEvents((current) => !current)}
             >
-              <Text style={globalStyles.smallButtonText}>
-                Delete Vehicle
+              <Text style={styles.showAllText}>
+                {showAllPastEvents ? "Show less" : `Show all ${pastEvents.length} past events`}
               </Text>
             </Pressable>
           ) : null}
-        </View>
+        </>
+      )}
+    </Panel>
+  );
 
-        <View style={globalStyles.card}>
-          <Text style={[styles.row, globalStyles.text]}>Make: {vehicle.make || "-"}</Text>
-          <Text style={[styles.row, globalStyles.text]}>Model: {vehicle.model || ""}</Text>
-          <Text style={[styles.row, globalStyles.text]}>Year: {vehicle.year || ""}</Text>
-          <Text style={[styles.row, globalStyles.text]}>Owner: {vehicle.owner || ""}</Text>
-          <Text style={[styles.row, globalStyles.text]}>
-            Odo:{" "}
-            {vehicle.odo != null
-              ? `${Math.round(vehicle.odo).toLocaleString("en-NZ")} km`
-              : "-"}
-          </Text>
-          <Text style={[styles.row, globalStyles.text]}>Chassis Number: {vehicle.chassisNumber || ""}</Text>
-          <Text style={[styles.row, globalStyles.text]}>Notes: {vehicle.notes || ""}</Text>
-
-          <Text style={globalStyles.subTitle}>Ownership History</Text>
-
-          {vehicle.ownerHistory && vehicle.ownerHistory.length > 0 ? (
-            vehicle.ownerHistory.map((entry, index) => (
-              <View key={index} style={styles.historyRow}>
-                <Text style={[styles.row, globalStyles.text]}>
-                  {entry.owner}
-                </Text>
-                <Text style={globalStyles.subText}>
-                  {new Date(entry.changedAt).toLocaleDateString()}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text style={globalStyles.text}>No previous owners</Text>
-          )}
-        </View>
-
-        <View style={globalStyles.card}>
-          <Text style={globalStyles.sectionTitle}>Events</Text>
-
-          <Text style={styles.eventGroupHeading}>UPCOMING</Text>
-          {upcomingEvents.length === 0 ? (
-            <Text style={globalStyles.subText}>No upcoming events</Text>
-          ) : (
-            upcomingEvents.map((entry) => renderEventRow(entry, true))
-          )}
-
-          <Text style={[styles.eventGroupHeading, styles.eventGroupHeadingSpaced]}>PAST</Text>
-          {pastEvents.length === 0 ? (
-            <Text style={globalStyles.subText}>No past events</Text>
-          ) : (
-            <>
-              {visiblePastEvents.map((entry) => renderEventRow(entry, false))}
-
-              {pastEvents.length > PAST_EVENTS_PREVIEW ? (
-                <Pressable
-                  style={styles.showAllButton}
-                  onPress={() => setShowAllPastEvents((current) => !current)}
-                >
-                  <Text style={styles.showAllText}>
-                    {showAllPastEvents
-                      ? "Show less"
-                      : `Show all ${pastEvents.length} past events`}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </>
-          )}
-        </View>
-
-        <View style={globalStyles.card}>
-          <Text style={globalStyles.sectionTitle}>Drivers</Text>
-          {vehicleDrivers.length === 0 ? (
-            <Text style={globalStyles.text}>No assigned drivers</Text>
-          ) : (
-            vehicleDrivers.map((item) => (
-              <View key={item._id} style={styles.driverRow}>
-                <View>
-                  <Text style={[styles.row, globalStyles.text]}>{item.driverId?.name}</Text>
-                  <Text style={globalStyles.subText}>{item.driverId?.experience}</Text>
-                  <Text style={globalStyles.subText}>{item.driverId?.email}</Text>
-                  <Text style={globalStyles.subText}>{item.driverId?.phoneNumber}</Text>
-                </View>
-
-                <Pressable
-                  style={globalStyles.buttonDangerSmall}
-                  onPress={() => handleRemoveDriverAssignment(item._id)}
-                >
-                  <Text style={globalStyles.smallButtonText}>Remove</Text>
-                </Pressable>
-              </View>
-            ))
-          )}
-
-          <View style={styles.actionRow}>
-            <Pressable style={[globalStyles.buttonPrimary, styles.buttonGap]} onPress={() => setShowAssignedDriverModal(true)}>
-              <Text style={globalStyles.buttonPrimaryText}>Assign Driver</Text>
-            </Pressable>
-          </View>
-
-        </View>
-
-        <View style={globalStyles.card}>
-          <Text style={globalStyles.sectionTitle}>Setups</Text>
-
-          {setups.length === 0 ? (
-            <Text style={globalStyles.text}>No setups assigned to this vehicle</Text>
-          ) : (
-            setups.map((setup) => (
-              <Pressable
-                key={setup._id}
-                style={styles.listItemCard}
-                onPress={() =>
-                  router.push({
-                    pathname: "/vehicles/[id]/setups/[setupId]",
-                    params: {
-                      id,
-                      setupId: setup._id,
-                    },
-                  })
-                }>
-                <View>
-                  <Text style={[styles.row, globalStyles.text]}>
-                    Version: {setup.version}
-                  </Text>
-                  <Text style={globalStyles.subText}>
-                    {setUpEventNames[setup._id]?.length
-                      ? `Used at: ${setUpEventNames[setup._id].join(", ")}`
-                      : "Not used yet"}
-                  </Text>
-                </View>
-              </Pressable>
-            ))
-          )}
-
-          <View style={styles.actionRow}>
+  const driversPanel = (
+    <Panel title="Drivers" icon="id-card-outline" actionLabel="Assign" onAction={() => setShowAssignedDriverModal(true)}>
+      {vehicleDrivers.length === 0 ? (
+        <EmptyState
+          icon="id-card-outline"
+          text="No drivers assigned"
+          action={
+            <Button
+              label="Assign Driver"
+              icon="person-add-outline"
+              size="sm"
+              variant="secondary"
+              onPress={() => setShowAssignedDriverModal(true)}
+            />
+          }
+        />
+      ) : (
+        vehicleDrivers.map((item) => (
+          <View key={item._id} style={styles.listRow}>
+            <Avatar name={item.driverId?.name} size={38} />
+            <View style={styles.listRowText}>
+              <Text style={styles.listRowTitle} numberOfLines={1}>{item.driverId?.name}</Text>
+              <Text style={styles.listRowSub} numberOfLines={1}>
+                {[item.driverId?.experience, item.driverId?.email || item.driverId?.phoneNumber]
+                  .filter(Boolean)
+                  .join(" · ") || "No details"}
+              </Text>
+            </View>
             <Pressable
-              style={[globalStyles.buttonPrimary, styles.buttonGap]}
-              onPress={openCreateSetupModal}
+              hitSlop={8}
+              onPress={() => handleRemoveDriverAssignment(item._id)}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
             >
-              <Text style={globalStyles.buttonPrimaryText}>Create Setup</Text>
+              <Ionicons name="close" size={18} color={colors.textMuted} />
             </Pressable>
           </View>
+        ))
+      )}
+    </Panel>
+  );
+
+  const setupsPanel = (
+    <Panel title="Setups" icon="construct-outline" actionLabel="New setup" onAction={openCreateSetupModal}>
+      {setups.length === 0 ? (
+        <EmptyState
+          icon="construct-outline"
+          text="No setups for this vehicle yet"
+          action={
+            <Button label="Create Setup" icon="add" size="sm" variant="secondary" onPress={openCreateSetupModal} />
+          }
+        />
+      ) : (
+        setups.map((setup) => (
+          <Pressable
+            key={setup._id}
+            style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
+            onPress={() =>
+              router.push({
+                pathname: "/vehicles/[id]/setups/[setupId]",
+                params: {
+                  id,
+                  setupId: setup._id,
+                },
+              })
+            }
+          >
+            <View style={styles.versionTile}>
+              <Text style={styles.versionText} numberOfLines={1}>{setup.version || "–"}</Text>
+            </View>
+            <View style={styles.listRowText}>
+              <Text style={styles.listRowTitle}>Setup {setup.version}</Text>
+              <Text style={styles.listRowSub} numberOfLines={1}>
+                {setUpEventNames[setup._id]?.length
+                  ? `Used at ${setUpEventNames[setup._id].join(", ")}`
+                  : "Not used yet"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+        ))
+      )}
+    </Panel>
+  );
+
+  const ownershipPanel = (
+    <Panel title="Ownership History" icon="time-outline">
+      {vehicle.ownerHistory && vehicle.ownerHistory.length > 0 ? (
+        vehicle.ownerHistory.map((entry, index) => (
+          <View key={index} style={styles.historyRow}>
+            <Text style={styles.listRowTitle}>{entry.owner}</Text>
+            <Text style={styles.listRowSub}>{new Date(entry.changedAt).toLocaleDateString("en-NZ")}</Text>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyLine}>No previous owners</Text>
+      )}
+    </Panel>
+  );
+
+  return (
+    <Screen>
+      <PageHeader
+        eyebrow={vehicle.racingNumber ? `Car #${vehicle.racingNumber}` : "Vehicle"}
+        title={vehicle.name}
+        subtitle={[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" · ") || undefined}
+        onBack={() => router.back()}
+        backLabel="Vehicles"
+        actions={
+          <>
+            <Button label="Edit" icon="create-outline" variant="secondary" onPress={openEditVehicleModal} />
+            {isAdmin ? (
+              <Button
+                label="Delete"
+                icon="trash-outline"
+                variant="ghost"
+                onPress={() => {
+                  setErrorMessage("");
+                  setShowDeleteVehicleModal(true);
+                }}
+              />
+            ) : null}
+          </>
+        }
+      />
+
+      <ErrorBanner message={errorMessage} />
+
+      {isWide ? (
+        <View style={styles.columns}>
+          <View style={styles.colMain}>
+            {detailsPanel}
+            {eventsPanel}
+          </View>
+          <View style={styles.colSide}>
+            {driversPanel}
+            {setupsPanel}
+            {ownershipPanel}
+          </View>
         </View>
+      ) : (
+        <>
+          {detailsPanel}
+          {eventsPanel}
+          {driversPanel}
+          {setupsPanel}
+          {ownershipPanel}
+        </>
+      )}
 
         <Modal
           visible={showAssignedDriverModal}
@@ -1030,8 +1062,7 @@ export default function VehicleDetailPage() {
             </View>
           </View>
         </Modal>
-      </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -1046,10 +1077,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   historyRow: {
-    marginBottom: 2,
-    paddingBottom: 2,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#374151",
+    borderBottomColor: colors.borderDark,
   },
   driverRow: {
     marginBottom: 10,
@@ -1188,5 +1221,109 @@ const styles = StyleSheet.create({
   showAllText: {
     color: "#2563eb",
     fontWeight: "700",
+  },
+
+  // ----- Redesigned layout -----
+  columns: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 20,
+  },
+
+  colMain: {
+    flex: 3,
+    gap: 20,
+  },
+
+  colSide: {
+    flex: 2,
+    gap: 20,
+  },
+
+  fieldGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 18,
+  },
+
+  notesBlock: {
+    marginTop: 18,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderDark,
+    gap: 6,
+  },
+
+  notesLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+
+  notesText: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+
+  emptyLine: {
+    color: colors.textMuted,
+    fontSize: 14,
+    marginTop: 6,
+  },
+
+  listRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+
+  listRowText: {
+    flex: 1,
+    gap: 2,
+  },
+
+  listRowTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  listRowSub: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+
+  iconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pressed: {
+    opacity: 0.8,
+  },
+
+  versionTile: {
+    minWidth: 38,
+    height: 38,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  versionText: {
+    color: "#93c5fd",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });

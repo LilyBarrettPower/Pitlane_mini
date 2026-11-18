@@ -2,11 +2,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Modal, ScrollView, Text, TextInput, View, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { apiFetch } from "../../../assets/api";
 import { useAuth } from "../../../context/AuthContext";
 import { globalStyles } from "../../../constants/styles";
+import { colors } from "../../../constants/theme";
+import { Button, EmptyState, ErrorBanner, LoadingState, PageHeader, Screen } from "../../../components/ui/kit";
 
 type Vehicle = {
     _id: string;
@@ -364,51 +366,66 @@ export default function TyresPage() {
         }));
     }, [groupedTyreSets]);
 
-    if (isLoading) {
+    if (isLoading && tyres.length === 0) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <ActivityIndicator color="#ffffff" />
-            </SafeAreaView>
+            <Screen>
+                <LoadingState />
+            </Screen>
         );
     }
 
+    const openCreate = () => {
+        setErrorMessage("");
+        setShowCreateModal(true);
+    };
+
     return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.actionRow}>
-                    <Text style={globalStyles.title}>Tyres</Text>
-                    <Pressable
-                        style={globalStyles.buttonPrimary}
-                        onPress={() => {
-                            setErrorMessage("");
-                            setShowCreateModal(true);
-                        }}
-                    >
-                        <Text style={globalStyles.buttonPrimaryText}>Add Tyre</Text>
-                    </Pressable>
+        <Screen>
+                <PageHeader
+                    eyebrow="Inventory"
+                    title="Tyres"
+                    subtitle={
+                        tyres.length
+                            ? `${tyres.length} ${tyres.length === 1 ? "tyre" : "tyres"} · ${groupedTyreSets.length} ${groupedTyreSets.length === 1 ? "set" : "sets"}`
+                            : undefined
+                    }
+                    actions={<Button label="Add Tyre" icon="add" onPress={openCreate} />}
+                />
+
+                <View style={styles.searchBox}>
+                    <Ionicons name="search" size={18} color={colors.textMuted} />
+                    <TextInput
+                        style={styles.searchInput}
+                        value={searchText}
+                        onChangeText={setSearchText}
+                        placeholder="Search vehicle, brand, spec, serial…"
+                        placeholderTextColor={colors.textMuted}
+                    />
+                    {searchText ? (
+                        <Pressable onPress={() => setSearchText("")} hitSlop={8}>
+                            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                        </Pressable>
+                    ) : null}
                 </View>
 
-                <TextInput
-                    style={globalStyles.input}
-                    value={searchText}
-                    onChangeText={setSearchText}
-                    placeholder="Search vehicle, brand, spec etc..."
-                    placeholderTextColor="#9ca3af"
-                />
-                {errorMessage ? (
-                    <Text style={globalStyles.errorText}>
-                        {errorMessage}
-                    </Text>
-                ) : null}
-
+                {!showCreateModal ? <ErrorBanner message={errorMessage} /> : null}
 
                 {filteredTyres.length === 0 ? (
                     <View style={globalStyles.card}>
-                        <Text style={globalStyles.text}>
-                            {tyres.length === 0
-                                ? "No tyres have been created yet"
-                                : "No tyres match your search"}
-                        </Text>
+                        <EmptyState
+                            icon={tyres.length === 0 ? "disc-outline" : "search-outline"}
+                            title={tyres.length === 0 ? "No tyres yet" : "No matches"}
+                            text={
+                                tyres.length === 0
+                                    ? "Add tyres to track sets, pressures and mileage."
+                                    : "No tyres match your search."
+                            }
+                            action={
+                                tyres.length === 0 ? (
+                                    <Button label="Add Tyre" icon="add" onPress={openCreate} />
+                                ) : undefined
+                            }
+                        />
                     </View>
                 ) : (
                     groupedByVehicle.map((vehicleGroup) => (
@@ -889,8 +906,7 @@ export default function TyresPage() {
                 </Modal>
 
 
-            </ScrollView>
-        </SafeAreaView>
+        </Screen>
 
 
 
@@ -961,11 +977,16 @@ const styles = StyleSheet.create({
         color: "#ffffff",
     },
 
+    // Sets sit side by side on wide screens and stack on phones
     tyreSetCard: {
-        backgroundColor: "#1f2937",
-        borderRadius: 16,
-        padding: 16,
+        backgroundColor: colors.card,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 18,
         gap: 16,
+        flexGrow: 1,
+        flexBasis: 420,
     },
 
     tyreSetHeader: {
@@ -1151,6 +1172,26 @@ const styles = StyleSheet.create({
     },
 
     vehicleSets: {
-        gap: 14,
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 16,
+    },
+
+    searchBox: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+    },
+
+    searchInput: {
+        flex: 1,
+        color: colors.textPrimary,
+        fontSize: 16,
+        paddingVertical: 12,
     },
 })

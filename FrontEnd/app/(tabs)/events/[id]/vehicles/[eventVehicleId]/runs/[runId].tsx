@@ -1,11 +1,24 @@
 import { useEffect, useState, useMemo } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable, Modal, TextInput } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { apiFetch } from "../../../../../../../assets/api";
 import { useAuth } from "../../../../../../../context/AuthContext";
 import { globalStyles } from "../../../../../../../constants/styles";
+import { colors } from "../../../../../../../constants/theme";
+import {
+    Badge,
+    Button,
+    EmptyState,
+    ErrorBanner,
+    Field,
+    LoadingState,
+    PageHeader,
+    Panel,
+    Screen,
+    useIsWide,
+} from "../../../../../../../components/ui/kit";
 
 type Run = {
     _id: string;
@@ -130,6 +143,7 @@ export default function RunDetailPage() {
     }>();
 
     const { token } = useAuth();
+    const isWide = useIsWide();
     const [run, setRun] = useState<Run | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -1073,83 +1087,86 @@ export default function RunDetailPage() {
         }
     }
 
-    if (isLoading) {
+    if (isLoading && !run) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <ActivityIndicator color="#ffffff" />
-            </SafeAreaView>
+            <Screen>
+                <LoadingState />
+            </Screen>
         );
     }
 
-    if (errorMessage || !run) {
+    if (!run) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <View style={styles.content}>
-                    <Text style={globalStyles.errorText}>
-                        {errorMessage || "Run not found"}
-                    </Text>
-                </View>
-            </SafeAreaView>
+            <Screen>
+                <PageHeader title="Run" onBack={() => router.back()} backLabel="Runs" />
+                <ErrorBanner message={errorMessage || "Run not found"} />
+            </Screen>
         );
     }
 
-    return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={globalStyles.title}>
-                    Run Detail
+    const runState = !run.outTime ? "ready" : !run.inTime ? "onTrack" : "complete";
+
+    const headerActions =
+        runState === "ready" ? (
+            <Button label="Car Out" icon="play" onPress={handleCarOut} />
+        ) : runState === "onTrack" ? (
+            <>
+                <Button label="Add Lap" icon="add" variant="secondary" onPress={openAddLapModal} />
+                <Button label="Car In" icon="flag" variant="danger" onPress={handleCarIn} />
+            </>
+        ) : (
+            <Badge label="Run complete" tone="primary" />
+        );
+
+    const statTiles = (
+        <View style={styles.statRow}>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>LAPS</Text>
+                <Text style={styles.statValue}>{run.lapsDone ?? lapTimes.length}</Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>
+                    BEST LAP{run.bestLapS && getBestLapNumber() ? ` · LAP ${getBestLapNumber()}` : ""}
                 </Text>
+                <Text style={styles.statValue}>{run.bestLapS ? formatLapTime(run.bestLapS) : "—"}</Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>AVERAGE LAP</Text>
+                <Text style={styles.statValue}>{run.averageLapS ? formatLapTime(run.averageLapS) : "—"}</Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>FUEL / LAP</Text>
+                <Text style={styles.statValue}>
+                    {run.fuelPerLap != null ? run.fuelPerLap.toFixed(2) : "—"}
+                    {run.fuelPerLap != null ? <Text style={styles.statUnit}> L</Text> : null}
+                </Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>DISTANCE</Text>
+                <Text style={styles.statValue}>
+                    {run.distanceKm ? Math.round(run.distanceKm * 10) / 10 : "—"}
+                    {run.distanceKm ? <Text style={styles.statUnit}> km</Text> : null}
+                </Text>
+            </View>
+        </View>
+    );
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Run Info</Text>
-                    <Text style={globalStyles.text}>{run.name}</Text>
-                    {!run.outTime ? (
-                        <View style={styles.actionRow}>
-                            <Pressable
-                                style={globalStyles.buttonPrimary}
-                                onPress={handleCarOut}
-                            >
-                                <Text style={globalStyles.buttonPrimaryText}>Car Out</Text>
-                            </Pressable>
-                        </View>
-                    ) : run.inTime ? (
-                        <View style={styles.completeCard}>
-                            <Text style={globalStyles.text}>Run Complete</Text>
-                        </View>
-                    ) : (
-                        <Text style={globalStyles.subText}>Car is on track</Text>
-                    )}
-                    <Text style={globalStyles.cardText}>Out Time: {formatTime(run.outTime)}</Text>
-                    <Text style={globalStyles.cardText}>In Time: {formatTime(run.inTime)}</Text>
-                    <Text style={globalStyles.cardText}>Laps Done: {run.lapsDone ?? "-"}</Text>
-                    <Text style={globalStyles.cardText}>
-                        Distance: {run.distanceKm ? `${Math.round(run.distanceKm * 10) / 10} km` : "-"}
-                    </Text>
-                </View>
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Conditions</Text>
-                    <Text style={globalStyles.cardText}>Weather: {run.weather || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Track Temp: {run.trackTemp ?? "-"}°C</Text>
-                    <Text style={globalStyles.cardText}>
-                        Track Condition: {run.trackCondition || "-"}
-                    </Text>
-                </View>
+    const detailsPanel = (
+        <Panel title="Run Details" icon="information-circle-outline">
+            <View style={styles.fieldGrid}>
+                <Field label="Out" value={run.outTime ? formatTime(run.outTime) : undefined} />
+                <Field label="In" value={run.inTime ? formatTime(run.inTime) : undefined} />
+                <Field label="Weather" value={run.weather} />
+                <Field label="Track temp" value={run.trackTemp != null && run.trackTemp !== "" ? `${run.trackTemp}°C` : undefined} />
+                <Field label="Track condition" value={run.trackCondition} />
+            </View>
 
-                <View style={globalStyles.card}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={globalStyles.sectionTitle}>Setup</Text>
-                        <Pressable
-                            style={globalStyles.smallButton}
-                            onPress={openSetUpModal}
-                        >
-                            <Text style={globalStyles.smallButtonText}>
-                                {runSetUp ? "Change" : "Choose Setup"}
-                            </Text>
-                        </Pressable>
-                    </View>
-
+            <View style={styles.setupBlock}>
+                <View style={styles.setupInfo}>
+                    <Text style={styles.setupLabel}>SETUP</Text>
                     {runSetUp ? (
                         <Pressable
+                            hitSlop={6}
                             onPress={() =>
                                 eventVehicle &&
                                 router.push({
@@ -1161,99 +1178,139 @@ export default function RunDetailPage() {
                                 })
                             }
                         >
-                            <Text style={globalStyles.cardText}>
-                                Setup {runSetUp.version} ›
-                            </Text>
+                            <Text style={styles.setupLink}>Setup {runSetUp.version} ›</Text>
                         </Pressable>
                     ) : (
-                        <Text style={globalStyles.subText}>
-                            No setup recorded for this run.
-                        </Text>
+                        <Text style={styles.setupNone}>None recorded</Text>
                     )}
                 </View>
+                <Button
+                    label={runSetUp ? "Change" : "Choose"}
+                    size="sm"
+                    variant="secondary"
+                    onPress={openSetUpModal}
+                />
+            </View>
+        </Panel>
+    );
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Laps</Text>
-                    {lapTimes.length === 0 ? (
-                        <Text style={globalStyles.text}>No lap times yet</Text>
-                    ) : (
-                        lapTimes.map((lap, index) => {
-                            const fuelBurn = getLapFuelBurn(index);
-
-                            return (
-                                <View key={lap._id} style={styles.lapRow}>
-                                    <Text style={globalStyles.cardText}>
-                                        Lap {lap.lapNumber}:{" "}
-                                        {formatLapTime(lap.lapTimeS)}
-                                        {lap.isOutLap
-                                            ? " . OUT LAP"
-                                            : lap.isInLap
-                                                ? " . IN LAP"
-                                                : ""}
-                                    </Text>
-
-                                    <Text style={globalStyles.subText}>
-                                        Fuel Remaining: {lap.fuelRemaining ?? "-"} L
-                                    </Text>
-
-                                    <Text style={globalStyles.subText}>
-                                        Fuel Burn: {fuelBurn !== null ? `${fuelBurn.toFixed(2)} L` : "-"}
-                                    </Text>
-
-                                    <Text style={globalStyles.subText}>
-                                        Status: {lap.trackStatus || "-"}
-                                    </Text>
-
-                                    {lap.notes ? (
-                                        <Text style={globalStyles.subText}>Notes: {lap.notes}</Text>
-                                    ) : null}
-
-                                    <View style={styles.lapButtonRow}>
-                                        <Pressable
-                                            style={globalStyles.smallButton}
-                                            onPress={() => openEditLapModal(lap)}
-                                        >
-                                            <Text style={globalStyles.smallButtonText}>Edit</Text>
-                                        </Pressable>
-                                        <Pressable
-                                            style={globalStyles.buttonDangerSmall}
-                                            onPress={() => setLapToDelete(lap)}
-                                        >
-                                            <Text style={globalStyles.smallButtonText}>Delete</Text>
-                                        </Pressable>
-                                    </View>
-                                </View>
-                            );
-                        })
-                    )}
-                    <View style={styles.actionRow}>
-                        {run.outTime && !run.inTime ? (
-                            <>
-                                <Pressable
-                                    style={globalStyles.buttonPrimary}
-                                    onPress={openAddLapModal}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Add Lap</Text>
-                                </Pressable>
-
-                                <Pressable
-                                    style={globalStyles.buttonDanger}
-                                    onPress={handleCarIn}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Car In</Text>
-                                </Pressable>
-                            </>
-                        ) : !run.outTime ? (
-                            <Text style={globalStyles.subText}>
-                                Press Car Out before entering laps
-                            </Text>
-                        ) : (
-                            <Text style={globalStyles.subText}>
-                                Lap entry closed — run complete
-                            </Text>
-                        )}
+    const lapsPanel = (
+        <Panel
+            title="Lap Times"
+            icon="stopwatch-outline"
+            actionLabel={runState === "onTrack" ? "Add lap" : undefined}
+            onAction={runState === "onTrack" ? openAddLapModal : undefined}
+        >
+            {lapTimes.length === 0 ? (
+                <EmptyState
+                    icon="stopwatch-outline"
+                    text={
+                        runState === "ready"
+                            ? "Press Car Out to start the run, then add laps."
+                            : runState === "onTrack"
+                                ? "No laps yet. Add the first lap time."
+                                : "No lap times were recorded for this run."
+                    }
+                    action={
+                        runState === "onTrack" ? (
+                            <Button label="Add Lap" icon="add" size="sm" onPress={openAddLapModal} />
+                        ) : undefined
+                    }
+                />
+            ) : (
+                <>
+                    <View style={styles.tableHead}>
+                        <Text style={[styles.tableHeadText, styles.colLap]}>LAP</Text>
+                        <Text style={[styles.tableHeadText, styles.colTime]}>TIME</Text>
+                        <Text style={[styles.tableHeadText, styles.colFuel]}>FUEL</Text>
+                        <Text style={[styles.tableHeadText, styles.colFuel]}>BURN</Text>
+                        <View style={styles.colActions} />
                     </View>
-                </View>
+
+                    {lapTimes.map((lap, index) => {
+                        const fuelBurn = getLapFuelBurn(index);
+                        const isBest = !!run.bestLapS && lap.lapTimeS === run.bestLapS && !lap.isInLap && !lap.isOutLap;
+
+                        return (
+                            <View
+                                key={lap._id}
+                                style={[styles.tableRow, index === lapTimes.length - 1 && styles.tableRowLast]}
+                            >
+                                <View style={styles.colLap}>
+                                    <Text style={styles.lapNumber}>{lap.lapNumber}</Text>
+                                    {lap.isOutLap ? <Badge label="OUT" /> : lap.isInLap ? <Badge label="IN" /> : null}
+                                </View>
+
+                                <View style={styles.colTime}>
+                                    <Text style={[styles.lapTime, isBest && styles.lapTimeBest]}>
+                                        {formatLapTime(lap.lapTimeS)}
+                                    </Text>
+                                    {lap.trackStatus || lap.notes ? (
+                                        <Text style={styles.lapMeta} numberOfLines={1}>
+                                            {[lap.trackStatus, lap.notes].filter(Boolean).join(" · ")}
+                                        </Text>
+                                    ) : null}
+                                </View>
+
+                                <Text style={[styles.tableCell, styles.colFuel]}>
+                                    {lap.fuelRemaining != null ? `${lap.fuelRemaining} L` : "—"}
+                                </Text>
+                                <Text style={[styles.tableCell, styles.colFuel]}>
+                                    {fuelBurn !== null ? `${fuelBurn.toFixed(2)} L` : "—"}
+                                </Text>
+
+                                <View style={[styles.colActions, styles.lapActions]}>
+                                    <Pressable
+                                        hitSlop={6}
+                                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                                        onPress={() => openEditLapModal(lap)}
+                                    >
+                                        <Ionicons name="create-outline" size={17} color={colors.textMuted} />
+                                    </Pressable>
+                                    <Pressable
+                                        hitSlop={6}
+                                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                                        onPress={() => setLapToDelete(lap)}
+                                    >
+                                        <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
+                                    </Pressable>
+                                </View>
+                            </View>
+                        );
+                    })}
+                </>
+            )}
+
+            {runState === "complete" && lapTimes.length > 0 ? (
+                <Text style={styles.lapFootnote}>Lap entry closed — run complete</Text>
+            ) : null}
+        </Panel>
+    );
+
+    return (
+        <Screen>
+            <PageHeader
+                eyebrow={
+                    runState === "onTrack" ? "● On track" : runState === "complete" ? "Run complete" : "Ready to go out"
+                }
+                title={run.name || "Run"}
+                subtitle={
+                    run.outTime
+                        ? `Out ${formatTime(run.outTime)}${run.inTime ? ` · In ${formatTime(run.inTime)}` : ""}`
+                        : undefined
+                }
+                onBack={() => router.back()}
+                backLabel="Runs"
+                actions={headerActions}
+            />
+
+            <ErrorBanner message={errorMessage} />
+
+            {statTiles}
+
+            <View style={isWide ? styles.columns : styles.stack}>
+                <View style={isWide ? styles.colMain : styles.stack}>
+                    {lapsPanel}
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>
                         Tyre Pressure Checks
@@ -1424,6 +1481,10 @@ export default function RunDetailPage() {
                         </>
                     )}
                 </View>
+                </View>
+
+                <View style={isWide ? styles.colSide : styles.stack}>
+                    {detailsPanel}
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>
                         Tyre Notes
@@ -1513,8 +1574,6 @@ export default function RunDetailPage() {
                         ))
                     )}
                 </View>
-
-
                 {/* <View style={globalStyles.card}>
                     <View style={styles.sectionHeader}>
                         <Text style={globalStyles.sectionTitle}>Tyre Pressure Checks</Text>
@@ -1573,52 +1632,35 @@ export default function RunDetailPage() {
                         ))
                     )} */}
                 {/* </View> */}
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Fuel</Text>
-                    <Text style={globalStyles.cardText}>Fuel Start: {run.fuelStart ?? "-"} L</Text>
-                    <Text style={globalStyles.cardText}>Fuel End: {run.fuelEnd ?? "-"} L</Text>
-                    <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed ?? "-"} L</Text>
-                    <Text style={globalStyles.cardText}>
-                        Average Fuel/Lap: {run.fuelPerLap != null ? `${run.fuelPerLap.toFixed(2)} L` : "-"}
-                    </Text>
-                    <View style={styles.actionRow}>
-                        <Pressable
-                            style={globalStyles.buttonPrimary}
-                            onPress={() => {
-                                setFuelEndInput(run.fuelEnd ? String(run.fuelEnd) : "");
-                                setShowFuelEndModal(true);
-                            }}
-                        >
-                            <Text style={globalStyles.buttonPrimaryText}>
-                                {run.fuelEnd == null ? "Enter Fuel End" : "Edit Fuel End"}
-                            </Text>
-                        </Pressable>
+                {/* Fuel per lap is in the stat tiles above */}
+                <Panel title="Fuel" icon="water-outline">
+                    <View style={styles.fieldGrid}>
+                        <Field label="Start" value={run.fuelStart != null ? `${run.fuelStart} L` : undefined} />
+                        <Field label="End" value={run.fuelEnd != null ? `${run.fuelEnd} L` : undefined} />
+                        <Field
+                            label="Used"
+                            value={run.fuelUsed != null ? `${Math.round(run.fuelUsed * 100) / 100} L` : undefined}
+                        />
                     </View>
-                </View>
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Laps Summary</Text>
-                    <Text style={globalStyles.cardText}>Total Laps: {run.lapsDone || "-"}</Text>
-                    <Text style={globalStyles.cardText}>
-                        Best Lap: {""}
-                        {run.bestLapS != null
-                            ? `Lap ${getBestLapNumber()} (${formatLapTime(run.bestLapS)})`
-                            : "-"
-                        }
-                    </Text>
-                    <Text style={globalStyles.cardText}>
-                        Average Lap: {run.averageLapS ? formatLapTime(run.averageLapS) : "-"}
-                    </Text>
-                    <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed}</Text>
-                    <Text style={globalStyles.cardText}>
-                        Average Fuel/Lap: {run.fuelPerLap != null ? `${run.fuelPerLap.toFixed(2)} L` : "-"}
-                    </Text>
-
-                </View>
+                    <Button
+                        label={run.fuelEnd == null ? "Enter Fuel End" : "Edit Fuel End"}
+                        icon="create-outline"
+                        size="sm"
+                        variant="secondary"
+                        style={styles.fuelButton}
+                        onPress={() => {
+                            setFuelEndInput(run.fuelEnd ? String(run.fuelEnd) : "");
+                            setShowFuelEndModal(true);
+                        }}
+                    />
+                </Panel>
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Notes</Text>
                     <Text style={globalStyles.cardText}>{run.notes || "-"}</Text>
                 </View>
+                </View>
+            </View>
 
                 <Modal
                     visible={showSetUpModal}
@@ -2443,11 +2485,8 @@ export default function RunDetailPage() {
                         </View>
                     </ScrollView>
                 </Modal>
-
-            </ScrollView>
-        </SafeAreaView >
-    )
-
+        </Screen>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -2744,5 +2783,179 @@ const styles = StyleSheet.create({
     tyreNoteActions: {
         flexDirection: "row",
         gap: 8,
+    },
+
+    // ----- Redesigned layout -----
+    columns: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 20,
+    },
+    stack: {
+        gap: 16,
+    },
+    colMain: {
+        flex: 3,
+        gap: 20,
+    },
+    colSide: {
+        flex: 2,
+        gap: 20,
+    },
+    statRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+    },
+    statTile: {
+        flexGrow: 1,
+        flexBasis: 140,
+        backgroundColor: colors.card,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 16,
+        gap: 8,
+    },
+    statLabel: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+    statValue: {
+        color: colors.textPrimary,
+        fontSize: 24,
+        fontWeight: "800",
+        fontVariant: ["tabular-nums"],
+    },
+    statUnit: {
+        color: colors.textMuted,
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    fieldGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 18,
+    },
+    setupBlock: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        marginTop: 18,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: colors.borderDark,
+    },
+    setupInfo: {
+        gap: 4,
+        flexShrink: 1,
+    },
+    setupLabel: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 1,
+    },
+    setupLink: {
+        color: colors.primaryLight,
+        fontSize: 15,
+        fontWeight: "700",
+    },
+    setupNone: {
+        color: colors.textMuted,
+        fontSize: 15,
+    },
+    tableHead: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderDark,
+    },
+    tableHeadText: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+    tableRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderDark,
+    },
+    tableRowLast: {
+        borderBottomWidth: 0,
+        paddingBottom: 0,
+    },
+    tableCell: {
+        color: colors.textSecondary,
+        fontSize: 14,
+        fontVariant: ["tabular-nums"],
+    },
+    colLap: {
+        width: 64,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+    },
+    colTime: {
+        flex: 1,
+        paddingRight: 8,
+    },
+    colFuel: {
+        width: 72,
+        textAlign: "right",
+    },
+    colActions: {
+        width: 76,
+    },
+    lapActions: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        gap: 4,
+    },
+    lapNumber: {
+        color: colors.textMuted,
+        fontSize: 14,
+        fontWeight: "700",
+        fontVariant: ["tabular-nums"],
+    },
+    lapTime: {
+        color: colors.textPrimary,
+        fontSize: 16,
+        fontWeight: "700",
+        fontVariant: ["tabular-nums"],
+    },
+    lapTimeBest: {
+        color: colors.live,
+    },
+    lapMeta: {
+        color: colors.textMuted,
+        fontSize: 12,
+        marginTop: 2,
+    },
+    fuelButton: {
+        alignSelf: "flex-start",
+        marginTop: 16,
+    },
+    lapFootnote: {
+        color: colors.textMuted,
+        fontSize: 13,
+        marginTop: 14,
+    },
+    iconButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    pressed: {
+        opacity: 0.7,
     },
 });

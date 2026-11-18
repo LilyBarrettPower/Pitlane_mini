@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { apiFetch } from "../../../../../assets/api";
 import { useAuth } from "../../../../../context/AuthContext";
 import { globalStyles } from "../../../../../constants/styles";
+import { colors } from "../../../../../constants/theme";
+import { Button, ErrorBanner, LoadingState, PageHeader, Panel, Screen } from "../../../../../components/ui/kit";
 
 
 type Vehicle = {
@@ -232,162 +233,72 @@ export default function TyreSetDetailPage() {
         }
     }
 
-    if (isLoading) {
+    if (isLoading && tyres.length === 0) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <ActivityIndicator color="#ffffff" />
-            </SafeAreaView>
+            <Screen>
+                <LoadingState />
+            </Screen>
         );
     }
 
     if (tyres.length === 0) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <View style={styles.content}>
-                    <Text style={globalStyles.errorText}>
-                        {errorMessage || "Tyre set not found"}
-                    </Text>
-                </View>
-            </SafeAreaView>
+            <Screen>
+                <PageHeader title={String(setName || "Tyre set")} onBack={() => router.back()} backLabel="Tyres" />
+                <ErrorBanner message={errorMessage || "Tyre set not found"} />
+            </Screen>
         );
     }
 
     return (
-        <SafeAreaView
-            style={globalStyles.container}
-        >
-            <ScrollView
-                contentContainerStyle={styles.content}
-            >
-                <View style={styles.titleRow}>
-                    <View style={styles.titleText}>
-                        <Text style={globalStyles.title}>
-                            {setName}
-                        </Text>
+        <Screen>
+                <PageHeader
+                    eyebrow="Tyre set"
+                    title={String(setName)}
+                    subtitle={[getVehicleName(), tyres[0]?.brand, tyres[0]?.spec].filter(Boolean).join(" · ")}
+                    onBack={() => router.back()}
+                    backLabel="Tyres"
+                    actions={
+                        <Button
+                            label="Delete Set"
+                            icon="trash-outline"
+                            variant="ghost"
+                            onPress={() => {
+                                setErrorMessage("");
+                                setShowDeleteModal(true);
+                            }}
+                        />
+                    }
+                />
 
-                        <Text
-                            style={globalStyles.subText}
-                        >
-                            {getVehicleName()}
-                        </Text>
-                    </View>
+                {!showDeleteModal ? <ErrorBanner message={errorMessage} /> : null}
 
-                    <Pressable
-                        style={
-                            globalStyles.buttonDangerSmall
-                        }
-                        onPress={() => {
-                            setErrorMessage("");
-                            setShowDeleteModal(true);
-                        }}
-                    >
-                        <Text
-                            style={
-                                globalStyles.smallButtonText
-                            }
-                        >
-                            Delete Set
-                        </Text>
-                    </Pressable>
-                </View>
-
-                {errorMessage ? (
-                    <Text
-                        style={globalStyles.errorText}
-                    >
-                        {errorMessage}
-                    </Text>
-                ) : null}
-
-                <View style={globalStyles.card}>
-                    <Text
-                        style={
-                            globalStyles.sectionTitle
-                        }
-                    >
-                        Set Information
-                    </Text>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>
-                            Vehicle
-                        </Text>
-
-                        <Text style={styles.infoValue}>
-                            {getVehicleName()}
+                <View style={styles.statRow}>
+                    <View style={styles.statTile}>
+                        <Text style={styles.statLabel}>AVG MILEAGE</Text>
+                        <Text style={styles.statValue}>
+                            {getAverageDistance().toFixed(0)}
+                            <Text style={styles.statUnit}> km</Text>
                         </Text>
                     </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>
-                            Brand
-                        </Text>
-
-                        <Text style={styles.infoValue}>
-                            {tyres[0]?.brand || "-"}
+                    <View style={styles.statTile}>
+                        <Text style={styles.statLabel}>AVG HEAT CYCLES</Text>
+                        <Text style={styles.statValue}>{getAverageHeatCycles().toFixed(1)}</Text>
+                    </View>
+                    <View style={styles.statTile}>
+                        <Text style={styles.statLabel}>TYRES</Text>
+                        <Text style={styles.statValue}>
+                            {tyres.length}
+                            <Text style={styles.statUnit}> / 4</Text>
                         </Text>
                     </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>
-                            Specification
-                        </Text>
-
-                        <Text style={styles.infoValue}>
-                            {tyres[0]?.spec || "-"}
-                        </Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>
-                            Tyres
-                        </Text>
-
-                        <Text style={styles.infoValue}>
-                            {tyres.length}/4
-                        </Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>
-                            Heat Cycles
-                        </Text>
-
-                        <Text style={styles.infoValue}>
-                            {getAverageHeatCycles().toFixed(
-                                1
-                            )}
-                        </Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>
-                            Current Mileage
-                        </Text>
-
-                        <Text style={styles.infoValue}>
-                            {getAverageDistance().toFixed(
-                                0
-                            )}{" "}
-                            km
-                        </Text>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>
-                            Runs
-                        </Text>
-
-                        <Text style={styles.infoValue}>
-                            -
-                        </Text>
+                    <View style={styles.statTile}>
+                        <Text style={styles.statLabel}>RUNS</Text>
+                        <Text style={styles.statValue}>{history.length}</Text>
                     </View>
                 </View>
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>
-                        Pressure Check History
-                    </Text>
+                <Panel title="Pressure Check History" icon="speedometer-outline">
 
                     {history.length === 0 ? (
                         <Text style={globalStyles.subText}>
@@ -490,7 +401,7 @@ export default function TyreSetDetailPage() {
                             </View>
                         ))
                     )}
-                </View>
+                </Panel>
 
                 <Modal
                     visible={showDeleteModal}
@@ -599,8 +510,7 @@ export default function TyreSetDetailPage() {
                         </View>
                     </View>
                 </Modal>
-            </ScrollView>
-        </SafeAreaView>
+        </Screen>
     );
 }
 
@@ -737,5 +647,39 @@ const styles = StyleSheet.create({
     checkNotes: {
         color: "#d1d5db",
         fontSize: 12,
+    },
+
+    // ----- Redesigned layout -----
+    statRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+    },
+    statTile: {
+        flexGrow: 1,
+        flexBasis: 150,
+        backgroundColor: colors.card,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 16,
+        gap: 8,
+    },
+    statLabel: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+    statValue: {
+        color: colors.textPrimary,
+        fontSize: 26,
+        fontWeight: "800",
+        fontVariant: ["tabular-nums"],
+    },
+    statUnit: {
+        color: colors.textMuted,
+        fontSize: 13,
+        fontWeight: "600",
     },
 });

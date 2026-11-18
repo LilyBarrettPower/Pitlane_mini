@@ -10,11 +10,23 @@ import {
     TextInput
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { apiFetch } from "../../../../assets/api";
 import { useAuth } from "../../../../context/AuthContext";
 import { globalStyles } from "../../../../constants/styles";
+import { colors } from "../../../../constants/theme";
+import {
+    Button,
+    EmptyState,
+    ErrorBanner,
+    Field,
+    LoadingState,
+    PageHeader,
+    Panel,
+    Screen,
+    useIsWide,
+} from "../../../../components/ui/kit";
 
 type Track = {
     _id: string;
@@ -50,6 +62,7 @@ type EventVehicle = {
 export default function EventDetailPage() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { token } = useAuth();
+    const isWide = useIsWide();
 
     const [event, setEvent] = useState<Event | null>(null);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -335,113 +348,170 @@ export default function EventDetailPage() {
     }
 
 
-    if (isLoading) {
+    if (isLoading && !event) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <ActivityIndicator color="#ffffff" />
-            </SafeAreaView>
+            <Screen>
+                <LoadingState />
+            </Screen>
         );
     }
 
-    if (errorMessage || !event) {
+    if (!event) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <View style={styles.content}>
-                    <Text style={globalStyles.errorText}>
-                        {errorMessage || "Event not found"}
-                    </Text>
-                </View>
-            </SafeAreaView>
+            <Screen>
+                <PageHeader title="Event" onBack={() => router.back()} backLabel="Events" />
+                <ErrorBanner message={errorMessage || "Event not found"} />
+            </Screen>
         );
     }
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    const isLive =
+        new Date(event.startDate).getTime() <= Date.now() &&
+        new Date(event.endDate).getTime() + dayMs > Date.now();
+    const trackName = getTrackName();
+
+    const formatLongDate = (date?: string) =>
+        date
+            ? new Date(date).toLocaleDateString("en-NZ", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+            })
+            : undefined;
+
+    const infoPanel = (
+        <Panel title="Event Info" icon="information-circle-outline">
+            <View style={styles.fieldGrid}>
+                <Field label="Track" value={trackName !== "-" ? trackName : undefined} />
+                <Field label="Type" value={event.type} />
+                <Field label="Start" value={formatLongDate(event.startDate)} />
+                <Field label="End" value={formatLongDate(event.endDate)} />
+            </View>
+
+            {event.notes ? (
+                <View style={styles.notesBlock}>
+                    <Text style={styles.notesLabel}>NOTES</Text>
+                    <Text style={styles.notesText}>{event.notes}</Text>
+                </View>
+            ) : null}
+        </Panel>
+    );
+
+    const carsPanel = (
+        <Panel
+            title="Cars Entered"
+            icon="car-sport-outline"
+            actionLabel="Assign vehicle"
+            onAction={() => setShowAssignModal(true)}
+        >
+            {eventVehicles.length === 0 ? (
+                <EmptyState
+                    icon="car-sport-outline"
+                    text="No cars entered in this event yet."
+                    action={
+                        <Button
+                            label="Assign Vehicle"
+                            icon="add"
+                            size="sm"
+                            variant="secondary"
+                            onPress={() => setShowAssignModal(true)}
+                        />
+                    }
+                />
+            ) : (
+                <View style={styles.carGrid}>
+                    {eventVehicles.map((item) => (
+                        <Pressable
+                            key={item._id}
+                            style={({ pressed }) => [styles.carCard, pressed && styles.pressed]}
+                            onPress={() =>
+                                router.push({
+                                    pathname: "/events/[id]/vehicles/[eventVehicleId]" as any,
+                                    params: {
+                                        id: String(id),
+                                        eventVehicleId: item._id,
+                                    },
+                                })
+                            }
+                        >
+                            <View style={styles.numberTile}>
+                                <Text style={styles.numberText}>
+                                    {item.vehicleId?.racingNumber ? `#${item.vehicleId.racingNumber}` : "–"}
+                                </Text>
+                            </View>
+
+                            <View style={styles.carText}>
+                                <Text style={styles.carName} numberOfLines={1}>
+                                    {item.vehicleId?.name ||
+                                        `${item.vehicleId?.make || ""} ${item.vehicleId?.model || ""}`.trim() ||
+                                        "Unnamed vehicle"}
+                                </Text>
+                                <Text style={styles.carSub} numberOfLines={1}>
+                                    Runs, tyres & setups ›
+                                </Text>
+                            </View>
+
+                            <Pressable
+                                hitSlop={8}
+                                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                                onPress={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveVehicleAssignment(item._id);
+                                }}
+                            >
+                                <Ionicons name="close" size={18} color={colors.textMuted} />
+                            </Pressable>
+                        </Pressable>
+                    ))}
+                </View>
+            )}
+        </Panel>
+    );
 
     return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <Text style={globalStyles.title}>{event.name}</Text>
-                <View style={styles.eventActionRow}>
-                    <Pressable
-                        style={globalStyles.smallButton}
-                        onPress={openEditModal}
-                    >
-                        <Text style={globalStyles.smallButtonText}>
-                            Edit Event
-                        </Text>
-                    </Pressable>
+        <Screen>
+            <PageHeader
+                eyebrow={isLive ? "● Live now" : event.type || "Event"}
+                title={event.name}
+                subtitle={[
+                    `${formatDate(event.startDate)} – ${formatDate(event.endDate)}`,
+                    trackName !== "-" ? trackName : "",
+                ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                onBack={() => router.back()}
+                backLabel="Events"
+                actions={
+                    <>
+                        <Button label="Edit" icon="create-outline" variant="secondary" onPress={openEditModal} />
+                        <Button
+                            label="Delete"
+                            icon="trash-outline"
+                            variant="ghost"
+                            onPress={() => {
+                                setErrorMessage("");
+                                setShowDeleteModal(true);
+                            }}
+                        />
+                    </>
+                }
+            />
 
-                    <Pressable
-                        style={globalStyles.buttonDangerSmall}
-                        onPress={() => {
-                            setErrorMessage("");
-                            setShowDeleteModal(true);
-                        }}
-                    >
-                        <Text style={globalStyles.smallButtonText}>
-                            Delete Event
-                        </Text>
-                    </Pressable>
+            {!showEditModal && !showAssignModal ? <ErrorBanner message={errorMessage} /> : null}
+
+            {isWide ? (
+                <View style={styles.columns}>
+                    <View style={styles.colMain}>{carsPanel}</View>
+                    <View style={styles.colSide}>{infoPanel}</View>
                 </View>
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Event Info</Text>
-                    <Text style={globalStyles.cardText}>Track: {getTrackName()}</Text>
-                    <Text style={globalStyles.cardText}>Type: {event.type || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Start: {formatDate(event.startDate)}</Text>
-                    <Text style={globalStyles.cardText}>End: {formatDate(event.endDate)}</Text>
-                    <Text style={globalStyles.cardText}>Status: {event.status || "-"}</Text>
-                    <Text style={globalStyles.cardText}>Notes: {event.notes || "-"}</Text>
-                </View>
-
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Assigned Vehicles</Text>
-
-                    {eventVehicles.length === 0 ? (
-                        <Text style={globalStyles.text}>No vehicles assigned</Text>
-                    ) : (
-                        eventVehicles.map((item) => (
-                            <Pressable
-                                key={item._id}
-                                style={styles.listItemCard}
-                                onPress={() =>
-                                    router.push({
-                                        pathname: "/events/[id]/vehicles/[eventVehicleId]" as any,
-                                        params: {
-                                            id: String(id),
-                                            eventVehicleId: item._id,
-                                        },
-                                    })
-                                }
-                            >
-                                <View>
-                                    <Text style={globalStyles.cardText}>
-                                        {vehicleLabel(item.vehicleId)}
-                                    </Text>
-                                    <Text style={globalStyles.subText}>
-                                        {item.type || "Event vehicle"}
-                                    </Text>
-                                </View>
-
-                                <Pressable
-                                    style={globalStyles.buttonDangerSmall}
-                                    onPress={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveVehicleAssignment(item._id);
-                                    }}
-                                >
-                                    <Text style={globalStyles.smallButtonText}>Remove</Text>
-                                </Pressable>
-                            </Pressable>
-                        ))
-                    )}
-
-                    <View style={styles.actionRow}>
-                        <Pressable
-                            style={globalStyles.buttonPrimary}
-                            onPress={() => setShowAssignModal(true)}
-                        >
-                            <Text style={globalStyles.buttonPrimaryText}>Assign Vehicle</Text>
-                        </Pressable>
-                    </View>
-                </View>
+            ) : (
+                <>
+                    {infoPanel}
+                    {carsPanel}
+                </>
+            )}
 
                 <Modal
                     visible={showAssignModal}
@@ -759,9 +829,7 @@ export default function EventDetailPage() {
                         </View>
                     </View>
                 </Modal>
-
-            </ScrollView>
-        </SafeAreaView>
+        </Screen>
     );
 }
 
@@ -829,5 +897,98 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+    },
+
+    // ----- Redesigned layout -----
+    columns: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 20,
+    },
+    colMain: {
+        flex: 3,
+        gap: 20,
+    },
+    colSide: {
+        flex: 2,
+        gap: 20,
+    },
+    fieldGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 18,
+    },
+    notesBlock: {
+        marginTop: 18,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: colors.borderDark,
+        gap: 6,
+    },
+    notesLabel: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 1,
+    },
+    notesText: {
+        color: colors.textSecondary,
+        fontSize: 15,
+        lineHeight: 22,
+    },
+    carGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 10,
+    },
+    carCard: {
+        flexGrow: 1,
+        flexBasis: 260,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        backgroundColor: colors.background,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 12,
+    },
+    numberTile: {
+        minWidth: 48,
+        height: 48,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        backgroundColor: colors.primarySoft,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    numberText: {
+        color: colors.textPrimary,
+        fontSize: 17,
+        fontWeight: "800",
+    },
+    carText: {
+        flex: 1,
+        gap: 3,
+    },
+    carName: {
+        color: colors.textPrimary,
+        fontSize: 16,
+        fontWeight: "800",
+    },
+    carSub: {
+        color: colors.primaryLight,
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    iconButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    pressed: {
+        opacity: 0.8,
     },
 });

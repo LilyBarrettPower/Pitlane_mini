@@ -1,11 +1,22 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable, Modal, TextInput } from "react-native";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { apiFetch } from "../../../../../../assets/api";
 import { useAuth } from "../../../../../../context/AuthContext";
 import { globalStyles } from "../../../../../../constants/styles";
+import { colors } from "../../../../../../constants/theme";
+import {
+    Badge,
+    Button,
+    EmptyState,
+    ErrorBanner,
+    LoadingState,
+    PageHeader,
+    Panel,
+    Screen,
+    useIsWide,
+} from "../../../../../../components/ui/kit";
 
 type Vehicle = {
     _id: string;
@@ -128,6 +139,7 @@ export default function EventVehicleDetailPage() {
     }>();
 
     const { token } = useAuth();
+    const isWide = useIsWide();
 
     const [eventVehicle, setEventVehicle] = useState<EventVehicle | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -629,140 +641,185 @@ export default function EventVehicleDetailPage() {
     }
 
 
-    if (isLoading) {
+    if (isLoading && !eventVehicle) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <ActivityIndicator color="#ffffff" />
-            </SafeAreaView>
+            <Screen>
+                <LoadingState />
+            </Screen>
         );
     }
 
-    if (errorMessage || !eventVehicle) {
+    if (!eventVehicle) {
         return (
-            <SafeAreaView style={globalStyles.container}>
-                <View style={styles.content}>
-                    <Text style={globalStyles.errorText}>
-                        {errorMessage || "Event vehicle not found"}
-                    </Text>
-                </View>
-            </SafeAreaView>
+            <Screen>
+                <PageHeader title="Event vehicle" onBack={() => router.back()} backLabel="Event" />
+                <ErrorBanner message={errorMessage || "Event vehicle not found"} />
+            </Screen>
         );
     }
 
-    return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.breadcrumbCard}>
-                    <Text style={globalStyles.title}>
-                        {event?.name || "Event"}
-                    </Text>
+    const carName =
+        typeof eventVehicle.vehicleId === "string" ? "Event Vehicle" : vehicleLabel(eventVehicle.vehicleId);
 
-                    <Text style={globalStyles.text}>
-                        {typeof eventVehicle.vehicleId === "string"
-                            ? "Event Vehicle"
-                            : vehicleLabel(eventVehicle.vehicleId)}
-                    </Text>
-                </View>
+    // e.g. 92.415 -> "1:32.415"
+    const lapTime = (seconds?: number) => {
+        if (!seconds || !Number.isFinite(seconds)) return "—";
+        const mins = Math.floor(seconds / 60);
+        const secs = (seconds % 60).toFixed(3).padStart(6, "0");
+        return `${mins}:${secs}`;
+    };
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Event Vehicle Info</Text>
-                    <Text style={globalStyles.cardText}>
-                        Do we want any text here?
-                    </Text>
-                </View>
+    const totalLaps = runs.reduce((sum, run) => sum + (run.lapsDone ?? 0), 0);
+    const bestLaps = runs.map((run) => run.bestLapS).filter((time): time is number => !!time && time > 0);
+    const bestLap = bestLaps.length ? Math.min(...bestLaps) : undefined;
+    const totalFuel = runs.reduce((sum, run) => sum + (run.fuelUsed ?? 0), 0);
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Runs</Text>
-                    {runs.length === 0 ? (
-                        <Text style={globalStyles.text}>No runs yet</Text>
-                    ) : (
-                        runs.map((run) => (
+    const runStatus = (run: Run) =>
+        !run.outTime
+            ? { label: "Not started", tone: "neutral" as const }
+            : !run.inTime
+                ? { label: "● On track", tone: "live" as const }
+                : { label: "Complete", tone: "primary" as const };
+
+    const statTiles = (
+        <View style={styles.statRow}>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>RUNS</Text>
+                <Text style={styles.statValue}>{runs.length}</Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>TOTAL LAPS</Text>
+                <Text style={styles.statValue}>{totalLaps}</Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>BEST LAP</Text>
+                <Text style={styles.statValue}>{lapTime(bestLap)}</Text>
+            </View>
+            <View style={styles.statTile}>
+                <Text style={styles.statLabel}>FUEL USED</Text>
+                <Text style={styles.statValue}>
+                    {Math.round(totalFuel * 10) / 10}
+                    <Text style={styles.statUnit}> L</Text>
+                </Text>
+            </View>
+        </View>
+    );
+
+    const runsPanel = (
+        <Panel title="Runs" icon="stopwatch-outline" actionLabel="New run" onAction={openCreateRunModal}>
+            {runs.length === 0 ? (
+                <EmptyState
+                    icon="stopwatch-outline"
+                    text="No runs yet for this car."
+                    action={<Button label="Create Run" icon="add" size="sm" onPress={openCreateRunModal} />}
+                />
+            ) : (
+                <>
+                    <View style={styles.tableHead}>
+                        <Text style={[styles.tableHeadText, styles.colRun]}>RUN</Text>
+                        <Text style={[styles.tableHeadText, styles.colLaps]}>LAPS</Text>
+                        <Text style={[styles.tableHeadText, styles.colBest]}>BEST</Text>
+                    </View>
+
+                    {runs.map((run, index) => {
+                        const status = runStatus(run);
+
+                        return (
                             <Pressable
                                 key={run._id}
-                                style={styles.listItemCard}
-                                onPress={() => {
-                                    console.log("Opening run:", {
-                                        name: run.name,
-                                        runId: run._id,
-                                    });
-
-                                    router.push(
-                                        `/events/${String(eventId)}/vehicles/${String(
-                                            eventVehicleId
-                                        )}/runs/${run._id}`
-                                    );
-                                }}
-                            >
-                                <View>
-                                    <Text style={globalStyles.cardText}>{run.name || "Unnamed Run"}</Text>
-                                    <Text style={globalStyles.subText}>
-                                        Status:{" "}
-                                        {!run.outTime
-                                            ? "Not started"
-                                            : !run.inTime
-                                                ? "On track"
-                                                : "Complete"}
-                                    </Text>
-                                    {/* <Text style={globalStyles.subText}>
-                                        ID: {run._id}
-                                    </Text> */}
-
-                                    <Text style={globalStyles.subText}>
-                                        Total Laps: {run.lapsDone ?? "-"} | Best Time s: {run.bestLapS ?? "-"}
-                                    </Text>
-                                    <Text style={globalStyles.subText}>
-                                        Fuel Used: {run.fuelUsed ?? "-"} L
-                                    </Text>
-                                </View>
-                            </Pressable>
-                        ))
-                    )}
-
-                    <View style={styles.actionRow}>
-                        <Pressable
-                            style={globalStyles.buttonPrimary}
-                            onPress={openCreateRunModal}>
-                            <Text style={globalStyles.buttonPrimaryText}>Create Run</Text>
-                        </Pressable>
-                    </View>
-                </View>
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Setup Used</Text>
-
-                    {setUpsUsed.length === 0 ? (
-                        <Text style={globalStyles.text}>
-                            No setups recorded for runs at this event yet.
-                        </Text>
-                    ) : (
-                        setUpsUsed.map((item) => (
-                            <Pressable
-                                key={item.setUp._id}
-                                style={styles.listItemCard}
+                                style={({ pressed }) => [
+                                    styles.tableRow,
+                                    index === runs.length - 1 && styles.tableRowLast,
+                                    pressed && styles.rowPressed,
+                                ]}
                                 onPress={() =>
-                                    router.push({
-                                        pathname: "/vehicles/[id]/setups/[setupId]",
-                                        params: {
-                                            id: getVehicleId(),
-                                            setupId: item.setUp._id,
-                                        },
-                                    })
+                                    router.push(
+                                        `/events/${String(eventId)}/vehicles/${String(eventVehicleId)}/runs/${run._id}`
+                                    )
                                 }
                             >
-                                <Text style={globalStyles.cardText}>
-                                    Setup {item.setUp.version}
-                                </Text>
-                                <Text style={globalStyles.subText}>
-                                    {item.runs.length} {item.runs.length === 1 ? "run" : "runs"}:{" "}
-                                    {item.runs.map((run) => run.name || "Unnamed Run").join(", ")}
+                                <View style={styles.colRun}>
+                                    <View style={styles.runNameRow}>
+                                        <Text style={styles.runName} numberOfLines={1}>
+                                            {run.name || "Unnamed Run"}
+                                        </Text>
+                                        <Badge label={status.label} tone={status.tone} />
+                                    </View>
+                                    <Text style={styles.runSub} numberOfLines={1}>
+                                        {[
+                                            run.fuelUsed ? `${Math.round(run.fuelUsed * 10) / 10} L fuel` : "",
+                                            run.weather,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" · ") || "—"}
+                                    </Text>
+                                </View>
+                                <Text style={[styles.tableCell, styles.colLaps]}>{run.lapsDone ?? 0}</Text>
+                                <Text style={[styles.tableCell, styles.tableCellStrong, styles.colBest]}>
+                                    {lapTime(run.bestLapS)}
                                 </Text>
                             </Pressable>
-                        ))
-                    )}
-                </View>
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>
-                        Tyres
-                    </Text>
+                        );
+                    })}
+                </>
+            )}
+        </Panel>
+    );
+
+    const setupsPanel = (
+        <Panel title="Setups Used" icon="construct-outline">
+            {setUpsUsed.length === 0 ? (
+                <EmptyState icon="construct-outline" text="No setups recorded for runs at this event yet." />
+            ) : (
+                setUpsUsed.map((item) => (
+                    <Pressable
+                        key={item.setUp._id}
+                        style={({ pressed }) => [styles.setupRow, pressed && styles.pressed]}
+                        onPress={() =>
+                            router.push({
+                                pathname: "/vehicles/[id]/setups/[setupId]",
+                                params: {
+                                    id: getVehicleId(),
+                                    setupId: item.setUp._id,
+                                },
+                            })
+                        }
+                    >
+                        <View style={styles.versionTile}>
+                            <Text style={styles.versionText} numberOfLines={1}>{item.setUp.version || "–"}</Text>
+                        </View>
+                        <View style={styles.setupText}>
+                            <Text style={styles.runName}>Setup {item.setUp.version}</Text>
+                            <Text style={styles.runSub} numberOfLines={2}>
+                                {item.runs.length} {item.runs.length === 1 ? "run" : "runs"}:{" "}
+                                {item.runs.map((run) => run.name || "Unnamed Run").join(", ")}
+                            </Text>
+                        </View>
+                    </Pressable>
+                ))
+            )}
+        </Panel>
+    );
+
+    return (
+        <Screen>
+                <PageHeader
+                    eyebrow={event?.name || "Event"}
+                    title={carName}
+                    subtitle="Runs, tyres and setups at this event"
+                    onBack={() => router.back()}
+                    backLabel="Event"
+                    actions={<Button label="New Run" icon="add" onPress={openCreateRunModal} />}
+                />
+
+                {!showRunModal ? <ErrorBanner message={errorMessage} /> : null}
+
+                {statTiles}
+
+                <View style={isWide ? styles.columns : styles.stack}>
+                    <View style={isWide ? styles.colMain : styles.stack}>
+                        {runsPanel}
+                        <Panel title="Tyres" icon="disc-outline">
 
                     {tyreHistory.length === 0 ? (
                         <Text style={globalStyles.text}>
@@ -996,6 +1053,9 @@ export default function EventVehicleDetailPage() {
                             );
                         })
                     )}
+                        </Panel>
+                    </View>
+                    <View style={isWide ? styles.colSide : styles.stack}>{setupsPanel}</View>
                 </View>
 
                 <Modal
@@ -1349,10 +1409,8 @@ export default function EventVehicleDetailPage() {
                         </View>
                     </ScrollView>
                 </Modal>
-            </ScrollView>
-        </SafeAreaView>
-    )
-
+        </Screen>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -1597,5 +1655,148 @@ const styles = StyleSheet.create({
     customTyreOptionSelected: {
         backgroundColor: "#1d4ed8",
         borderColor: "#2563eb",
+    },
+
+    // ----- Redesigned layout -----
+    columns: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 20,
+    },
+    stack: {
+        gap: 16,
+    },
+    colMain: {
+        flex: 3,
+        gap: 20,
+    },
+    colSide: {
+        flex: 2,
+        gap: 20,
+    },
+    statRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+    },
+    statTile: {
+        flexGrow: 1,
+        flexBasis: 150,
+        backgroundColor: colors.card,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 16,
+        gap: 8,
+    },
+    statLabel: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+    statValue: {
+        color: colors.textPrimary,
+        fontSize: 26,
+        fontWeight: "800",
+        fontVariant: ["tabular-nums"],
+    },
+    statUnit: {
+        color: colors.textMuted,
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    tableHead: {
+        flexDirection: "row",
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderDark,
+    },
+    tableHeadText: {
+        color: colors.textMuted,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+    tableRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderDark,
+    },
+    tableRowLast: {
+        borderBottomWidth: 0,
+        paddingBottom: 0,
+    },
+    rowPressed: {
+        backgroundColor: colors.pressedOverlay,
+    },
+    tableCell: {
+        color: colors.textSecondary,
+        fontSize: 15,
+        fontVariant: ["tabular-nums"],
+    },
+    tableCellStrong: {
+        color: colors.textPrimary,
+        fontWeight: "700",
+    },
+    colRun: {
+        flex: 1,
+        paddingRight: 12,
+        gap: 4,
+    },
+    colLaps: {
+        width: 56,
+        textAlign: "center",
+    },
+    colBest: {
+        width: 90,
+        textAlign: "right",
+    },
+    runNameRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        flexWrap: "wrap",
+    },
+    runName: {
+        color: colors.textPrimary,
+        fontSize: 15,
+        fontWeight: "700",
+    },
+    runSub: {
+        color: colors.textMuted,
+        fontSize: 13,
+    },
+    setupRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        backgroundColor: colors.background,
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 8,
+    },
+    setupText: {
+        flex: 1,
+        gap: 2,
+    },
+    versionTile: {
+        minWidth: 38,
+        height: 38,
+        paddingHorizontal: 8,
+        borderRadius: 10,
+        backgroundColor: colors.primarySoft,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    versionText: {
+        color: "#93c5fd",
+        fontSize: 14,
+        fontWeight: "800",
+    },
+    pressed: {
+        opacity: 0.8,
     },
 });
