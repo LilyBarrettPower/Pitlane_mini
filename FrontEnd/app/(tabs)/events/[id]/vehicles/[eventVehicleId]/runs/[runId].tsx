@@ -1578,7 +1578,9 @@ export default function RunDetailPage() {
                     <Text style={globalStyles.cardText}>Fuel Start: {run.fuelStart ?? "-"} L</Text>
                     <Text style={globalStyles.cardText}>Fuel End: {run.fuelEnd ?? "-"} L</Text>
                     <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed ?? "-"} L</Text>
-                    <Text style={globalStyles.cardText}>Average Fuel/Lap: {run.fuelPerLap ?? "-"} L</Text>
+                    <Text style={globalStyles.cardText}>
+                        Average Fuel/Lap: {run.fuelPerLap != null ? `${run.fuelPerLap.toFixed(2)} L` : "-"}
+                    </Text>
                     <View style={styles.actionRow}>
                         <Pressable
                             style={globalStyles.buttonPrimary}
@@ -1603,9 +1605,13 @@ export default function RunDetailPage() {
                             : "-"
                         }
                     </Text>
-                    <Text style={globalStyles.cardText}>Average Lap: {run.averageLapS || "-"}</Text>
+                    <Text style={globalStyles.cardText}>
+                        Average Lap: {run.averageLapS ? formatLapTime(run.averageLapS) : "-"}
+                    </Text>
                     <Text style={globalStyles.cardText}>Fuel Used: {run.fuelUsed}</Text>
-                    <Text style={globalStyles.cardText}>Average Fuel/Lap: {run.fuelPerLap}</Text>
+                    <Text style={globalStyles.cardText}>
+                        Average Fuel/Lap: {run.fuelPerLap != null ? `${run.fuelPerLap.toFixed(2)} L` : "-"}
+                    </Text>
 
                 </View>
 
