@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import SettingsShell from "../../../components/settingsShell";
 import { useAuth } from "../../../context/AuthContext";
@@ -24,6 +25,7 @@ type ListedUser = {
   name?: string;
   email: string;
   role: string;
+  status?: "invited" | "active";
 };
 
 const ROLES: Role[] = ["admin", "engineer", "mechanic", "viewer"];
@@ -44,10 +46,11 @@ export default function UsersPage() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("viewer");
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -83,15 +86,15 @@ export default function UsersPage() {
   function openCreateModal() {
     setName("");
     setEmail("");
-    setPassword("");
     setRole("viewer");
     setFormError("");
     setShowCreateModal(true);
   }
 
-  async function handleCreateUser() {
-    if (!email.trim() || !password) {
-      setFormError("Email and password are required");
+  // Invite by email - the new user chooses their own password from the link
+  async function handleInviteUser() {
+    if (!email.trim()) {
+      setFormError("Email is required");
       return;
     }
 
@@ -99,7 +102,7 @@ export default function UsersPage() {
       setFormError("");
       setIsSaving(true);
 
-      await apiFetch("/auth/create-user", {
+      const data = await apiFetch("/auth/invite", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -107,17 +110,42 @@ export default function UsersPage() {
         body: JSON.stringify({
           name,
           email,
-          password,
           role,
         }),
       });
 
       setShowCreateModal(false);
+      setErrorMessage(data.warning || "");
+      setSuccessMessage(data.warning ? "" : `Invite sent to ${email.trim()}`);
       await fetchUsers();
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Failed to create user");
+      setFormError(error instanceof Error ? error.message : "Failed to invite user");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleResendInvite(listedUser: ListedUser) {
+    const userId = listedUser.id || listedUser._id;
+    if (!userId) return;
+
+    try {
+      setResendingId(userId);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      await apiFetch(`/auth/invite/${userId}/resend`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setSuccessMessage(`New invite sent to ${listedUser.email}`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to resend invite");
+    } finally {
+      setResendingId(null);
     }
   }
 
@@ -125,9 +153,16 @@ export default function UsersPage() {
     <SettingsShell
       title="Users"
       subtitle={users.length ? `${users.length} ${users.length === 1 ? "member" : "members"}` : undefined}
-      actions={isAdmin ? <Button label="Add User" icon="person-add-outline" onPress={openCreateModal} /> : undefined}
+      actions={isAdmin ? <Button label="Invite User" icon="person-add-outline" onPress={openCreateModal} /> : undefined}
     >
       <ErrorBanner message={errorMessage} />
+
+      {successMessage ? (
+        <View style={styles.successBanner}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.live} />
+          <Text style={styles.successText}>{successMessage}</Text>
+        </View>
+      ) : null}
 
       <Panel title="Team members" icon="people-outline">
         {isUsersLoading && users.length === 0 ? (
@@ -149,12 +184,25 @@ export default function UsersPage() {
                   {listedUser.email}
                 </Text>
               </View>
-              <Badge label={listedUser.role.toUpperCase()} tone={ROLE_TONE[listedUser.role] || "neutral"} />
+              <View style={styles.userBadges}>
+                {listedUser.status === "invited" ? <Badge label="INVITED" tone="warning" /> : null}
+                <Badge label={listedUser.role.toUpperCase()} tone={ROLE_TONE[listedUser.role] || "neutral"} />
+              </View>
+              {isAdmin && listedUser.status === "invited" ? (
+                <Button
+                  label="Resend"
+                  icon="mail-outline"
+                  size="sm"
+                  variant="ghost"
+                  loading={resendingId === (listedUser.id || listedUser._id)}
+                  onPress={() => handleResendInvite(listedUser)}
+                />
+              ) : null}
             </View>
           ))
         )}
 
-        {!isAdmin ? <Text style={styles.helper}>Only admins can add users.</Text> : null}
+        {!isAdmin ? <Text style={styles.helper}>Only admins can invite users.</Text> : null}
       </Panel>
 
       <Modal
@@ -165,7 +213,10 @@ export default function UsersPage() {
       >
         <View style={globalStyles.modalOverlay}>
           <View style={globalStyles.modalCard}>
-            <Text style={globalStyles.modalTitle}>Add User</Text>
+            <Text style={globalStyles.modalTitle}>Invite User</Text>
+            <Text style={styles.modalIntro}>
+              We&apos;ll email them a link to set their own password. The link lasts 72 hours.
+            </Text>
 
             <View>
               <Text style={globalStyles.label}>Name</Text>
@@ -187,18 +238,6 @@ export default function UsersPage() {
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                style={globalStyles.input}
-              />
-            </View>
-
-            <View>
-              <Text style={globalStyles.label}>Temporary password</Text>
-              <TextInput
-                value={password}
-                placeholder="Password"
-                placeholderTextColor={colors.textMuted}
-                onChangeText={setPassword}
-                secureTextEntry
                 style={globalStyles.input}
               />
             </View>
@@ -229,7 +268,7 @@ export default function UsersPage() {
                 onPress={() => setShowCreateModal(false)}
                 disabled={isSaving}
               />
-              <Button label="Add User" onPress={handleCreateUser} loading={isSaving} />
+              <Button label="Send Invite" icon="send-outline" onPress={handleInviteUser} loading={isSaving} />
             </View>
           </View>
         </View>
@@ -267,6 +306,33 @@ const styles = StyleSheet.create({
   userEmail: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+
+  userBadges: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: colors.liveSoft,
+    borderRadius: 10,
+    padding: 12,
+  },
+
+  successText: {
+    color: "#86efac",
+    flexShrink: 1,
+  },
+
+  modalIntro: {
+    color: colors.textMuted,
+    fontSize: 14,
+    marginTop: -4,
   },
 
   helper: {

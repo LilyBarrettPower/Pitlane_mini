@@ -73,7 +73,12 @@ export default function LoginPage() {
             </View>
 
             <View>
-                <Text style={globalStyles.label}>Password</Text>
+                <View style={styles.passwordLabelRow}>
+                    <Text style={globalStyles.label}>Password</Text>
+                    <Pressable onPress={() => router.push("/forgot-password")} hitSlop={8}>
+                        <Text style={styles.forgotLink}>Forgot password?</Text>
+                    </Pressable>
+                </View>
                 <TextInput
                     value={password}
                     onChangeText={setPassword}
@@ -93,6 +98,18 @@ export default function LoginPage() {
 }
 
 const styles = StyleSheet.create({
+    passwordLabelRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+    },
+
+    forgotLink: {
+        color: colors.primaryLight,
+        fontSize: 13,
+        fontWeight: "700",
+    },
+
     footerText: {
         color: colors.textMuted,
         fontSize: 14,

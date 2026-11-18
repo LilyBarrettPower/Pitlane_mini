@@ -1,25 +1,49 @@
-// Schema for user data used for authentication and personalisation 
+// Schema for user data used for authentication and personalisation
 
-const mongoose = require("mongoose"); // import mongoose into this file 
+const mongoose = require("mongoose");
 
-const UserSchema = new mongoose.Schema( //Create new schema 
+const UserSchema = new mongoose.Schema(
     {
-        organisationId: { // Use the Oganisation ID as a a foreign key - to link the user to their organisation
+        // Links the user to their organisation
+        organisationId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Organisation",
             required: true,
         },
-        email: { type: String, required: true, unique: true }, // Do we want this to be lowercase: true too??
-        passwordHash: { type: String, required: true },
+        email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+        // Empty until an invited user sets their password
+        passwordHash: { type: String },
         name: { type: String },
         role: {
             type: String,
-            enum: ["admin", "engineer", "mechanic", "viewer"], // enum for choosing between the roles (make this into a drop down)
+            enum: ["admin", "engineer", "mechanic", "viewer"],
             default: "engineer",
         },
-        isActive: { type: Boolean, default: true }, // Not 100% sure if I need this...
+        // "invited" = added by an admin but hasn't set a password yet.
+        // Users created before invites existed have no value and count as active.
+        status: {
+            type: String,
+            enum: ["invited", "active"],
+            default: "active",
+        },
+        invitedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
+
+        // One-time link tokens (SHA-256 hashes only, never the raw token).
+        // select: false keeps them out of query results unless asked for.
+        inviteTokenHash: { type: String, select: false },
+        inviteExpiresAt: { type: Date, select: false },
+        resetTokenHash: { type: String, select: false },
+        resetExpiresAt: { type: Date, select: false },
+
+        isActive: { type: Boolean, default: true },
     },
     { timestamps: true }
 );
 
-module.exports = mongoose.model("User", UserSchema)
+UserSchema.index({ inviteTokenHash: 1 }, { sparse: true });
+UserSchema.index({ resetTokenHash: 1 }, { sparse: true });
+
+module.exports = mongoose.model("User", UserSchema);
