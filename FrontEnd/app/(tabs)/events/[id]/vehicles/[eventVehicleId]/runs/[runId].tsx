@@ -23,6 +23,7 @@ type Run = {
     fuelPerLap?: number; // Also auto populates
     bestLapS?: number;
     averageLapS?: number;
+    distanceKm?: number; // laps x track length, set when the car comes in
     notes?: string;
 };
 
@@ -1121,6 +1122,9 @@ export default function RunDetailPage() {
                     <Text style={globalStyles.cardText}>Out Time: {formatTime(run.outTime)}</Text>
                     <Text style={globalStyles.cardText}>In Time: {formatTime(run.inTime)}</Text>
                     <Text style={globalStyles.cardText}>Laps Done: {run.lapsDone ?? "-"}</Text>
+                    <Text style={globalStyles.cardText}>
+                        Distance: {run.distanceKm ? `${Math.round(run.distanceKm * 10) / 10} km` : "-"}
+                    </Text>
                 </View>
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Conditions</Text>

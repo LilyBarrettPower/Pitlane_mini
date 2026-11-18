@@ -4,9 +4,28 @@ const Event = require("../models/Event");
 const Track = require("../models/Track");
 const LapTime = require("../models/LapTimes");
 const TyreRun = require("../models/TyreRun");
+const Vehicle = require("../models/Vehicle");
 const {
     updateTyreMileageForRun,
 } = require("./tyreRunController");
+
+// Adds (or with a negative number, removes) km on the ODO of the vehicle a
+// run belongs to. Treats a missing ODO as 0.
+async function adjustVehicleOdo(eventVehicleId, organisationId, km) {
+    if (!km) return;
+
+    const eventVehicle = await EventVehicle.findOne({
+        _id: eventVehicleId,
+        organisationId,
+    });
+
+    if (!eventVehicle) return;
+
+    await Vehicle.updateOne(
+        { _id: eventVehicle.vehicleId, organisationId },
+        [{ $set: { odo: { $add: [{ $ifNull: ["$odo", 0] }, km] } } }]
+    );
+}
 
 exports.carIn = async (req, res) => {
     try {
@@ -93,61 +112,68 @@ exports.carIn = async (req, res) => {
                         : 0;
             }
         
-        //  TYRE MILEAGE
+        //  RUN DISTANCE -> TYRE MILEAGE AND VEHICLE ODO
 
-        // Tyre mileage is a bonus: if it can't be worked out (no tyre run,
-        // or no track distance), the car should still be marked as in and the
-        // run stats saved. We just report a warning instead.
+        // These are a bonus: if the distance can't be worked out (no track
+        // distance), the car should still be marked as in and the run stats
+        // saved. We just report a warning instead.
         let warning;
 
-        const tyreRun = await TyreRun.findOne({
+        const eventVehicle = await EventVehicle.findOne({
+            _id: run.eventVehicleId,
             organisationId,
-            runId: run._id,
             isActive: true,
         });
 
-        if (tyreRun) {
-            const eventVehicle = await EventVehicle.findOne({
-                _id: run.eventVehicleId,
+        const event = eventVehicle
+            ? await Event.findOne({
+                _id: eventVehicle.eventId,
                 organisationId,
+                isActive: true,
+            })
+            : null;
+
+        const track = event
+            ? await Track.findOne({
+                _id: event.trackId,
+                organisationId,
+                isActive: true,
+            })
+            : null;
+
+        const trackDistanceOk =
+            track &&
+            Number.isFinite(track.distanceKms) &&
+            track.distanceKms > 0;
+
+        if (trackDistanceOk) {
+            // Every lap the car physically drove, including in and out laps
+            const physicalLaps = laps.length;
+
+            const runDistanceKm =
+                Math.round(physicalLaps * track.distanceKms * 1000) / 1000;
+
+            const tyreRun = await TyreRun.findOne({
+                organisationId,
+                runId: run._id,
                 isActive: true,
             });
 
-            const event = eventVehicle
-                ? await Event.findOne({
-                    _id: eventVehicle.eventId,
-                    organisationId,
-                    isActive: true,
-                })
-                : null;
-
-            const track = event
-                ? await Track.findOne({
-                    _id: event.trackId,
-                    organisationId,
-                    isActive: true,
-                })
-                : null;
-
-            const trackDistanceOk =
-                track &&
-                Number.isFinite(track.distanceKms) &&
-                track.distanceKms > 0;
-
-            if (trackDistanceOk) {
-                const physicalLaps = laps.length;
-
-                const runDistanceKm = physicalLaps * track.distanceKms;
-
+            if (tyreRun) {
                 await updateTyreMileageForRun(
                     tyreRun,
                     runDistanceKm,
                     organisationId,
                 );
-            } else {
-                warning =
-                    "Tyre mileage not updated: track distance is not configured";
             }
+
+            // Only add what this run hasn't already added to the ODO
+            const odoDifference = runDistanceKm - (run.distanceKm ?? 0);
+            await adjustVehicleOdo(run.eventVehicleId, organisationId, odoDifference);
+            run.distanceKm = runDistanceKm;
+        } else {
+            warning =
+                "Tyre mileage and ODO not updated: track distance is not configured";
         }
 
         await run.save();
@@ -277,7 +303,11 @@ exports.updateRun = async (req, res) => {
             return res.status(404).json({ message: "Run Not Found" });
         }
 
-        Object.assign(run, req.body);
+        // distanceKm is managed by "car in" and isActive by archive/unarchive,
+        // both of which keep the vehicle's ODO in step - don't let a plain
+        // update change them.
+        const { distanceKm, isActive, ...updates } = req.body;
+        Object.assign(run, updates);
 
         if (run.fuelStart != null && run.fuelEnd != null) {
             run.fuelUsed = run.fuelStart - run.fuelEnd;
@@ -301,14 +331,18 @@ exports.archiveRun = async (req, res) => {
         const { id } = req.params;
         const organisationId = req.user.organisationId;
 
-        const run = await Run.findOneAndUpdate(
-            { _id: id, organisationId },
-            { isActive: false },
-            { new: true }
-        );
+        const run = await Run.findOne({ _id: id, organisationId });
         if (!run) {
             return res.status(404).json({ message: "Run Not Found" });
         }
+
+        // Only take the run's km off the ODO if it wasn't already archived
+        if (run.isActive) {
+            run.isActive = false;
+            await run.save();
+            await adjustVehicleOdo(run.eventVehicleId, organisationId, -(run.distanceKm ?? 0));
+        }
+
         res.json({ message: "Run Archived", run });
     } catch (err) {
         console.error("Archive run error", err);
@@ -324,14 +358,18 @@ exports.unarchiveRun = async (req, res) => {
         const { id } = req.params;
         const organisationId = req.user.organisationId;
 
-        const run = await Run.findOneAndUpdate(
-            { _id: id, organisationId },
-            { isActive: true },
-            { new: true }
-        );
+        const run = await Run.findOne({ _id: id, organisationId });
         if (!run) {
             return res.status(404).json({ message: "Run Not Found" });
         }
+
+        // Only add the run's km back to the ODO if it was actually archived
+        if (!run.isActive) {
+            run.isActive = true;
+            await run.save();
+            await adjustVehicleOdo(run.eventVehicleId, organisationId, run.distanceKm ?? 0);
+        }
+
         res.json({ message: "Run Unarchived", run });
     } catch (err) {
         console.error("Unarchive run error", err);

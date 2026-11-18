@@ -461,7 +461,12 @@ export default function VehicleDetailPage() {
           <Text style={[styles.row, globalStyles.text]}>Model: {vehicle.model || ""}</Text>
           <Text style={[styles.row, globalStyles.text]}>Year: {vehicle.year || ""}</Text>
           <Text style={[styles.row, globalStyles.text]}>Owner: {vehicle.owner || ""}</Text>
-          <Text style={[styles.row, globalStyles.text]}>Odo: {vehicle.odo || ""}</Text>
+          <Text style={[styles.row, globalStyles.text]}>
+            Odo:{" "}
+            {vehicle.odo != null
+              ? `${Math.round(vehicle.odo).toLocaleString("en-NZ")} km`
+              : "-"}
+          </Text>
           <Text style={[styles.row, globalStyles.text]}>Chassis Number: {vehicle.chassisNumber || ""}</Text>
           <Text style={[styles.row, globalStyles.text]}>Notes: {vehicle.notes || ""}</Text>
 
