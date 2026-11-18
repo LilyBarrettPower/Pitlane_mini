@@ -7,6 +7,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { apiFetch } from "../../../assets/api";
 import { globalStyles } from "../../../constants/styles";
 import { colors } from "../../../constants/theme";
+import { INVALID_EMAIL_MESSAGE, isValidEmail } from "../../../constants/validation";
 import {
   Avatar,
   Badge,
@@ -95,8 +96,8 @@ export default function UsersPage() {
 
   // Invite by email - the new user chooses their own password from the link
   async function handleInviteUser() {
-    if (!email.trim()) {
-      setFormError("Email is required");
+    if (!isValidEmail(email)) {
+      setFormError(INVALID_EMAIL_MESSAGE);
       return;
     }
 

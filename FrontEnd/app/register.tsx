@@ -7,7 +7,9 @@ import { colors } from "../constants/theme";
 import { apiFetch } from "../assets/api";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/ui/AuthLayout";
+import { PasswordChecklist } from "../components/ui/PasswordFields";
 import { Button, ErrorBanner } from "../components/ui/kit";
+import { INVALID_EMAIL_MESSAGE, isValidEmail, passwordProblem } from "../constants/validation";
 
 export default function RegisterPage() {
     const { login, token, isLoading: authLoading } = useAuth();
@@ -29,6 +31,18 @@ export default function RegisterPage() {
     if (authLoading) return null;
 
     async function handleRegister() {
+        // Check before sending, using the same rules as the backend
+        const problem = !orgName.trim()
+            ? "Please enter your organisation's name"
+            : !isValidEmail(email)
+                ? INVALID_EMAIL_MESSAGE
+                : passwordProblem(password);
+
+        if (problem) {
+            setErrorMessage(problem);
+            return;
+        }
+
         try {
             setErrorMessage("");
             setIsLoading(true);
@@ -107,9 +121,11 @@ export default function RegisterPage() {
                     placeholder="Choose a password"
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
+                    autoCapitalize="none"
                     style={globalStyles.input}
                     onSubmitEditing={handleRegister}
                 />
+                <PasswordChecklist password={password} />
             </View>
 
             <ErrorBanner message={errorMessage} />

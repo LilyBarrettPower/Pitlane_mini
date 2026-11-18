@@ -10,6 +10,7 @@ import { globalStyles } from "../constants/styles";
 import { colors } from "../constants/theme";
 import AuthLayout from "../components/ui/AuthLayout";
 import { Button, ErrorBanner } from "../components/ui/kit";
+import { INVALID_EMAIL_MESSAGE, isValidEmail } from "../constants/validation";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
@@ -18,8 +19,8 @@ export default function ForgotPasswordPage() {
     const [isSending, setIsSending] = useState(false);
 
     async function handleSubmit() {
-        if (!email.trim()) {
-            setErrorMessage("Please enter your email");
+        if (!isValidEmail(email)) {
+            setErrorMessage(INVALID_EMAIL_MESSAGE);
             return;
         }
 

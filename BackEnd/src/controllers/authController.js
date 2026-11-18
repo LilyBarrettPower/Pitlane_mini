@@ -4,9 +4,10 @@ const Organisation = require("../models/Organisation");
 const User = require("../models/User");
 const { createToken: createLinkToken, hashToken } = require("../utils/tokens");
 const { sendInviteEmail, sendPasswordResetEmail } = require("../utils/mailer");
+const { isValidEmail, normaliseEmail, passwordProblem } = require("../utils/validation");
 
 const SALT_ROUNDS = 10;
-const MIN_PASSWORD_LENGTH = 8;
+const INVALID_EMAIL_MESSAGE = "Please enter a valid email address";
 const INVITE_EXPIRY_MS = 72 * 60 * 60 * 1000; // 72 hours
 const RESET_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 const ALLOWED_ROLES = ["admin", "engineer", "mechanic", "viewer"];
@@ -51,13 +52,6 @@ function getOrganisationId(req) {
         : req.user.organisationId;
 }
 
-function passwordProblem(password) {
-    if (!password || String(password).length < MIN_PASSWORD_LENGTH) {
-        return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
-    }
-    return null;
-}
-
 // Public fields of a user for the users list (never hashes or tokens)
 function publicUser(user) {
     return {
@@ -82,23 +76,27 @@ exports.registerOrganisation = async (req, res) => {
                 .json({ message: "Organisation name, email and password are required" });
         }
 
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: INVALID_EMAIL_MESSAGE });
+        }
+
         const problem = passwordProblem(password);
         if (problem) {
             return res.status(400).json({ message: problem });
         }
 
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        const existingUser = await User.findOne({ email: normaliseEmail(email) });
         if (existingUser) {
             return res
                 .status(400)
                 .json({ message: "User with this email already exists" });
         }
 
-        const organisation = await Organisation.create({ name: orgName });
+        const organisation = await Organisation.create({ name: String(orgName).trim() });
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
         const user = await User.create({
             organisationId: organisation._id,
-            email: email.toLowerCase(),
+            email: normaliseEmail(email),
             passwordHash,
             name,
             role: "admin",
@@ -136,7 +134,13 @@ exports.login = async (req, res) => {
                 .json({ message: "Email and password are required" });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase(), isActive: true }).populate(
+        // Format check only - password rules aren't applied at login, so
+        // older accounts with simpler passwords can still sign in
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: INVALID_EMAIL_MESSAGE });
+        }
+
+        const user = await User.findOne({ email: normaliseEmail(email), isActive: true }).populate(
             "organisationId",
             "name"
         );
@@ -217,8 +221,8 @@ exports.inviteUser = async (req, res) => {
 
         const { name, email, role } = req.body;
 
-        if (!email || !String(email).includes("@")) {
-            return res.status(400).json({ message: "A valid email is required" });
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: INVALID_EMAIL_MESSAGE });
         }
 
         if (role && !ALLOWED_ROLES.includes(role)) {
@@ -226,7 +230,7 @@ exports.inviteUser = async (req, res) => {
         }
 
         const organisationId = getOrganisationId(req);
-        const normalisedEmail = String(email).trim().toLowerCase();
+        const normalisedEmail = normaliseEmail(email);
 
         const existingUser = await User.findOne({ email: normalisedEmail });
         const sameOrg = existingUser && String(existingUser.organisationId) === String(organisationId);
@@ -393,9 +397,9 @@ exports.forgotPassword = async (req, res) => {
     };
 
     try {
-        const email = String(req.body.email || "").trim().toLowerCase();
-        if (!email) {
-            return res.status(400).json({ message: "Email is required" });
+        const email = normaliseEmail(req.body.email);
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: INVALID_EMAIL_MESSAGE });
         }
 
         const user = await User.findOne({ email, isActive: true });

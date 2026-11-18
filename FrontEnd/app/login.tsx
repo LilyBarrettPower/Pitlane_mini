@@ -8,6 +8,7 @@ import { apiFetch } from "../assets/api";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/ui/AuthLayout";
 import { Button, ErrorBanner } from "../components/ui/kit";
+import { INVALID_EMAIL_MESSAGE, isValidEmail } from "../constants/validation";
 
 export default function LoginPage() {
     // Set when the app logged the user out, e.g. removed from the organisation
@@ -29,6 +30,16 @@ export default function LoginPage() {
     if (authLoading) return null;
 
     async function handleLogin() {
+        // Email format only - password rules aren't applied at login
+        if (!isValidEmail(email)) {
+            setErrorMessage(INVALID_EMAIL_MESSAGE);
+            return;
+        }
+        if (!password) {
+            setErrorMessage("Please enter your password");
+            return;
+        }
+
         try {
             setErrorMessage("");
             setIsLoading(true);
