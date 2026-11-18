@@ -1,5 +1,5 @@
 import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal, TextInput, SectionList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../../../assets/api";
@@ -24,6 +24,49 @@ type Vehicle = {
     changedAt: string;
   }[];
 };
+
+// From GET /event-vehicles/event/:vehicleId - this car's entry in an event
+type VehicleEventEntry = {
+  _id: string; // the event vehicle id (used for the car's page at that event)
+  eventId: {
+    _id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    trackId?: { _id: string; name?: string } | null;
+  };
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Event dates are stored as the start of each day, so an event is still
+// on until the end of its end date.
+function eventHasEnded(entry: VehicleEventEntry) {
+  return new Date(entry.eventId.endDate).getTime() + DAY_MS <= Date.now();
+}
+
+function eventIsLive(entry: VehicleEventEntry) {
+  return new Date(entry.eventId.startDate).getTime() <= Date.now() && !eventHasEnded(entry);
+}
+
+// e.g. "12 Apr 2026" or "12 Apr – 13 Apr 2026"
+function formatEventDates(startDate: string, endDate: string) {
+  const format = (date: string) =>
+    new Date(date).toLocaleDateString("en-NZ", { day: "numeric", month: "short" });
+
+  const start = format(startDate);
+  const end = format(endDate);
+  const year = new Date(endDate).getFullYear();
+
+  return start === end ? `${start} ${year}` : `${start} – ${end} ${year}`;
+}
+
+function daysUntilLabel(startDate: string) {
+  const days = Math.ceil((new Date(startDate).getTime() - Date.now()) / DAY_MS);
+  return days <= 1 ? "Tomorrow" : `In ${days} days`;
+}
+
+const PAST_EVENTS_PREVIEW = 5;
 
 type Driver = {
   _id: string;
@@ -73,6 +116,9 @@ export default function VehicleDetailPage() {
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [assignErrorMessage, setAssignErrorMessage] = useState("");
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
+
+  const [vehicleEvents, setVehicleEvents] = useState<VehicleEventEntry[]>([]);
+  const [showAllPastEvents, setShowAllPastEvents] = useState(false);
 
   const [setups, setSetups] = useState<SetUp[]>([]);
   // setUpId -> names of the events that setup was used at (newest first)
@@ -178,12 +224,73 @@ export default function VehicleDetailPage() {
 
 
 
+  async function fetchVehicleEvents() {
+    const data = await apiFetch(`/event-vehicles/event/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setVehicleEvents(data.assignments || []);
+  }
+
+  // Upcoming (including live): soonest first. Past: most recent first.
+  const upcomingEvents = useMemo(
+    () => vehicleEvents.filter((entry) => !eventHasEnded(entry)),
+    [vehicleEvents]
+  );
+
+  const pastEvents = useMemo(
+    () => vehicleEvents.filter((entry) => eventHasEnded(entry)).reverse(),
+    [vehicleEvents]
+  );
+
+  const visiblePastEvents = showAllPastEvents
+    ? pastEvents
+    : pastEvents.slice(0, PAST_EVENTS_PREVIEW);
+
+  function openVehicleEvent(entry: VehicleEventEntry) {
+    router.push(`/events/${entry.eventId._id}/vehicles/${entry._id}`);
+  }
+
+  function renderEventRow(entry: VehicleEventEntry, showTiming: boolean) {
+    const live = eventIsLive(entry);
+
+    return (
+      <Pressable
+        key={entry._id}
+        style={({ pressed }) => [styles.eventRow, pressed && styles.eventRowPressed]}
+        onPress={() => openVehicleEvent(entry)}
+      >
+        <View style={styles.eventRowInfo}>
+          <Text style={globalStyles.cardText}>{entry.eventId.name}</Text>
+          <Text style={globalStyles.subText}>
+            {[
+              formatEventDates(entry.eventId.startDate, entry.eventId.endDate),
+              entry.eventId.trackId?.name,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </Text>
+        </View>
+
+        {showTiming ? (
+          <Text style={[styles.eventBadge, live ? styles.eventBadgeLive : styles.eventBadgeUpcoming]}>
+            {live ? "Live" : daysUntilLabel(entry.eventId.startDate)}
+          </Text>
+        ) : null}
+      </Pressable>
+    );
+  }
+
   useEffect(() => {
     if (id && token) {
       fetchVehicle();
       fetchVehicleDrivers();
       fetchDrivers();
       fetchSetups();
+      fetchVehicleEvents().catch(() => {});
     }
   }, [id, token]);
 
@@ -389,6 +496,7 @@ export default function VehicleDetailPage() {
         fetchSetups();
         fetchVehicleDrivers();
         fetchDrivers();
+        fetchVehicleEvents().catch(() => {});
       }
     }, [id, token])
   );
@@ -487,6 +595,40 @@ export default function VehicleDetailPage() {
             <Text style={globalStyles.text}>No previous owners</Text>
           )}
         </View>
+
+        <View style={globalStyles.card}>
+          <Text style={globalStyles.sectionTitle}>Events</Text>
+
+          <Text style={styles.eventGroupHeading}>UPCOMING</Text>
+          {upcomingEvents.length === 0 ? (
+            <Text style={globalStyles.subText}>No upcoming events</Text>
+          ) : (
+            upcomingEvents.map((entry) => renderEventRow(entry, true))
+          )}
+
+          <Text style={[styles.eventGroupHeading, styles.eventGroupHeadingSpaced]}>PAST</Text>
+          {pastEvents.length === 0 ? (
+            <Text style={globalStyles.subText}>No past events</Text>
+          ) : (
+            <>
+              {visiblePastEvents.map((entry) => renderEventRow(entry, false))}
+
+              {pastEvents.length > PAST_EVENTS_PREVIEW ? (
+                <Pressable
+                  style={styles.showAllButton}
+                  onPress={() => setShowAllPastEvents((current) => !current)}
+                >
+                  <Text style={styles.showAllText}>
+                    {showAllPastEvents
+                      ? "Show less"
+                      : `Show all ${pastEvents.length} past events`}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </>
+          )}
+        </View>
+
         <View style={globalStyles.card}>
           <Text style={globalStyles.sectionTitle}>Drivers</Text>
           {vehicleDrivers.length === 0 ? (
@@ -983,4 +1125,68 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
 },
+
+  eventGroupHeading: {
+    color: "#9ca3af",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginTop: 8,
+    marginBottom: 2,
+  },
+
+  eventGroupHeadingSpaced: {
+    marginTop: 18,
+  },
+
+  eventRow: {
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#374151",
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  eventRowPressed: {
+    opacity: 0.75,
+  },
+
+  eventRowInfo: {
+    flexShrink: 1,
+    gap: 2,
+  },
+
+  eventBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 11,
+    fontWeight: "700",
+    overflow: "hidden",
+  },
+
+  eventBadgeLive: {
+    backgroundColor: "#166534",
+    color: "#dcfce7",
+  },
+
+  eventBadgeUpcoming: {
+    backgroundColor: "#374151",
+    color: "#e5e7eb",
+  },
+
+  showAllButton: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+
+  showAllText: {
+    color: "#2563eb",
+    fontWeight: "700",
+  },
 });

@@ -1,6 +1,7 @@
 const EventVehicle = require("../models/EventVehicle");
 const Vehicle = require("../models/Vehicle");
 const Event = require("../models/Event");
+require("../models/Track"); // registers the model for populate("trackId")
 
 
 // Create an event vehicle:
@@ -86,13 +87,22 @@ exports.getEventForVehicle = async (req, res) => {
         const { vehicleId } = req.params;
         const organisationId = req.user.organisationId;
 
-        const assignments = await EventVehicle.find({
+        const found = await EventVehicle.find({
             organisationId,
             vehicleId,
             isActive: true,
-        })
-            .populate("eventId")
-            .sort({ createdAt: 1 });
+        }).populate({
+            path: "eventId",
+            match: { isActive: true }, // archived events come back as null
+            populate: { path: "trackId", select: "name" },
+        });
+
+        // Drop archived events and sort by event date (earliest first)
+        const assignments = found
+            .filter((assignment) => assignment.eventId)
+            .sort(
+                (a, b) => new Date(a.eventId.startDate) - new Date(b.eventId.startDate)
+            );
 
         res.json({ assignments });
     } catch (err) {
