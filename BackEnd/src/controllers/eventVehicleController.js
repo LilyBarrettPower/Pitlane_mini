@@ -17,24 +17,36 @@ exports.createAssignment = async (req, res) => {
         }
         const organisationId = req.user.organisationId;
 
-        console.log("createAssignment body:", {
-            organisationId: req.user.organisationId,
-            vehicleId,
-            eventId,
-        });
-
         const vehicle = await Vehicle.findOne({ _id: vehicleId, organisationId });
-        console.log("Found the vehicle", vehicle);
 
         if (!vehicle) {
             return res.status(404).json({ message: "Vehicle not found" });
         }
 
-        let event = await Event.findOne({ _id: eventId, organisationId });
-        console.log("Found the event:", event);
+        const event = await Event.findOne({ _id: eventId, organisationId });
 
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
+        }
+
+        // A car can only have one entry per event (enforced by a unique
+        // index). Removing a car archives its entry rather than deleting it,
+        // so if it's added back we reactivate that entry - which also brings
+        // back its runs, tyres and setups for the event.
+        const existing = await EventVehicle.findOne({ organisationId, vehicleId, eventId });
+
+        if (existing) {
+            if (existing.isActive) {
+                return res
+                    .status(409)
+                    .json({ message: "This vehicle is already assigned to this event" });
+            }
+
+            existing.isActive = true;
+            if (type !== undefined) existing.type = type || "";
+            await existing.save();
+
+            return res.json({ assignment: existing, reactivated: true });
         }
 
         const assignment = await EventVehicle.create({
@@ -50,7 +62,7 @@ exports.createAssignment = async (req, res) => {
         if (err.code == 11000) {
             return res
                 .status(409)
-                .json({ message: "This event is already assigned to this vehicle" });
+                .json({ message: "This vehicle is already assigned to this event" });
         }
 
         res.status(500).json({ message: "Server error" });
