@@ -27,7 +27,7 @@ exports.createTyre = async (req, res) => {
             currentSet, 
             size,
             position,
-            fiaSerial: fiaSerial || "",
+            fiaSerial: fiaSerial || undefined,
             condition, 
             heatCycles: heatCycles ?? 0,
             kmTotal: kmTotal ?? 0,
@@ -209,7 +209,7 @@ exports.archiveTyreSet = async (req, res) => {
 
         res.json({
             message: "Tyre set archived",
-            archivedCount: XPathResult.modifiedCount,
+            archivedCount: result.modifiedCount,
         });
     } catch (err) {
         console.error("archiveTyreSet error", err);

@@ -95,52 +95,10 @@ exports.carIn = async (req, res) => {
         
         //  TYRE MILEAGE
 
-        const eventVehicle = await EventVehicle.findOne({
-            _id: run.eventVehicleId,
-            organisationId,
-            isActive: true,
-        });
-
-        if (!eventVehicle) {
-            return res.status(404).json({
-                message: "Event Vehicle Not Found",
-            });
-        }
-
-        const event = await Event.findOne({
-            _id: eventVehicle.eventId,
-            organisationId,
-            isActive: true,
-        });
-
-        if (!event) {
-            return res.status(404).json({
-                message: "Event Not Found",
-            });
-        }
-
-        const track = await Track.findOne({
-            _id: event.trackId,
-            organisationId,
-            isActive: true,
-        });
-
-        if (!track) {
-            return res.status(404).json({
-                message: "Track Not Found",
-            });
-        }
-
-        if (
-            track.distanceKms == null || !Number.isFinite(
-                track.distanceKms
-            ) || 
-            track.distanceKms <= 0
-        ) {
-            return res.status(400).json({
-                message: "Track distance is not configured",
-            });
-        }
+        // Tyre mileage is a bonus: if it can't be worked out (no tyre run,
+        // or no track distance), the car should still be marked as in and the
+        // run stats saved. We just report a warning instead.
+        let warning;
 
         const tyreRun = await TyreRun.findOne({
             organisationId,
@@ -149,15 +107,47 @@ exports.carIn = async (req, res) => {
         });
 
         if (tyreRun) {
-            const physicalLaps = laps.length;
-
-            const runDistanceKm = physicalLaps * track.distanceKms;
-
-            await updateTyreMileageForRun(
-                tyreRun,
-                runDistanceKm,
+            const eventVehicle = await EventVehicle.findOne({
+                _id: run.eventVehicleId,
                 organisationId,
-            );
+                isActive: true,
+            });
+
+            const event = eventVehicle
+                ? await Event.findOne({
+                    _id: eventVehicle.eventId,
+                    organisationId,
+                    isActive: true,
+                })
+                : null;
+
+            const track = event
+                ? await Track.findOne({
+                    _id: event.trackId,
+                    organisationId,
+                    isActive: true,
+                })
+                : null;
+
+            const trackDistanceOk =
+                track &&
+                Number.isFinite(track.distanceKms) &&
+                track.distanceKms > 0;
+
+            if (trackDistanceOk) {
+                const physicalLaps = laps.length;
+
+                const runDistanceKm = physicalLaps * track.distanceKms;
+
+                await updateTyreMileageForRun(
+                    tyreRun,
+                    runDistanceKm,
+                    organisationId,
+                );
+            } else {
+                warning =
+                    "Tyre mileage not updated: track distance is not configured";
+            }
         }
 
         await run.save();
@@ -165,6 +155,7 @@ exports.carIn = async (req, res) => {
         res.json({
             message: "Car marked as in and run calculated",
             run,
+            ...(warning && { warning }),
         });
     } catch (err) {
         console.error("Car in error", err);

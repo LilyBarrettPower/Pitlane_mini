@@ -35,4 +35,4 @@ EventVehicleSchema.index(
     { unique: true }
 );
 
-module.exports = mongoose.model("Event Vehicle", EventVehicleSchema);
+module.exports = mongoose.model("EventVehicle", EventVehicleSchema, "event vehicles");

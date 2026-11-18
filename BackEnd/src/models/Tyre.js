@@ -17,7 +17,7 @@ const TyreSchema = new mongoose.Schema(
         currentSet: {type: String}, // Maybe change this to an ID? 
         size: {type: String},
         position: {type: String},
-        fiaSerial: { type: String, trim: true, unique: true, sparse: true},
+        fiaSerial: { type: String, trim: true },
         condition: { type: String, enum: ["New", "Used"], required: true }, // Should make it so that when this is "New" km total initially is 0
         heatCycles: { type: Number, default: 0, min: 0 },
         kmTotal: { type: Number, default: 0, min: 0 },
@@ -32,10 +32,13 @@ const TyreSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// FIA serials must be unique within an organisation, but only when one is entered.
+// (A "sparse" index doesn't work here: empty strings, and compound keys that
+// include organisationId, still get indexed - so tyres without a serial clashed.)
 TyreSchema.index(
-    { organisationId: 1, vehicleId: 1, fiaSerial: 1 },
-    { unique: true, sparse: true }
-)
+    { organisationId: 1, fiaSerial: 1 },
+    { unique: true, partialFilterExpression: { fiaSerial: { $gt: "" } } }
+);
 
 TyreSchema.pre("validate", function () {
     if (this.kmTotal > 0) {

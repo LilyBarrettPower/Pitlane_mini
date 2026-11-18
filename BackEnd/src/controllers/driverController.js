@@ -47,7 +47,7 @@ exports.getDriver = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const driver = await Driver.findById({
+        const driver = await Driver.findOne({
             _id: id,
             organisationId: req.user.organisationId,
         });
@@ -67,7 +67,7 @@ exports.getDriver = async (req, res) => {
 exports.updateDriver = async (req, res) => {
     try {
         const { id } = req.params;
-        const driver = await Driver.findByIdAndUpdate({
+        const driver = await Driver.findOneAndUpdate({
             _id: id,
             organisationId: req.user.organisationId,
         },
@@ -95,7 +95,7 @@ exports.deleteDriver = async (req, res) => {
         }
         
         const { id } = req.params;
-        const driver = await Driver.findByIdAndUpdate({
+        const driver = await Driver.findOneAndUpdate({
             _id: id,
             organisationId: req.user.organisationId,
         },
@@ -121,7 +121,7 @@ exports.deleteDriver = async (req, res) => {
 exports.unarchiveDriver = async (req, res) => {
     try {
         const { id } = req.params;
-        const driver = await Driver.findByIdAndUpdate({
+        const driver = await Driver.findOneAndUpdate({
             _id: id,
             organisationId: req.user.organisationId,
         },

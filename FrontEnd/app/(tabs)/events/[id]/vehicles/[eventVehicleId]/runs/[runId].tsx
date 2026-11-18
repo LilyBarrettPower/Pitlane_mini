@@ -525,7 +525,7 @@ export default function RunDetailPage() {
             setIsLoading(true);
             setErrorMessage("");
 
-            await apiFetch(`/runs/${runId}/car-in`, {
+            const data = await apiFetch(`/runs/${runId}/car-in`, {
                 method: "PATCH",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -536,6 +536,11 @@ export default function RunDetailPage() {
                 fetchRun(),
                 fetchLapTimes(),
             ]);
+
+            // e.g. tyre mileage skipped because the track has no distance set
+            if (data.warning) {
+                setErrorMessage(data.warning);
+            }
         } catch (error) {
             setErrorMessage(
                 error instanceof Error ? error.message : "Failed to make car in"

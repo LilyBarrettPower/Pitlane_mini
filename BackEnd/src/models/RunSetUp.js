@@ -30,4 +30,4 @@ RunSetUpSchema.index(
     { unique: true }
 );
 
-module.exports = mongoose.model("Run SetUp", RunSetUpSchema);
+module.exports = mongoose.model("RunSetUp", RunSetUpSchema, "run setups");

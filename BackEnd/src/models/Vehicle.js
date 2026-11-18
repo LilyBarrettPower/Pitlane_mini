@@ -5,7 +5,7 @@ const VehicleSchema = new mongoose.Schema(
         organisationId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Organisation",
-            require: true,
+            required: true,
         },
         name: {
             type: String,
