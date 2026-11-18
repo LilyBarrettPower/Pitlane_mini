@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { globalStyles } from "../constants/styles";
@@ -10,9 +10,12 @@ import AuthLayout from "../components/ui/AuthLayout";
 import { Button, ErrorBanner } from "../components/ui/kit";
 
 export default function LoginPage() {
+    // Set when the app logged the user out, e.g. removed from the organisation
+    const { reason } = useLocalSearchParams<{ reason?: string }>();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState(reason ? String(reason) : "");
     const [isLoading, setIsLoading] = useState(false);
 
     const { login, token, isLoading: authLoading } = useAuth();

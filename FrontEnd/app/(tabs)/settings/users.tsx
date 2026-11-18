@@ -38,7 +38,7 @@ const ROLE_TONE: Record<string, "primary" | "live" | "warning" | "neutral"> = {
 };
 
 export default function UsersPage() {
-  const { user, token } = useAuth();
+  const { user, organisation, token } = useAuth();
 
   const isAdmin = user?.role === "admin";
 
@@ -51,6 +51,8 @@ export default function UsersPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [userToRemove, setUserToRemove] = useState<ListedUser | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -122,6 +124,34 @@ export default function UsersPage() {
       setFormError(error instanceof Error ? error.message : "Failed to invite user");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  // Remove (archive) a user - they lose access straight away
+  async function handleRemoveUser() {
+    const userId = userToRemove?.id || userToRemove?._id;
+    if (!userToRemove || !userId) return;
+
+    try {
+      setIsRemoving(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+
+      await apiFetch(`/auth/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setSuccessMessage(`${userToRemove.name || userToRemove.email} has been removed`);
+      setUserToRemove(null);
+      await fetchUsers();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to remove user");
+      setUserToRemove(null);
+    } finally {
+      setIsRemoving(false);
     }
   }
 
@@ -198,6 +228,17 @@ export default function UsersPage() {
                   onPress={() => handleResendInvite(listedUser)}
                 />
               ) : null}
+              {/* Admins can remove anyone except themselves */}
+              {isAdmin && (listedUser.id || listedUser._id) !== user?.id ? (
+                <Pressable
+                  hitSlop={8}
+                  accessibilityLabel={`Remove ${listedUser.name || listedUser.email}`}
+                  style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}
+                  onPress={() => setUserToRemove(listedUser)}
+                >
+                  <Ionicons name="person-remove-outline" size={18} color={colors.textMuted} />
+                </Pressable>
+              ) : null}
             </View>
           ))
         )}
@@ -273,6 +314,38 @@ export default function UsersPage() {
           </View>
         </View>
       </Modal>
+
+      {/* Remove user confirmation */}
+      <Modal
+        visible={!!userToRemove}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setUserToRemove(null)}
+      >
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalCard}>
+            <Text style={globalStyles.modalTitle}>
+              Remove {userToRemove?.name || userToRemove?.email}?
+            </Text>
+            <Text style={globalStyles.text}>
+              {userToRemove?.status === "invited"
+                ? "Their invite will be cancelled and the link will stop working."
+                : `They'll lose access to ${organisation?.name || "this organisation"} straight away. Anything they've recorded will stay.`}
+            </Text>
+            <Text style={styles.modalIntro}>You can invite them again later if needed.</Text>
+
+            <View style={styles.modalActions}>
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onPress={() => setUserToRemove(null)}
+                disabled={isRemoving}
+              />
+              <Button label="Remove" variant="danger" onPress={handleRemoveUser} loading={isRemoving} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SettingsShell>
   );
 }
@@ -306,6 +379,18 @@ const styles = StyleSheet.create({
   userEmail: {
     color: colors.textMuted,
     fontSize: 13,
+  },
+
+  removeButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pressed: {
+    opacity: 0.7,
   },
 
   userBadges: {

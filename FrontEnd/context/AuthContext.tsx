@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {createContext, ReactNode, useContext, useEffect, useState} from "react";
+import {createContext, ReactNode, useContext, useEffect, useRef, useState} from "react";
+import { router } from "expo-router";
 import { AuthOrganisation, AuthUser, LoginResponse } from "../assets/auth";
+import { setUnauthorizedHandler } from "../assets/api";
 
 type AuthContextType = {
     token: string | null,
@@ -26,6 +28,27 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
     useEffect(() => {
         loadStoredAuth();
+    }, []);
+
+    // If the backend rejects our login (user removed from the organisation,
+    // or the 24-hour login expired), log out and go to the login page with
+    // the reason. The ref stops several failing requests redirecting at once.
+    const isSigningOut = useRef(false);
+
+    useEffect(() => {
+        setUnauthorizedHandler((message) => {
+            if (isSigningOut.current) return;
+            isSigningOut.current = true;
+
+            logout()
+                .catch(() => {})
+                .finally(() => {
+                    router.replace({ pathname: "/login", params: { reason: message } });
+                    isSigningOut.current = false;
+                });
+        });
+
+        return () => setUnauthorizedHandler(null);
     }, []);
 
     async function loadStoredAuth() {

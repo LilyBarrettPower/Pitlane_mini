@@ -229,26 +229,43 @@ exports.inviteUser = async (req, res) => {
         const normalisedEmail = String(email).trim().toLowerCase();
 
         const existingUser = await User.findOne({ email: normalisedEmail });
-        if (existingUser) {
-            const sameOrgInvite =
-                String(existingUser.organisationId) === String(organisationId) &&
-                existingUser.status === "invited";
+        const sameOrg = existingUser && String(existingUser.organisationId) === String(organisationId);
+
+        // Someone previously removed from this organisation: bring their
+        // account back as a fresh invite (they'll set a new password)
+        const rejoining = sameOrg && !existingUser.isActive;
+
+        if (existingUser && !rejoining) {
+            const alreadyInvited = sameOrg && existingUser.status === "invited";
 
             return res.status(400).json({
-                message: sameOrgInvite
+                message: alreadyInvited
                     ? "This person has already been invited - use Resend invite instead"
                     : "A user with this email already exists",
             });
         }
 
-        const user = await User.create({
-            organisationId,
-            email: normalisedEmail,
-            name: name || "",
-            role: role || "viewer",
-            status: "invited",
-            invitedBy: req.user.userId,
-        });
+        let user;
+
+        if (rejoining) {
+            user = existingUser;
+            user.isActive = true;
+            user.status = "invited";
+            user.passwordHash = undefined;
+            user.name = name || user.name || "";
+            user.role = role || "viewer";
+            user.invitedBy = req.user.userId;
+            await user.save();
+        } else {
+            user = await User.create({
+                organisationId,
+                email: normalisedEmail,
+                name: name || "",
+                role: role || "viewer",
+                status: "invited",
+                invitedBy: req.user.userId,
+            });
+        }
 
         const inviter = await User.findById(req.user.userId);
 
@@ -437,6 +454,61 @@ exports.resetPassword = async (req, res) => {
         res.json(await loginResponse(user));
     } catch (err) {
         console.error("resetPassword error", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// DELETE - admin removes a user from the organisation. The user is archived
+// (not deleted) so anything they recorded stays; they lose access straight away.
+exports.removeUser = async (req, res) => {
+    try {
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ message: "Only admins can remove users" });
+        }
+
+        const { userId } = req.params;
+        const organisationId = getOrganisationId(req);
+
+        if (String(userId) === String(req.user.userId)) {
+            return res.status(400).json({ message: "You can't remove yourself" });
+        }
+
+        const user = await User.findOne({ _id: userId, organisationId, isActive: true }).select(
+            "+inviteTokenHash +inviteExpiresAt +resetTokenHash +resetExpiresAt"
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Never leave the organisation without an admin
+        if (user.role === "admin") {
+            const otherAdmins = await User.countDocuments({
+                organisationId,
+                isActive: true,
+                role: "admin",
+                _id: { $ne: user._id },
+            });
+
+            if (otherAdmins === 0) {
+                return res.status(400).json({ message: "You can't remove the last admin" });
+            }
+        }
+
+        user.isActive = false;
+        // Cancel any outstanding invite or password reset links
+        user.inviteTokenHash = undefined;
+        user.inviteExpiresAt = undefined;
+        user.resetTokenHash = undefined;
+        user.resetExpiresAt = undefined;
+        await user.save();
+
+        res.json({ message: "User removed", user: publicUser(user) });
+    } catch (err) {
+        console.error("removeUser error", err);
+        if (err.name === "CastError") {
+            return res.status(400).json({ message: "Invalid user id" });
+        }
         res.status(500).json({ message: "Server error" });
     }
 };
