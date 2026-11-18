@@ -4,6 +4,7 @@ const TyreRun = require("../models/TyreRun");
 const EventVehicle = require("../models/EventVehicle");
 const Event = require("../models/Event");
 const TyrePressureCheck = require("../models/TyrePressureCheck");
+const Track = require("../models/Track"); // registers the model for populate("trackId")
 
 
 async function updateTyreMileageForRun(
@@ -470,5 +471,108 @@ exports.getTyreHistoryForEventVehicle = async (req, res) => {
         res.status(500).json({
             message: "Server error",
         });
+    }
+};
+
+// GET - every event a single tyre has been used at, one summary row per event:
+// { eventId, eventName, startDate, endDate, trackName, corners, runCount, laps, distanceKm }
+exports.getTyreEventHistory = async (req, res) => {
+    try {
+        const organisationId = req.user.organisationId;
+        const { tyreId } = req.params;
+        const corners = ["LF", "RF", "LR", "RR"];
+
+        const tyre = await Tyre.findOne({ _id: tyreId, organisationId });
+
+        if (!tyre) {
+            return res.status(404).json({ message: "Tyre not found" });
+        }
+
+        const tyreRuns = await TyreRun.find({
+            organisationId,
+            isActive: true,
+            $or: corners.map((corner) => ({ [`tyres.${corner}`]: tyre._id })),
+        });
+
+        if (tyreRuns.length === 0) {
+            return res.json({ events: [] });
+        }
+
+        // Load runs, event vehicles and events in batches rather than one
+        // query per tyre run.
+        const runs = await Run.find({
+            _id: { $in: tyreRuns.map((tyreRun) => tyreRun.runId) },
+            organisationId,
+            isActive: true,
+        });
+        const runById = new Map(runs.map((run) => [String(run._id), run]));
+
+        const eventVehicles = await EventVehicle.find({
+            _id: { $in: runs.map((run) => run.eventVehicleId) },
+            organisationId,
+        });
+        const eventVehicleById = new Map(
+            eventVehicles.map((eventVehicle) => [String(eventVehicle._id), eventVehicle])
+        );
+
+        const events = await Event.find({
+            _id: { $in: eventVehicles.map((eventVehicle) => eventVehicle.eventId) },
+            organisationId,
+            isActive: true,
+        }).populate("trackId", "name");
+        const eventById = new Map(events.map((event) => [String(event._id), event]));
+
+        const summaryByEventId = new Map();
+
+        for (const tyreRun of tyreRuns) {
+            const run = runById.get(String(tyreRun.runId));
+            if (!run) continue;
+
+            const eventVehicle = eventVehicleById.get(String(run.eventVehicleId));
+            if (!eventVehicle) continue;
+
+            const event = eventById.get(String(eventVehicle.eventId));
+            if (!event) continue;
+
+            const corner = corners.find(
+                (c) => String(tyreRun.tyres?.[c]) === String(tyre._id)
+            );
+
+            const key = String(event._id);
+            if (!summaryByEventId.has(key)) {
+                summaryByEventId.set(key, {
+                    eventId: event._id,
+                    eventName: event.name,
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                    trackName: event.trackId?.name || "",
+                    corners: [],
+                    runCount: 0,
+                    laps: 0,
+                    distanceKm: 0,
+                });
+            }
+
+            const summary = summaryByEventId.get(key);
+
+            if (corner && !summary.corners.includes(corner)) {
+                summary.corners.push(corner);
+            }
+            summary.runCount += 1;
+            summary.laps += run.lapsDone ?? 0;
+            summary.distanceKm += corner ? tyreRun.distanceKm?.[corner] ?? 0 : 0;
+        }
+
+        const result = [...summaryByEventId.values()]
+            .map((summary) => ({
+                ...summary,
+                distanceKm: Math.round(summary.distanceKm * 10) / 10,
+            }))
+            .sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+        res.json({ events: result });
+    } catch (err) {
+        console.error("getTyreEventHistory error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

@@ -10,6 +10,7 @@ router.post("/", tyreRunController.createTyreRun);
 router.get("/", tyreRunController.getTyreRuns);
 router.get("/history", tyreRunController.getTyreSetHistory);
 router.get("/event-vehicle/:eventVehicleId/history", tyreRunController.getTyreHistoryForEventVehicle);
+router.get("/tyre/:tyreId/events", tyreRunController.getTyreEventHistory);
 router.get("/:id", tyreRunController.getTyreRunById);
 router.patch("/:id", tyreRunController.updateTyreRun);
 router.delete("/:id", tyreRunController.archiveTyreRun);

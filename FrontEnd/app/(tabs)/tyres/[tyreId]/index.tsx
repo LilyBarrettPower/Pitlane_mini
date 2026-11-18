@@ -29,6 +29,19 @@ type Tyre = {
     kmTotal?: number;
 };
 
+// One row per event, from GET /tyre-runs/tyre/:tyreId/events
+type TyreEventSummary = {
+    eventId: string;
+    eventName: string;
+    startDate?: string;
+    endDate?: string;
+    trackName?: string;
+    corners: string[];
+    runCount: number;
+    laps: number;
+    distanceKm: number;
+};
+
 type TyreNote = {
     _id: string;
     corner: "LF" | "RF" | "LR" | "RR";
@@ -68,6 +81,35 @@ export default function TyreDetailPage() {
     const [kmTotal, setKmTotal] = useState("");
 
     const [tyreNotes, setTyreNotes] = useState<TyreNote[]>([]);
+    const [tyreEvents, setTyreEvents] = useState<TyreEventSummary[]>([]);
+
+    async function fetchTyreEvents() {
+        if (!token || !tyreId) return;
+
+        const data = await apiFetch(`/tyre-runs/tyre/${tyreId}/events`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setTyreEvents(data.events || []);
+    }
+
+    // e.g. "12 Apr 2026" or "12 Apr 2026 – 13 Apr 2026"
+    function formatEventDates(startDate?: string, endDate?: string) {
+        const format = (date: string) =>
+            new Date(date).toLocaleDateString("en-NZ", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+            });
+
+        if (!startDate) return "";
+        const start = format(startDate);
+        const end = endDate ? format(endDate) : start;
+        return start === end ? start : `${start} – ${end}`;
+    }
 
     async function fetchTyreNotes() {
         if (!token || !tyreId) return;
@@ -123,6 +165,7 @@ export default function TyreDetailPage() {
                     fetchTyre(),
                     fetchVehicles(),
                     fetchTyreNotes(),
+                    fetchTyreEvents(),
                 ]);
             } catch (error) {
                 setErrorMessage(error instanceof Error ? error.message : "Failed to load tyre");
@@ -404,6 +447,57 @@ export default function TyreDetailPage() {
                     <Text style={globalStyles.cardText}>
                         Distance: {tyre.kmTotal ?? 0} km
                     </Text>
+                </View>
+
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>
+                        Events Used At
+                    </Text>
+
+                    {tyreEvents.length === 0 ? (
+                        <Text style={globalStyles.cardText}>
+                            Not used at any events yet.
+                        </Text>
+                    ) : (
+                        tyreEvents.map((item) => (
+                            <Pressable
+                                key={item.eventId}
+                                style={({ pressed }) => [
+                                    styles.tyreNoteCard,
+                                    pressed && styles.pressed,
+                                ]}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: "/events/[id]" as any,
+                                        params: { id: item.eventId },
+                                    })
+                                }
+                            >
+                                <Text style={styles.tyreNoteCorner}>
+                                    {item.eventName}
+                                </Text>
+
+                                <Text style={globalStyles.subText}>
+                                    {[
+                                        formatEventDates(item.startDate, item.endDate),
+                                        item.trackName,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(" · ")}
+                                </Text>
+
+                                <Text style={globalStyles.cardText}>
+                                    Corner: {item.corners.join(", ") || "-"}
+                                    {" · "}
+                                    {item.runCount} {item.runCount === 1 ? "run" : "runs"}
+                                    {" · "}
+                                    {item.laps} laps
+                                    {" · "}
+                                    {item.distanceKm} km
+                                </Text>
+                            </Pressable>
+                        ))
+                    )}
                 </View>
 
                 <View style={globalStyles.card}>
@@ -934,5 +1028,9 @@ const styles = StyleSheet.create({
         color: "#93c5fd",
         fontSize: 13,
         fontWeight: "700",
+    },
+
+    pressed: {
+        opacity: 0.75,
     },
 });
