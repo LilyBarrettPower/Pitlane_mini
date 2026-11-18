@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
 import {
     StyleSheet,
@@ -30,6 +30,36 @@ type Event = {
     status?: string;
     notes?: string;
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PAST_EVENTS_PREVIEW = 10;
+
+// Event dates are stored as the start of each day, so an event is still
+// on until the end of its end date.
+function eventHasEnded(event: Event) {
+    return new Date(event.endDate).getTime() + DAY_MS <= Date.now();
+}
+
+function eventIsLive(event: Event) {
+    return new Date(event.startDate).getTime() <= Date.now() && !eventHasEnded(event);
+}
+
+// e.g. "12 Apr 2026" or "12 Apr – 13 Apr 2026"
+function formatEventDates(startDate: string, endDate: string) {
+    const format = (date: string) =>
+        new Date(date).toLocaleDateString("en-NZ", { day: "numeric", month: "short" });
+
+    const start = format(startDate);
+    const end = format(endDate);
+    const year = new Date(endDate).getFullYear();
+
+    return start === end ? `${start} ${year}` : `${start} – ${end} ${year}`;
+}
+
+function daysUntilLabel(startDate: string) {
+    const days = Math.ceil((new Date(startDate).getTime() - Date.now()) / DAY_MS);
+    return days <= 1 ? "Tomorrow" : `In ${days} days`;
+}
 
 export default function EventsPage() {
 
@@ -193,9 +223,81 @@ export default function EventsPage() {
         return track?.name || "-";
     }
 
-    function formatDate(date?: string) {
-        if (!date) return "-";
-        return new Date(date).toLocaleDateString();
+    // Upcoming (including live): soonest first. Past: most recent first.
+    // The API already returns events sorted by start date, earliest first.
+    const upcomingEvents = useMemo(
+        () => events.filter((event) => !eventHasEnded(event)),
+        [events]
+    );
+
+    const pastEvents = useMemo(
+        () => events.filter((event) => eventHasEnded(event)).reverse(),
+        [events]
+    );
+
+    const [showAllPastEvents, setShowAllPastEvents] = useState(false);
+
+    const visiblePastEvents = showAllPastEvents
+        ? pastEvents
+        : pastEvents.slice(0, PAST_EVENTS_PREVIEW);
+
+    function renderEventCard(event: Event, showTiming: boolean) {
+        const live = eventIsLive(event);
+
+        return (
+            <Pressable
+                key={event._id}
+                style={({ pressed }) => [
+                    globalStyles.card,
+                    styles.eventCard,
+                    live && styles.eventCardLive,
+                    pressed && styles.pressed,
+                ]}
+                onPress={() =>
+                    router.push({
+                        pathname: "/events/[id]" as any,
+                        params: { id: event._id },
+                    })
+                }
+            >
+                <View style={styles.eventInfo}>
+                    <Text style={styles.eventName}>{event.name}</Text>
+                    <Text style={globalStyles.subText}>
+                        {[
+                            formatEventDates(event.startDate, event.endDate),
+                            getTrackName(event) !== "-" ? getTrackName(event) : "",
+                            event.type,
+                        ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                    </Text>
+                </View>
+
+                {showTiming ? (
+                    <Text style={[styles.badge, live ? styles.badgeLive : styles.badgeUpcoming]}>
+                        {live ? "Live" : daysUntilLabel(event.startDate)}
+                    </Text>
+                ) : null}
+
+                {/* <View style={styles.actionRow}>
+                    <Pressable style={globalStyles.smallButton}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            openEditModal(event);
+                        }}>
+                        <Text style={globalStyles.smallButtonText}>Edit</Text>
+                    </Pressable>
+
+                    <Pressable style={globalStyles.buttonDangerSmall}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEvent(event);
+                        }}>
+                        <Text style={globalStyles.smallButtonText}>Delete</Text>
+                    </Pressable>
+                </View> */}
+            </Pressable>
+        );
     }
 
     return (
@@ -216,42 +318,36 @@ export default function EventsPage() {
                 ) : events.length === 0 ? (
                     <Text style={globalStyles.text}>No events yet</Text>
                 ) : (
-                    events.map((event) => (
-                        <Pressable key={event._id}
-                            style={globalStyles.card}
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/events/[id]" as any,
-                                    params: { id: event._id },
-                                })
-                            }>
-                            <Text style={globalStyles.cardTitle}>{event.name}</Text>
-                            <Text style={globalStyles.cardText}>Track: {getTrackName(event)}</Text>
-                            <Text style={globalStyles.cardText}>Type: {event.type}</Text>
-                            <Text style={globalStyles.cardText}>Start: {formatDate(event.startDate)}</Text>
-                            <Text style={globalStyles.cardText}>End: {formatDate(event.endDate)}</Text>
-                            <Text style={globalStyles.cardText}>Status: {event.status || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Notes: {event.notes || "-"}</Text>
+                    <>
+                        <Text style={styles.sectionHeading}>UPCOMING</Text>
+                        {upcomingEvents.length === 0 ? (
+                            <Text style={globalStyles.subText}>No upcoming events</Text>
+                        ) : (
+                            upcomingEvents.map((event) => renderEventCard(event, true))
+                        )}
 
-                            {/* <View style={styles.actionRow}>
-                                <Pressable style={globalStyles.smallButton}
-                                    onPress={(e) => {
-                                        e.stopPropagation();
-                                        openEditModal(event);
-                                    }}>
-                                    <Text style={globalStyles.smallButtonText}>Edit</Text>
-                                </Pressable>
+                        <Text style={[styles.sectionHeading, styles.sectionHeadingSpaced]}>PAST</Text>
+                        {pastEvents.length === 0 ? (
+                            <Text style={globalStyles.subText}>No past events</Text>
+                        ) : (
+                            <>
+                                {visiblePastEvents.map((event) => renderEventCard(event, false))}
 
-                                <Pressable style={globalStyles.buttonDangerSmall}
-                                    onPress={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteEvent(event);
-                                    }}>
-                                    <Text style={globalStyles.smallButtonText}>Delete</Text>
-                                </Pressable>
-                            </View> */}
-                        </Pressable>
-                    ))
+                                {pastEvents.length > PAST_EVENTS_PREVIEW ? (
+                                    <Pressable
+                                        style={styles.showAllButton}
+                                        onPress={() => setShowAllPastEvents((current) => !current)}
+                                    >
+                                        <Text style={styles.showAllText}>
+                                            {showAllPastEvents
+                                                ? "Show less"
+                                                : `Show all ${pastEvents.length} past events`}
+                                        </Text>
+                                    </Pressable>
+                                ) : null}
+                            </>
+                        )}
+                    </>
                 )}
             </ScrollView>
 
@@ -393,5 +489,71 @@ const styles = StyleSheet.create({
     selectItemActive: {
         backgroundColor: "#1d4ed8",
         borderColor: "#2563eb",
+    },
+
+    sectionHeading: {
+        color: "#9ca3af",
+        fontSize: 12,
+        fontWeight: "800",
+        letterSpacing: 1.2,
+        marginBottom: -4,
+    },
+
+    sectionHeadingSpaced: {
+        marginTop: 12,
+    },
+
+    eventCard: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+    },
+
+    eventCardLive: {
+        borderColor: "#22c55e",
+    },
+
+    pressed: {
+        opacity: 0.8,
+    },
+
+    eventInfo: {
+        flexShrink: 1,
+        gap: 4,
+    },
+
+    eventName: {
+        color: "#ffffff",
+        fontSize: 18,
+        fontWeight: "700",
+    },
+
+    badge: {
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        fontSize: 11,
+        fontWeight: "700",
+        overflow: "hidden",
+    },
+
+    badgeLive: {
+        backgroundColor: "#166534",
+        color: "#dcfce7",
+    },
+
+    badgeUpcoming: {
+        backgroundColor: "#374151",
+        color: "#e5e7eb",
+    },
+
+    showAllButton: {
+        alignSelf: "flex-start",
+    },
+
+    showAllText: {
+        color: "#2563eb",
+        fontWeight: "700",
     },
 });
