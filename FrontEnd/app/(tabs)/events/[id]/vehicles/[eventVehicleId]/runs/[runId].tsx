@@ -158,6 +158,9 @@ export default function RunDetailPage() {
     const [noteCategory, setNoteCategory] = useState("General");
     const [tyreNoteText, setTyreNoteText] = useState("");
     const [tyreNoteError, setTyreNoteError] = useState("");
+    // First tap on "Delete" arms this; second tap confirms.
+    const [noteToDeleteId, setNoteToDeleteId] = useState<string | null>(null);
+    const [isDeletingTyreNote, setIsDeletingTyreNote] = useState(false);
 
     const [eventVehicle, setEventVehicle] = useState<EventVehicle | null>(null);
     const [availableTyres, setAvailableTyres] = useState<Tyre[]>([]);
@@ -707,6 +710,29 @@ export default function RunDetailPage() {
             );
         } finally {
             setIsSavingLap(false);
+        }
+    }
+
+    async function handleDeleteTyreNote(noteId: string) {
+        try {
+            setIsDeletingTyreNote(true);
+            setErrorMessage("");
+
+            await apiFetch(`/tyre-notes/${noteId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            setNoteToDeleteId(null);
+            await fetchTyreNotes();
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Failed to delete tyre note"
+            );
+        } finally {
+            setIsDeletingTyreNote(false);
         }
     }
 
@@ -1333,9 +1359,47 @@ export default function RunDetailPage() {
                                     {item.note}
                                 </Text>
 
-                                <Text style={globalStyles.subText}>
-                                    {new Date(item.createdAt).toLocaleString("en-NZ")}
-                                </Text>
+                                <View style={styles.tyreNoteFooter}>
+                                    <Text style={globalStyles.subText}>
+                                        {new Date(item.createdAt).toLocaleString("en-NZ")}
+                                    </Text>
+
+                                    {noteToDeleteId === item._id ? (
+                                        <View style={styles.tyreNoteActions}>
+                                            <Pressable
+                                                style={globalStyles.smallButton}
+                                                onPress={() => setNoteToDeleteId(null)}
+                                                disabled={isDeletingTyreNote}
+                                            >
+                                                <Text style={globalStyles.smallButtonText}>
+                                                    Cancel
+                                                </Text>
+                                            </Pressable>
+
+                                            <Pressable
+                                                style={[
+                                                    globalStyles.buttonDangerSmall,
+                                                    isDeletingTyreNote && globalStyles.buttonDisabled,
+                                                ]}
+                                                onPress={() => handleDeleteTyreNote(item._id)}
+                                                disabled={isDeletingTyreNote}
+                                            >
+                                                <Text style={globalStyles.smallButtonText}>
+                                                    {isDeletingTyreNote ? "Deleting..." : "Confirm Delete"}
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                    ) : (
+                                        <Pressable
+                                            style={globalStyles.smallButton}
+                                            onPress={() => setNoteToDeleteId(item._id)}
+                                        >
+                                            <Text style={globalStyles.smallButtonText}>
+                                                Delete
+                                            </Text>
+                                        </Pressable>
+                                    )}
+                                </View>
                             </View>
                         ))
                     )}
@@ -2466,5 +2530,17 @@ const styles = StyleSheet.create({
 
     tyreNoteInput: {
         minHeight: 110,
+    },
+
+    tyreNoteFooter: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 8,
+    },
+
+    tyreNoteActions: {
+        flexDirection: "row",
+        gap: 8,
     },
 });

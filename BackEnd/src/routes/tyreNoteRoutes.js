@@ -8,6 +8,7 @@ router.use(authMiddleware);
 
 router.post("/", tyreNoteController.createTyreNote);
 router.get("/", tyreNoteController.getTyreNotes);
+router.get("/summary", tyreNoteController.getTyreNoteSummary);
 router.delete("/:id", tyreNoteController.archiveTyreNote);
 
 module.exports = router;

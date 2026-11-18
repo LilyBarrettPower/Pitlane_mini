@@ -27,7 +27,16 @@ type Tyre = {
     condition: string;
     heatCycles?: string;
     kmTotal?: number;
-    notes?: string;
+};
+
+type TyreNote = {
+    _id: string;
+    corner: "LF" | "RF" | "LR" | "RR";
+    category: string;
+    note: string;
+    createdAt: string;
+    // populated by the backend with the run's name
+    runId?: { _id: string; name?: string } | null;
 };
 
 export default function TyreDetailPage() {
@@ -57,7 +66,21 @@ export default function TyreDetailPage() {
     const [condition, setCondition] = useState("");
     const [heatCycles, setHeatCycles] = useState("");
     const [kmTotal, setKmTotal] = useState("");
-    const [notes, setNotes] = useState("");
+
+    const [tyreNotes, setTyreNotes] = useState<TyreNote[]>([]);
+
+    async function fetchTyreNotes() {
+        if (!token || !tyreId) return;
+
+        const data = await apiFetch(`/tyre-notes?tyreId=${tyreId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setTyreNotes(data.tyreNotes || []);
+    }
 
     async function fetchTyre() {
         if (!token || !tyreId) return;
@@ -99,6 +122,7 @@ export default function TyreDetailPage() {
                 await Promise.all([
                     fetchTyre(),
                     fetchVehicles(),
+                    fetchTyreNotes(),
                 ]);
             } catch (error) {
                 setErrorMessage(error instanceof Error ? error.message : "Failed to load tyre");
@@ -129,7 +153,6 @@ export default function TyreDetailPage() {
         setCondition(selectedTyre.condition || "");
         setHeatCycles(String(selectedTyre.heatCycles ?? 0));
         setKmTotal(String(selectedTyre.kmTotal ?? 0));
-        setNotes(selectedTyre.notes || "");
     }
 
     function openEditModal() {
@@ -188,7 +211,6 @@ export default function TyreDetailPage() {
                     condition,
                     heatCycles: Number(heatCycles) || 0,
                     kmTotal: Number(kmTotal) || 0,
-                    notes: notes.trim(),
                 }),
             });
 
@@ -386,12 +408,36 @@ export default function TyreDetailPage() {
 
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>
-                        Notes
+                        Tyre Notes
                     </Text>
 
-                    <Text style={globalStyles.cardText}>
-                        {tyre.notes || "No notes"}
-                    </Text>
+                    {tyreNotes.length === 0 ? (
+                        <Text style={globalStyles.cardText}>
+                            No notes recorded for this tyre.
+                        </Text>
+                    ) : (
+                        tyreNotes.map((item) => (
+                            <View key={item._id} style={styles.tyreNoteCard}>
+                                <View style={styles.tyreNoteHeader}>
+                                    <Text style={styles.tyreNoteCorner}>
+                                        {item.corner} · {item.runId?.name || "Unnamed Run"}
+                                    </Text>
+
+                                    <Text style={styles.tyreNoteCategory}>
+                                        {item.category}
+                                    </Text>
+                                </View>
+
+                                <Text style={globalStyles.cardText}>
+                                    {item.note}
+                                </Text>
+
+                                <Text style={globalStyles.subText}>
+                                    {new Date(item.createdAt).toLocaleString("en-NZ")}
+                                </Text>
+                            </View>
+                        ))
+                    )}
                 </View>
 
                 <Modal
@@ -649,25 +695,6 @@ export default function TyreDetailPage() {
                                     placeholderTextColor="#9ca3af"
                                 />
 
-                                <Text
-                                    style={globalStyles.label}
-                                >
-                                    Notes
-                                </Text>
-
-                                <TextInput
-                                    style={[
-                                        globalStyles.input,
-                                        styles.notesInput,
-                                    ]}
-                                    value={notes}
-                                    onChangeText={setNotes}
-                                    multiline
-                                    textAlignVertical="top"
-                                    placeholder="Optional notes"
-                                    placeholderTextColor="#9ca3af"
-                                />
-
                                 {errorMessage ? (
                                     <Text
                                         style={
@@ -879,7 +906,33 @@ const styles = StyleSheet.create({
         color: "#ffffff",
     },
 
-    notesInput: {
-        minHeight: 90,
+    tyreNoteCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 12,
+        gap: 8,
+    },
+
+    tyreNoteHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 8,
+    },
+
+    tyreNoteCorner: {
+        color: "#ffffff",
+        fontSize: 16,
+        fontWeight: "800",
+        flexShrink: 1,
+    },
+
+    tyreNoteCategory: {
+        color: "#93c5fd",
+        fontSize: 13,
+        fontWeight: "700",
     },
 });

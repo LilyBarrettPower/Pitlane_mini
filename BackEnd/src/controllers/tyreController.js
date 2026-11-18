@@ -8,7 +8,7 @@ exports.createTyre = async (req, res) => {
 
         const organisationId = req.user.organisationId;
 
-        const { vehicleId, brand, spec, currentSet, size, position, fiaSerial, condition, heatCycles, kmTotal, notes } = req.body;
+        const { vehicleId, brand, spec, currentSet, size, position, fiaSerial, condition, heatCycles, kmTotal } = req.body;
         if (!vehicleId || !brand || !condition ) {
             return res.status(400).json({ message: "VehicleId, brand and condition are required" });
         }
@@ -31,7 +31,6 @@ exports.createTyre = async (req, res) => {
             condition, 
             heatCycles: heatCycles ?? 0,
             kmTotal: kmTotal ?? 0,
-            notes: notes || "",
         });
 
         res.status(201).json({ tyre});

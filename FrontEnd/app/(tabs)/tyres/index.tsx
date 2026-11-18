@@ -28,7 +28,13 @@ type Tyre = {
     condition: string;
     heatCycles?: number;
     kmTotal?: number;
-    notes?: string;
+};
+
+// From GET /tyre-notes/summary. "General" notes are excluded by the backend.
+type TyreNoteSummary = {
+    tyreId: string;
+    count: number;
+    topCategory: string;
 };
 
 type TyreSetGroup = {
@@ -72,7 +78,24 @@ export default function TyresPage() {
     const [condition, setCondition] = useState("New");
     const [heatCycles, setHeatCycles] = useState("");
     const [kmTotal, setKmTotal] = useState("");
-    const [notes, setNotes] = useState("");
+
+    // tyreId -> note summary, for the badge on each tyre card
+    const [noteSummaries, setNoteSummaries] = useState<Record<string, TyreNoteSummary>>({});
+
+    async function fetchNoteSummaries() {
+        const data = await apiFetch("/tyre-notes/summary", {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const byTyreId: Record<string, TyreNoteSummary> = {};
+        for (const item of (data.summary || []) as TyreNoteSummary[]) {
+            byTyreId[item.tyreId] = item;
+        }
+        setNoteSummaries(byTyreId);
+    }
 
     async function fetchTyres() {
         const data = await apiFetch("/tyres", {
@@ -107,6 +130,7 @@ export default function TyresPage() {
                 await Promise.all([
                     fetchTyres(),
                     fetchVehicles(),
+                    fetchNoteSummaries(),
                 ]);
             } catch (error) {
                 setErrorMessage(
@@ -156,7 +180,6 @@ export default function TyresPage() {
                     condition,
                     heatCycles: Number(heatCycles) || 0,
                     kmTotal: Number(kmTotal) || 0,
-                    notes: notes.trim(),
                 }),
             });
 
@@ -184,7 +207,6 @@ export default function TyresPage() {
         setCondition("");
         setHeatCycles("");
         setKmTotal("");
-        setNotes("");
     }
 
     function closeCreateModal() {
@@ -531,6 +553,12 @@ export default function TyresPage() {
                                                             </Text>
                                                         </View>
 
+                                                        {noteSummaries[tyre._id] ? (
+                                                            <TyreNoteBadge
+                                                                summary={noteSummaries[tyre._id]}
+                                                            />
+                                                        ) : null}
+
                                                         <Text
                                                             style={
                                                                 styles.tyreDetailLabel
@@ -618,20 +646,6 @@ export default function TyresPage() {
                                                             </View>
                                                         </View>
 
-                                                        {tyre.notes ? (
-                                                            <Text
-                                                                style={
-                                                                    styles.tyreNotes
-                                                                }
-                                                                numberOfLines={
-                                                                    2
-                                                                }
-                                                            >
-                                                                {
-                                                                    tyre.notes
-                                                                }
-                                                            </Text>
-                                                        ) : null}
                                                     </Pressable>
                                                 )
                                             )}
@@ -834,21 +848,6 @@ export default function TyresPage() {
                                     placeholderTextColor="#9ca3af"
                                 />
 
-                                <Text style={globalStyles.label}>Notes</Text>
-
-                                <TextInput
-                                    style={[
-                                        globalStyles.input,
-                                        styles.notesInput,
-                                    ]}
-                                    value={notes}
-                                    onChangeText={setNotes}
-                                    multiline
-                                    textAlignVertical="top"
-                                    placeholder="Optional notes"
-                                    placeholderTextColor="#9ca3af"
-                                />
-
                                 {errorMessage ? (
                                     <Text style={globalStyles.errorText}>
                                         {errorMessage}
@@ -898,6 +897,24 @@ export default function TyresPage() {
     )
 }
 
+// Shows the most serious note category on a tyre, e.g. "⚠ Puncture · 3 notes".
+function TyreNoteBadge({ summary }: { summary: TyreNoteSummary }) {
+    const severeCategories = ["Puncture", "Damage", "Flat Spot"];
+
+    const colourStyle = severeCategories.includes(summary.topCategory)
+        ? styles.noteBadgeSevere
+        : summary.topCategory === "Wear"
+            ? styles.noteBadgeWarning
+            : styles.noteBadgeNeutral;
+
+    return (
+        <Text style={[styles.noteBadge, colourStyle]}>
+            ⚠ {summary.topCategory}
+            {summary.count > 1 ? ` · ${summary.count} notes` : ""}
+        </Text>
+    );
+}
+
 
 const styles = StyleSheet.create({
     content: {
@@ -944,9 +961,6 @@ const styles = StyleSheet.create({
         color: "#ffffff",
     },
 
-    notesInput: {
-        minHeight: 90,
-    },
     tyreSetCard: {
         backgroundColor: "#1f2937",
         borderRadius: 16,
@@ -1079,10 +1093,33 @@ const styles = StyleSheet.create({
         flex: 1,
     },
 
-    tyreNotes: {
-        color: "#9ca3af",
-        fontSize: 12,
-        marginTop: 5,
+    noteBadge: {
+        alignSelf: "flex-start",
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        fontSize: 11,
+        fontWeight: "700",
+        overflow: "hidden",
+        marginBottom: 5,
+    },
+
+    // Puncture / Damage / Flat Spot
+    noteBadgeSevere: {
+        backgroundColor: "#991b1b",
+        color: "#fee2e2",
+    },
+
+    // Wear
+    noteBadgeWarning: {
+        backgroundColor: "#92400e",
+        color: "#fef3c7",
+    },
+
+    // Other
+    noteBadgeNeutral: {
+        backgroundColor: "#374151",
+        color: "#e5e7eb",
     },
     tyreSetCardPressed: {
         opacity: 0.8,

@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const TyreNote = require("../models/TyreNote");
 const TyreRun = require("../models/TyreRun");
 const Run = require("../models/Run");
@@ -147,6 +148,57 @@ exports.archiveTyreNote = async (req, res) => {
         });
     } catch (err) {
         console.error("Archive Tyre Note error", err);
+        res.status(500).json({
+            message: "Server error",
+        });
+    }
+};
+
+// Most serious first. "General" notes are left out of the summary entirely.
+const SUMMARY_CATEGORY_PRIORITY = [
+    "Puncture",
+    "Damage",
+    "Flat Spot",
+    "Wear",
+    "Other",
+];
+
+// GET - one entry per tyre that has non-General notes, for badges on the
+// tyres list: { tyreId, count, topCategory }
+exports.getTyreNoteSummary = async (req, res) => {
+    try {
+        const organisationId = new mongoose.Types.ObjectId(
+            req.user.organisationId
+        );
+
+        const groups = await TyreNote.aggregate([
+            {
+                $match: {
+                    organisationId,
+                    isActive: true,
+                    category: { $in: SUMMARY_CATEGORY_PRIORITY },
+                },
+            },
+            {
+                $group: {
+                    _id: "$tyreId",
+                    count: { $sum: 1 },
+                    categories: { $addToSet: "$category" },
+                },
+            },
+        ]);
+
+        const summary = groups.map((group) => ({
+            tyreId: group._id,
+            count: group.count,
+            topCategory: SUMMARY_CATEGORY_PRIORITY.find((category) =>
+                group.categories.includes(category)
+            ),
+        }));
+
+        res.json({ summary });
+    } catch (err) {
+        console.error("Get Tyre Note Summary error", err);
         res.status(500).json({
             message: "Server error",
         });
