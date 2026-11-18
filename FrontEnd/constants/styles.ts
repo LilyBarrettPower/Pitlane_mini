@@ -1,12 +1,15 @@
 import { StyleSheet } from "react-native";
 import { colors, spacing } from "./theme";
 
+// Shared styles used across the app. These follow the dashboard's look:
+// rounded 18px cards, bold white headings, muted grey secondary text.
 export const globalStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
 
+  // Narrow centred column (auth pages, loading states)
   content: {
     padding: spacing.lg,
     flex: 1,
@@ -24,52 +27,58 @@ export const globalStyles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: spacing.radiusLg,
-    padding: spacing.md,
+    padding: 20,
     borderWidth: 1,
     borderColor: colors.borderDark,
   },
 
   cardTitle: {
-    color: colors.primary,
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 10
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 8,
   },
 
   cardText: {
-    color: "#d1d5db",
+    color: colors.textSecondary,
+    fontSize: 15,
     marginBottom: 4,
   },
 
   buttonPrimary: {
     backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
     borderRadius: spacing.radiusMd,
     alignItems: "center",
+    justifyContent: "center",
   },
 
   buttonSecondary: {
     backgroundColor: colors.borderDark,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     borderRadius: spacing.radiusMd,
     alignItems: "center",
+    justifyContent: "center",
   },
 
   buttonDanger: {
     backgroundColor: colors.danger,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
     borderRadius: spacing.radiusMd,
     alignItems: "center",
+    justifyContent: "center",
   },
-    buttonDangerSmall: {
+
+  buttonDangerSmall: {
     backgroundColor: colors.danger,
-    paddingVertical: 10,
+    paddingVertical: 9,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
   },
 
   buttonDisabled: {
@@ -77,21 +86,23 @@ export const globalStyles = StyleSheet.create({
   },
 
   smallButton: {
-    backgroundColor: "#374151",
-    paddingVertical: 10,
+    backgroundColor: colors.borderDark,
+    paddingVertical: 9,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
   },
 
   smallButtonText: {
-    color: "#ffffff",
+    color: colors.textPrimary,
+    fontSize: 14,
     fontWeight: "700",
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(3, 7, 18, 0.72)",
     justifyContent: "center",
     alignItems: "center",
     padding: spacing.lg,
@@ -99,19 +110,20 @@ export const globalStyles = StyleSheet.create({
 
   modalCard: {
     width: "100%",
-    maxWidth: 520,
+    maxWidth: 560,
     backgroundColor: colors.card,
     borderRadius: spacing.radiusModal,
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.borderDark,
-            gap: 12,
+    gap: 12,
   },
 
   modalTitle: {
-    color: "#ffffff",
-    fontSize: 24,
-    fontWeight: "700",
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 4,
   },
 
   input: {
@@ -126,60 +138,65 @@ export const globalStyles = StyleSheet.create({
   },
 
   label: {
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-    fontSize: 14,
-    fontWeight: "600",
+    color: colors.textSecondary,
+    marginBottom: 6,
+    fontSize: 13,
+    fontWeight: "700",
   },
 
   buttonPrimaryText: {
     color: colors.textPrimary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
   },
 
   ButtonSecondaryText: {
     color: colors.textPrimary,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   errorText: {
-    color: "#f87171",
+    color: colors.error,
     fontSize: 14,
   },
+
   successText: {
-    color: "#34d399",
+    color: colors.success,
     fontSize: 14,
   },
+
   title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#ffffff",
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: "800",
+    color: colors.textPrimary,
+    marginBottom: 4,
   },
+
   subTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#d1d5db",
-    marginBottom: 28,
+    fontSize: 15,
+    color: colors.textMuted,
+    marginBottom: 24,
   },
+
   form: {
     gap: 16,
   },
+
   text: {
     color: colors.textSecondary,
+    fontSize: 15,
   },
 
   sectionTitle: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "700",
-    marginTop: 15,
+    color: colors.textPrimary,
+    fontSize: 17,
+    fontWeight: "800",
+    marginBottom: 10,
   },
 
   subText: {
-    color: "#ffffff",
+    color: colors.textMuted,
     fontSize: 13,
   },
-
 });

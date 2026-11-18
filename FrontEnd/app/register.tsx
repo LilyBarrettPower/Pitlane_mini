@@ -1,21 +1,16 @@
-import {useState, useEffect} from "react";
-import {router} from "expo-router";
-import {
-    ActivityIndicator, 
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from "react-native";
-import {SafeAreaView} from "react-native-safe-area-context";
+import { useState, useEffect } from "react";
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
 import { globalStyles } from "../constants/styles";
+import { colors } from "../constants/theme";
 import { apiFetch } from "../assets/api";
 import { useAuth } from "../context/AuthContext";
-
+import AuthLayout from "../components/ui/AuthLayout";
+import { Button, ErrorBanner } from "../components/ui/kit";
 
 export default function RegisterPage() {
-    const {login, token, isLoading: authLoading} = useAuth();
+    const { login, token, isLoading: authLoading } = useAuth();
 
     const [orgName, setOrgName] = useState("");
     const [name, setName] = useState("");
@@ -23,7 +18,6 @@ export default function RegisterPage() {
     const [password, setPassword] = useState("");
 
     const [errorMessage, setErrorMessage] = useState("");
-    const [successMessage, setSuccessMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -37,103 +31,102 @@ export default function RegisterPage() {
     async function handleRegister() {
         try {
             setErrorMessage("");
-            setSuccessMessage("");
             setIsLoading(true);
 
             const data = await apiFetch("/auth/register-organisation", {
                 method: "POST",
                 body: JSON.stringify({
-                    orgName, 
-                    name, 
+                    orgName,
+                    name,
                     email,
                     password,
                 }),
             });
 
+            // Logging in updates the token, which redirects to the dashboard
             await login(data);
-
-            setSuccessMessage(
-                `Organisation created: ${data.organisation.name}\nLogged in as ${data.user.name}`
-            );
-
-            setTimeout(() => {
-                router.replace("/dashboard");
-            }, 1500);
         } catch (error) {
-            const message = 
-                error instanceof Error ? error.message : "Registration failed";
-            setErrorMessage(message);
+            setErrorMessage(error instanceof Error ? error.message : "Registration failed");
         } finally {
             setIsLoading(false);
         }
     }
 
     return (
-        <SafeAreaView style={globalStyles.container}>
-            <View style={globalStyles.content}>
-                <Text style={globalStyles.title}>Register Organisation</Text>
-                <Text style={globalStyles.subTitle}>
-                    Create your organisation and admin user
-                </Text>
-
-                <View style={globalStyles.form}>
-                    <View>
-                        <Text style={globalStyles.label}>Organisation Name</Text>
-                        <TextInput
-                            value={orgName}
-                            onChangeText={setOrgName}
-                            style={globalStyles.input}
-                            />
-                    </View>
-                    <View>
-                        <Text style={globalStyles.label}>Your Name</Text>
-                        <TextInput
-                            value={name}
-                            onChangeText={setName}
-                            style={globalStyles.input}
-                            />
-                    </View>
-                    <View>
-                        <Text style={globalStyles.label}>Email</Text>
-                        <TextInput
-                            value={email}
-                            onChangeText={setEmail}
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            style={globalStyles.input}
-                            />
-                    </View>
-                    <View>
-                        <Text style={globalStyles.label}>Password</Text>
-                        <TextInput  
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            style={globalStyles.input}
-                            />
-                    </View>
-
-                    {errorMessage ? (
-                        <Text style={globalStyles.errorText}>{errorMessage}</Text>
-                    ) : null}
-
-                    {successMessage ? (
-                        <Text style={globalStyles.successText}>{successMessage}</Text>
-                    ) : null}
-
-                    <Pressable 
-                        style={[globalStyles.buttonPrimary, isLoading && globalStyles.buttonDisabled]}
-                        onPress={handleRegister}
-                        disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#ffffff"/>
-                            ) : (
-                                <Text style={globalStyles.buttonPrimaryText}>Register Organisation</Text>
-                            )}
-                        </Pressable>
-                </View>
+        <AuthLayout
+            title="Create your team"
+            subtitle="Set up your organisation and your admin account."
+            footer={
+                <Pressable onPress={() => router.replace("/login")} hitSlop={8}>
+                    <Text style={styles.footerText}>
+                        Already have an account? <Text style={styles.footerLink}>Log in</Text>
+                    </Text>
+                </Pressable>
+            }
+        >
+            <View>
+                <Text style={globalStyles.label}>Organisation name</Text>
+                <TextInput
+                    value={orgName}
+                    onChangeText={setOrgName}
+                    placeholder="e.g. Apex Racing"
+                    placeholderTextColor={colors.textMuted}
+                    style={globalStyles.input}
+                />
             </View>
-        </SafeAreaView>
+
+            <View>
+                <Text style={globalStyles.label}>Your name</Text>
+                <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Full name"
+                    placeholderTextColor={colors.textMuted}
+                    style={globalStyles.input}
+                />
+            </View>
+
+            <View>
+                <Text style={globalStyles.label}>Email</Text>
+                <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="you@example.com"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    style={globalStyles.input}
+                />
+            </View>
+
+            <View>
+                <Text style={globalStyles.label}>Password</Text>
+                <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Choose a password"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    style={globalStyles.input}
+                    onSubmitEditing={handleRegister}
+                />
+            </View>
+
+            <ErrorBanner message={errorMessage} />
+
+            <Button label="Create organisation" onPress={handleRegister} loading={isLoading} />
+        </AuthLayout>
     );
 }
+
+const styles = StyleSheet.create({
+    footerText: {
+        color: colors.textMuted,
+        fontSize: 14,
+    },
+
+    footerLink: {
+        color: colors.primaryLight,
+        fontWeight: "700",
+    },
+});

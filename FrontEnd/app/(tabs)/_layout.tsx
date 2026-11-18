@@ -1,34 +1,45 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors } from "../../constants/theme";
+
+// Height of the tab bar's content (icons + labels), not counting the
+// phone's bottom safe area (home indicator), which is added on top.
+const TAB_BAR_CONTENT_HEIGHT = 66;
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 8);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#1f2937",
-          borderTopWidth: 0,
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 10,
+          backgroundColor: colors.backgroundDeep,
+          borderTopWidth: 1,
+          borderTopColor: colors.borderDark,
+          height: TAB_BAR_CONTENT_HEIGHT + bottomPadding,
+          paddingBottom: bottomPadding,
+          paddingTop: 6,
         },
 
+        // No vertical padding here - it squeezes the labels and clips them
         tabBarItemStyle: {
           borderRadius: 12,
-          marginHorizontal: 6,
-          marginVertical: 6,
+          marginHorizontal: 4,
         },
 
-        tabBarActiveBackgroundColor: "#2563eb",
+        // Soft blue pill behind the active tab
+        tabBarActiveBackgroundColor: colors.primarySoft,
 
-        tabBarActiveTintColor: "#ffffff",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarActiveTintColor: colors.primaryLight,
+        tabBarInactiveTintColor: colors.textMuted,
 
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "600",
+          fontSize: 11,
+          fontWeight: "700",
         },
       }}
     >

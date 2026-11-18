@@ -1,13 +1,42 @@
-import { Pressable, StyleSheet, Text, View, ActivityIndicator, Modal, TextInput, ScrollView } from "react-native";
+import { useEffect, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
 import SettingsShell from "../../../components/settingsShell";
 import { useAuth } from "../../../context/AuthContext";
-import {apiFetch} from "../../../assets/api";
-import {useState, useEffect} from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { apiFetch } from "../../../assets/api";
 import { globalStyles } from "../../../constants/styles";
+import { colors } from "../../../constants/theme";
+import {
+  Avatar,
+  Badge,
+  Button,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  Panel,
+} from "../../../components/ui/kit";
+
+type Role = "admin" | "engineer" | "mechanic" | "viewer";
+
+type ListedUser = {
+  id?: string;
+  _id?: string;
+  name?: string;
+  email: string;
+  role: string;
+};
+
+const ROLES: Role[] = ["admin", "engineer", "mechanic", "viewer"];
+
+const ROLE_TONE: Record<string, "primary" | "live" | "warning" | "neutral"> = {
+  admin: "primary",
+  engineer: "live",
+  mechanic: "warning",
+  viewer: "neutral",
+};
 
 export default function UsersPage() {
-  const { user, organisation, token } = useAuth();
+  const { user, token } = useAuth();
 
   const isAdmin = user?.role === "admin";
 
@@ -16,21 +45,19 @@ export default function UsersPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "engineer" | "mechanic" | "viewer">("viewer");
+  const [role, setRole] = useState<Role>("viewer");
 
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [users, setUsers] = useState<
-    {id?: string; _id?: string; name?: string; email: string; role: string} []
-    >([]);
-    
+  const [users, setUsers] = useState<ListedUser[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
 
-   async function fetchUsers() {
+  async function fetchUsers() {
     try {
-      setIsUsersLoading(false);
+      setIsUsersLoading(true);
+      setErrorMessage("");
 
       const data = await apiFetch("/auth/users", {
         method: "GET",
@@ -41,8 +68,7 @@ export default function UsersPage() {
 
       setUsers(data.users || []);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load users";
-      setErrorMessage(message);
+      setErrorMessage(error instanceof Error ? error.message : "Failed to load users");
     } finally {
       setIsUsersLoading(false);
     }
@@ -54,278 +80,235 @@ export default function UsersPage() {
     }
   }, [token]);
 
+  function openCreateModal() {
+    setName("");
+    setEmail("");
+    setPassword("");
+    setRole("viewer");
+    setFormError("");
+    setShowCreateModal(true);
+  }
+
   async function handleCreateUser() {
+    if (!email.trim() || !password) {
+      setFormError("Email and password are required");
+      return;
+    }
+
     try {
-        setErrorMessage("");
-        setSuccessMessage("");
-        setIsLoading(true);
+      setFormError("");
+      setIsSaving(true);
 
-        const data = await apiFetch("/auth/create-user", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                password,
-                role,
-            }),
-        });
+      await apiFetch("/auth/create-user", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+        }),
+      });
 
-        setSuccessMessage(`Created user: ${data.user.email}`);
-
-        await fetchUsers();
-        // I believe this here is where my error of a white screen after creating a user is coming from
-
-        setName("");
-        setEmail("");
-        setPassword("");
-        setRole("viewer");
-
-        setTimeout(() => {
-            setShowCreateModal(false);
-            setSuccessMessage("");
-        }, 1000);
+      setShowCreateModal(false);
+      await fetchUsers();
     } catch (error) {
-        const message = 
-            error instanceof Error ? error.message : "Failed to create user";
-        setErrorMessage(message);
+      setFormError(error instanceof Error ? error.message : "Failed to create user");
     } finally {
-        setIsLoading(false);
+      setIsSaving(false);
     }
   }
 
- 
-
   return (
-    <SafeAreaView style={globalStyles.container}>
-      <ScrollView>
-      <SettingsShell title="Users">
-        <View style={styles.headerRow}>
-          <Text style={globalStyles.sectionTitle}>{organisation?.name}</Text>
+    <SettingsShell
+      title="Users"
+      subtitle={users.length ? `${users.length} ${users.length === 1 ? "member" : "members"}` : undefined}
+      actions={isAdmin ? <Button label="Add User" icon="person-add-outline" onPress={openCreateModal} /> : undefined}
+    >
+      <ErrorBanner message={errorMessage} />
 
-          {isAdmin ? (
-          <View style={styles.section}>
-            <Text style={globalStyles.sectionTitle}>Create User</Text>
-            <Pressable 
-              style={[globalStyles.buttonPrimary, styles.gap]}
-              onPress={() => setShowCreateModal(true)}
-              >
-              <Text style={globalStyles.buttonPrimaryText}>Add New User</Text>
-            </Pressable>
-          </View>
+      <Panel title="Team members" icon="people-outline">
+        {isUsersLoading && users.length === 0 ? (
+          <LoadingState />
+        ) : users.length === 0 ? (
+          <EmptyState icon="people-outline" text="No users found." />
         ) : (
-          <View style={styles.section}>
-            <Text style={styles.helper}>
-              Only admins can create users.
-            </Text>
-          </View>
+          users.map((listedUser, index) => (
+            <View
+              key={listedUser.id || listedUser._id || listedUser.email}
+              style={[styles.userRow, index === users.length - 1 && styles.userRowLast]}
+            >
+              <Avatar name={listedUser.name || listedUser.email} size={40} />
+              <View style={styles.userText}>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {listedUser.name || listedUser.email}
+                </Text>
+                <Text style={styles.userEmail} numberOfLines={1}>
+                  {listedUser.email}
+                </Text>
+              </View>
+              <Badge label={listedUser.role.toUpperCase()} tone={ROLE_TONE[listedUser.role] || "neutral"} />
+            </View>
+          ))
         )}
-        
-        </View>
 
-            <View style={styles.section}>
-              <Text style={[globalStyles.sectionTitle, styles.gapBottom]}>Users</Text>
+        {!isAdmin ? <Text style={styles.helper}>Only admins can add users.</Text> : null}
+      </Panel>
 
-              {isUsersLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : users.length === 0 ? (
-                <Text style={globalStyles.text}>No users found.</Text>
-              ) : (
-                users.map((listedUser) => (
-                  <View
-                    key={listedUser.id || listedUser._id || listedUser.email}
-                    style={styles.userCard}
-                  >
-                    <Text style={styles.userName}>
-                      {listedUser.name || listedUser.email}
-                    </Text>
-                    <Text style={styles.userMeta}>{listedUser.email}</Text>
-                    <Text style={styles.userMeta}>Role: {listedUser.role}</Text>
-                  </View>
-                ))
-              )}
+      <Modal
+        visible={showCreateModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalCard}>
+            <Text style={globalStyles.modalTitle}>Add User</Text>
+
+            <View>
+              <Text style={globalStyles.label}>Name</Text>
+              <TextInput
+                value={name}
+                placeholder="Full name"
+                placeholderTextColor={colors.textMuted}
+                onChangeText={setName}
+                style={globalStyles.input}
+              />
             </View>
 
-        <Modal 
-          visible={showCreateModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowCreateModal(false)}
-          >
-              <View style={globalStyles.modalOverlay}>
-                  <View style={globalStyles.modalCard}>
-                      <Text style={globalStyles.modalTitle}>Create User</Text>
-                      <View style={globalStyles.form}>
-                          <View>
-                              <Text style={globalStyles.label}>Name</Text>
-                              <TextInput  
-                                  value={name}
-                                  placeholder="Name"
-                                  onChangeText={setName}
-                                  style={globalStyles.input}
-                                  />
-                          </View>
+            <View>
+              <Text style={globalStyles.label}>Email</Text>
+              <TextInput
+                value={email}
+                placeholder="name@example.com"
+                placeholderTextColor={colors.textMuted}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={globalStyles.input}
+              />
+            </View>
 
-                          <View>
-                              <Text style={globalStyles.label}>Email</Text>
-                              <TextInput
-                                  value={email}
-                                  placeholder="Email"
-                                  onChangeText={setEmail}
-                                  autoCapitalize="none"
-                                  keyboardType="email-address"
-                                  style={globalStyles.input}
-                              />
+            <View>
+              <Text style={globalStyles.label}>Temporary password</Text>
+              <TextInput
+                value={password}
+                placeholder="Password"
+                placeholderTextColor={colors.textMuted}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={globalStyles.input}
+              />
+            </View>
 
-                          </View>
-
-                          <View>
-                              <Text style={globalStyles.label}>Password</Text>
-                              <TextInput
-                                  value={password}
-                                  placeholder="Password"
-                                  onChangeText={setPassword}
-                                  secureTextEntry
-                                  style={globalStyles.input}
-                              />
-                          </View>
-
-                          <View>
-                              <Text style={globalStyles.label}>Role</Text>
-                              <View style={styles.roleRow}>
-                                  {(["admin", "engineer", "mechanic", "viewer"] as const).map((roleOption)=> (
-                                      <Pressable
-                                          key={roleOption}
-                                          style={[
-                                              styles.roleButton,
-                                              role == roleOption && styles.roleButtonActive,
-                                          ]}
-                                          onPress={() => setRole(roleOption)}
-                                          >
-                                              <Text 
-                                                  style={[
-                                                      styles.roleButtonText,
-                                                      role === roleOption && styles.roleButtonTextActive,
-                                                  ]}
-                                                  >
-                                                      {roleOption}
-                                                  </Text>
-                                          </Pressable>
-                                  ))}
-                              </View>
-                          </View>
-                          {errorMessage ? (
-                              <Text style={globalStyles.errorText}>{errorMessage}</Text>
-                          ) : null}
-
-                          {successMessage ? (
-                              <Text style={globalStyles.successText}>{successMessage}</Text>
-                          ) : null}
-
-                          <View style={styles.modalActions}>
-                              <Pressable  
-                                  style={globalStyles.buttonDanger}
-                                  onPress={() => setShowCreateModal(false)}
-                                  disabled={isLoading}
-                              > 
-                                  <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                              </Pressable>
-
-                              <Pressable
-                                  style={[globalStyles.buttonPrimary, isLoading && styles.buttonDisabled]}
-                                  onPress={handleCreateUser}
-                                  disabled={isLoading}
-                              >
-                                  {isLoading ? (
-                                      <ActivityIndicator color="#ffffff"/>
-                                  ) : (
-                                      <Text style={globalStyles.buttonPrimaryText}>Create User</Text>
-                                  )}
-                              </Pressable>
-                          </View>
-                      </View>
-                  </View>
+            <View>
+              <Text style={globalStyles.label}>Role</Text>
+              <View style={styles.roleRow}>
+                {ROLES.map((roleOption) => (
+                  <Pressable
+                    key={roleOption}
+                    style={[styles.roleButton, role === roleOption && styles.roleButtonActive]}
+                    onPress={() => setRole(roleOption)}
+                  >
+                    <Text style={[styles.roleButtonText, role === roleOption && styles.roleButtonTextActive]}>
+                      {roleOption[0].toUpperCase() + roleOption.slice(1)}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
-          </Modal>
-      </SettingsShell>
-    </ScrollView>
-    </SafeAreaView>
+            </View>
+
+            <ErrorBanner message={formError} />
+
+            <View style={styles.modalActions}>
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onPress={() => setShowCreateModal(false)}
+                disabled={isSaving}
+              />
+              <Button label="Add User" onPress={handleCreateUser} loading={isSaving} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SettingsShell>
   );
 }
 
 const styles = StyleSheet.create({
-  headerRow: {
+  userRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderDark,
   },
-  section: {
-    marginBottom: 24,
+
+  userRowLast: {
+    borderBottomWidth: 0,
+    paddingBottom: 0,
   },
-  helper: {
-    color: "#9ca3af",
-    fontSize: 14,
-    marginTop: 10,
+
+  userText: {
+    flex: 1,
+    gap: 2,
   },
-  userCard: {
-    backgroundColor: "#1f2937",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#374151",
-  },
+
   userName: {
-    color: "#ffffff",
-    fontSize: 16,
+    color: colors.textPrimary,
+    fontSize: 15,
     fontWeight: "700",
-    marginBottom: 6,
   },
-  userMeta: {
-    color: "#d1d5db",
-    fontSize: 14,
-    marginBottom: 2,
+
+  userEmail: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
-  buttonDisabled: {
-    opacity: 0.7,
+
+  helper: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 14,
   },
+
   roleRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
+
   roleButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     borderRadius: 10,
-    backgroundColor: "#111827",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#374151",
+    borderColor: colors.borderDark,
   },
+
   roleButtonActive: {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
+
   roleButtonText: {
-    color: "#d1d5db",
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
+
   roleButtonTextActive: {
-    color: "#ffffff",
+    color: colors.textPrimary,
   },
+
   modalActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 8,
-  },
-  gap : {
-    marginTop: 20,
-  },
-  gapBottom: {
-    marginBottom: 20,
+    gap: 10,
+    marginTop: 4,
   },
 });

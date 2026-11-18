@@ -1,18 +1,24 @@
-import {useEffect, useState} from "react";
-import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View
-} from "react-native";
-import {SafeAreaView} from "react-native-safe-area-context";
+import { useEffect, useState } from "react";
+import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
 import { globalStyles } from "../../constants/styles";
-import {apiFetch} from "../../assets/api";
-import {useAuth} from "../../context/AuthContext";
+import { colors } from "../../constants/theme";
+import { apiFetch } from "../../assets/api";
+import { useAuth } from "../../context/AuthContext";
+import {
+    Avatar,
+    Badge,
+    Button,
+    EmptyState,
+    ErrorBanner,
+    Grid,
+    GridItem,
+    IconName,
+    LoadingState,
+    PageHeader,
+    Screen,
+} from "../../components/ui/kit";
 
 type Driver = {
     _id: string;
@@ -24,33 +30,57 @@ type Driver = {
     isActive: boolean;
 };
 
+const FORM_FIELDS = [
+    { key: "name", label: "Name", placeholder: "Full name" },
+    { key: "experience", label: "Experience", placeholder: "e.g. Pro, Am, Rookie" },
+    { key: "email", label: "Email", placeholder: "driver@example.com", email: true },
+    { key: "phoneNumber", label: "Phone", placeholder: "Phone number", phone: true },
+    { key: "notes", label: "Notes", placeholder: "Optional notes" },
+] as const;
+
+type FormKey = (typeof FORM_FIELDS)[number]["key"];
+
+const EMPTY_FORM: Record<FormKey, string> = {
+    name: "",
+    experience: "",
+    email: "",
+    phoneNumber: "",
+    notes: "",
+};
+
+function ContactLine({ icon, value }: { icon: IconName; value?: string }) {
+    return (
+        <View style={styles.contactLine}>
+            <Ionicons name={icon} size={15} color={colors.textMuted} />
+            <Text style={[styles.contactText, !value && styles.contactEmpty]} numberOfLines={1}>
+                {value || "Not set"}
+            </Text>
+        </View>
+    );
+}
 
 export default function DriversPage() {
-
-    const {user, token} = useAuth();
+    const { user, token } = useAuth();
 
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
 
     const [showModal, setShowModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [formError, setFormError] = useState("");
 
-    const [name, setName] = useState("")
-    const [experience, setExperience] = useState("")
-    const [email, setEmail] = useState("")
-    const [phoneNumber, setPhoneNumber] = useState("")
-    const [notes, setNotes] = useState("")
+    const [form, setForm] = useState<Record<FormKey, string>>(EMPTY_FORM);
 
-    // Add delete vehicle state 
-    const [driverToDelete, setDriverToDelete] = useState<Driver| null>(null);
+    const [driverToDelete, setDriverToDelete] = useState<Driver | null>(null);
 
-    const isAdmin = user?.role == "admin";
+    const isAdmin = user?.role === "admin";
 
     async function fetchDrivers() {
         try {
             setIsLoading(true);
-            setErrorMessage("")
+            setErrorMessage("");
 
             const data = await apiFetch("/drivers", {
                 method: "GET",
@@ -67,41 +97,38 @@ export default function DriversPage() {
     }
 
     useEffect(() => {
-        if(token) fetchDrivers();
+        if (token) fetchDrivers();
     }, [token]);
 
     function openCreateModal() {
         setEditingDriver(null);
-        setName("");
-        setExperience("");
-        setEmail("");
-        setPhoneNumber("");
-        setNotes("");
+        setForm(EMPTY_FORM);
+        setFormError("");
         setShowModal(true);
     }
 
     function openEditModal(driver: Driver) {
         setEditingDriver(driver);
-        setName(driver.name || "");
-        setExperience(driver.experience || "");
-        setEmail(driver.email || "");
-        setPhoneNumber(driver.phoneNumber || "");
-        setNotes(driver.notes || "");
+        setForm({
+            name: driver.name || "",
+            experience: driver.experience || "",
+            email: driver.email || "",
+            phoneNumber: driver.phoneNumber || "",
+            notes: driver.notes || "",
+        });
+        setFormError("");
         setShowModal(true);
     }
 
     async function handleSaveDriver() {
-        try {
-            setIsLoading(true);
-            setErrorMessage("");
+        if (!form.name.trim()) {
+            setFormError("Driver name is required");
+            return;
+        }
 
-            const payload = {
-                name, 
-                experience,
-                email, 
-                phoneNumber,
-                notes,
-            };
+        try {
+            setIsSaving(true);
+            setFormError("");
 
             if (editingDriver) {
                 await apiFetch(`/drivers/${editingDriver._id}`, {
@@ -109,38 +136,34 @@ export default function DriversPage() {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(form),
                 });
             } else {
                 await apiFetch("/drivers", {
                     method: "POST",
-                    headers:{
+                    headers: {
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(form),
                 });
             }
 
             setShowModal(false);
             setEditingDriver(null);
-            setName("");
-            setExperience("");
-            setEmail("");
-            setPhoneNumber("");
-            setNotes("");
+            setForm(EMPTY_FORM);
 
             await fetchDrivers();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Failed to save driver");
+            setFormError(error instanceof Error ? error.message : "Failed to save driver");
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     }
 
     async function handleDeleteDriver(driver: Driver) {
         try {
-            setIsLoading(true);
-            setErrorMessage("")
+            setIsSaving(true);
+            setErrorMessage("");
 
             await apiFetch(`/drivers/${driver._id}`, {
                 method: "DELETE",
@@ -153,117 +176,144 @@ export default function DriversPage() {
             await fetchDrivers();
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : "Failed to delete driver");
+            setDriverToDelete(null);
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     }
 
-
     return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.headerRow}>
-                    <Text style={globalStyles.title}>Driver</Text>
+        <Screen>
+            <PageHeader
+                eyebrow="Team"
+                title="Drivers"
+                subtitle={
+                    drivers.length
+                        ? `${drivers.length} ${drivers.length === 1 ? "driver" : "drivers"}`
+                        : undefined
+                }
+                actions={<Button label="Add Driver" icon="add" onPress={openCreateModal} />}
+            />
 
-                    <Pressable style={globalStyles.buttonPrimary} onPress={openCreateModal}>
-                        <Text style={globalStyles.buttonPrimaryText}>Add Driver</Text>
-                    </Pressable>
+            <ErrorBanner message={errorMessage} />
+
+            {isLoading && drivers.length === 0 ? (
+                <LoadingState />
+            ) : drivers.length === 0 ? (
+                <View style={globalStyles.card}>
+                    <EmptyState
+                        icon="id-card-outline"
+                        title="No drivers yet"
+                        text="Add your drivers so you can assign them to vehicles."
+                        action={<Button label="Add Driver" icon="add" onPress={openCreateModal} />}
+                    />
                 </View>
-                {errorMessage ? <Text style={globalStyles.errorText}>{errorMessage}</Text>: null}
+            ) : (
+                <Grid>
+                    {drivers.map((driver) => (
+                        <GridItem key={driver._id} minWidth={300}>
+                            <View style={styles.driverCard}>
+                                <View style={styles.driverTop}>
+                                    <Avatar name={driver.name} size={46} />
+                                    <View style={styles.driverTitle}>
+                                        <Text style={styles.driverName} numberOfLines={1}>
+                                            {driver.name}
+                                        </Text>
+                                        {driver.experience ? (
+                                            <Badge label={driver.experience} tone="primary" />
+                                        ) : (
+                                            <Text style={styles.contactEmpty}>No experience level</Text>
+                                        )}
+                                    </View>
+                                </View>
 
-                {isLoading ? (
-                    <ActivityIndicator color="#ffffff"/>
-                ) : drivers.length === 0 ? (
-                    <Text style={globalStyles.text}>No drivers yet</Text>
-                ) : (
-                    drivers.map((driver) => (
-                        <View key={driver._id} style={globalStyles.card}>
-                            <Text style={globalStyles.cardTitle}>{driver.name}</Text>
-                            <Text style={globalStyles.cardText}>Experience: {driver.experience || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Email: {driver.email}</Text> 
-                            <Text style={globalStyles.cardText}>Phone: {driver.phoneNumber}</Text> 
-                            <Text style={globalStyles.cardText}>Notes: {driver.notes || "-"}</Text>
+                                <View style={styles.contactBlock}>
+                                    <ContactLine icon="mail-outline" value={driver.email} />
+                                    <ContactLine icon="call-outline" value={driver.phoneNumber} />
+                                </View>
 
-                            <View style={styles.actionRow}>
-                                <Pressable style={globalStyles.smallButton} onPress={() => openEditModal(driver)}>
-                                    <Text style={globalStyles.smallButtonText}>Edit</Text>
-                                </Pressable>
-                                {/* Make it so that only admins can delete drivers */}
-                                {isAdmin ? (
-                                    <Pressable style={globalStyles.buttonDanger} onPress={() => setDriverToDelete(driver)}>
-                                        <Text style={globalStyles.smallButtonText}>Delete</Text>
-                                    </Pressable>
+                                {driver.notes ? (
+                                    <Text style={styles.notes} numberOfLines={2}>
+                                        {driver.notes}
+                                    </Text>
                                 ) : null}
 
+                                <View style={styles.cardActions}>
+                                    <Button
+                                        label="Edit"
+                                        icon="create-outline"
+                                        size="sm"
+                                        variant="secondary"
+                                        onPress={() => openEditModal(driver)}
+                                    />
+                                    {isAdmin ? (
+                                        <Button
+                                            label="Delete"
+                                            icon="trash-outline"
+                                            size="sm"
+                                            variant="ghost"
+                                            onPress={() => setDriverToDelete(driver)}
+                                        />
+                                    ) : null}
+                                </View>
                             </View>
-                        </View>
-                    ))
-                )}
-            </ScrollView>
+                        </GridItem>
+                    ))}
+                </Grid>
+            )}
 
-            <Modal visible={showModal} transparent animationType="fade">
+            {/* Create / edit driver */}
+            <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
                 <View style={globalStyles.modalOverlay}>
-                    <View style={globalStyles.modalCard}>
+                    <View style={[globalStyles.modalCard, styles.modalCard]}>
                         <Text style={globalStyles.modalTitle}>
-                            {editingDriver ? "Edit Driver" : "Create Driver"}
+                            {editingDriver ? "Edit Driver" : "Add Driver"}
                         </Text>
-                        <Text style={globalStyles.label}>Name</Text>
-                        <TextInput
-                            style={globalStyles.input}
-                            placeholder="Name"
-                            placeholderTextColor="#9ca3af"
-                            value={name}
-                            onChangeText={setName}
-                        />
-                        <Text style={globalStyles.label}>Experience</Text>
-                        <TextInput
-                            style={globalStyles.input}
-                            placeholder="Experience"
-                            placeholderTextColor="#9ca3af"
-                            value={experience}
-                            onChangeText={setExperience}
-                        />
-                        <Text style={globalStyles.label}>Email</Text>
-                        <TextInput
-                            style={globalStyles.input}
-                            placeholder="Email"
-                            placeholderTextColor="#9ca3af"
-                            value={email}
-                            onChangeText={setEmail}
-                        />
-                        <Text style={globalStyles.label}>Phone Number</Text>
-                         <TextInput
-                            style={globalStyles.input}
-                            placeholder="Phone"
-                            placeholderTextColor="#9ca3af"
-                            value={phoneNumber}
-                            onChangeText={setPhoneNumber}
-                        /> 
-                        <Text style={globalStyles.label}>Notes</Text>
-                        <TextInput
-                            style={globalStyles.input}
-                            placeholder="Notes"
-                            placeholderTextColor="#9ca3af"
-                            value={notes}
-                            onChangeText={setNotes}
-                        />
+
+                        <ScrollView contentContainerStyle={styles.formGrid}>
+                            {FORM_FIELDS.map((field) => (
+                                <View
+                                    key={field.key}
+                                    style={[styles.formField, field.key === "notes" && styles.formFieldFull]}
+                                >
+                                    <Text style={globalStyles.label}>{field.label}</Text>
+                                    <TextInput
+                                        style={globalStyles.input}
+                                        placeholder={field.placeholder}
+                                        placeholderTextColor={colors.textMuted}
+                                        value={form[field.key]}
+                                        autoCapitalize={"email" in field ? "none" : "sentences"}
+                                        keyboardType={
+                                            "email" in field ? "email-address" : "phone" in field ? "phone-pad" : "default"
+                                        }
+                                        onChangeText={(text) =>
+                                            setForm((current) => ({ ...current, [field.key]: text }))
+                                        }
+                                    />
+                                </View>
+                            ))}
+                        </ScrollView>
+
+                        <ErrorBanner message={formError} />
 
                         <View style={styles.modalActions}>
-                            <Pressable style={globalStyles.buttonDanger} onPress={() => setShowModal(false)}>
-                                <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                            </Pressable>
-
-                            <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveDriver}>
-                                <Text style={globalStyles.buttonPrimaryText}>
-                                    {editingDriver ? "Save Changes" : "Create"}
-                                </Text>
-                            </Pressable>
+                            <Button
+                                label="Cancel"
+                                variant="secondary"
+                                onPress={() => setShowModal(false)}
+                                disabled={isSaving}
+                            />
+                            <Button
+                                label={editingDriver ? "Save Changes" : "Add Driver"}
+                                onPress={handleSaveDriver}
+                                loading={isSaving}
+                            />
                         </View>
                     </View>
                 </View>
             </Modal>
 
-            {/* Delete Driver Warning Modal */}
+            {/* Delete confirmation */}
             <Modal
                 visible={!!driverToDelete}
                 transparent
@@ -272,58 +322,119 @@ export default function DriversPage() {
             >
                 <View style={globalStyles.modalOverlay}>
                     <View style={globalStyles.modalCard}>
-                        <Text style={globalStyles.modalTitle}>Delete Driver?</Text>
+                        <Text style={globalStyles.modalTitle}>Delete driver?</Text>
                         <Text style={globalStyles.text}>
-                            Are you sure you want to delete{" "}
-                            {driverToDelete?.name || driverToDelete?.experience || "this driver"}?
+                            {driverToDelete?.name || "This driver"} will be removed from your team.
                         </Text>
+
                         <View style={styles.modalActions}>
-                            <Pressable
-                                style={globalStyles.buttonPrimary}
+                            <Button
+                                label="Cancel"
+                                variant="secondary"
                                 onPress={() => setDriverToDelete(null)}
-                                disabled={isLoading}
-                            >
-                                <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                            </Pressable>
-                            <Pressable
-                                style={[globalStyles.buttonDanger, isLoading && globalStyles.buttonDisabled]}
+                                disabled={isSaving}
+                            />
+                            <Button
+                                label="Delete"
+                                variant="danger"
+                                loading={isSaving}
                                 onPress={() => {
-                                    if (driverToDelete) {
-                                        handleDeleteDriver(driverToDelete);
-                                    }
+                                    if (driverToDelete) handleDeleteDriver(driverToDelete);
                                 }}
-                                disabled={isLoading}
-                            >
-                                <Text style={globalStyles.smallButtonText}>Yes, Delete</Text>
-                            </Pressable>
+                            />
                         </View>
                     </View>
                 </View>
             </Modal>
-
-
-        </SafeAreaView>
+        </Screen>
     );
 }
 
-
 const styles = StyleSheet.create({
-    content: {
-        padding: 24,
-        gap: 16,
+    driverCard: {
+        backgroundColor: colors.card,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 18,
+        gap: 14,
     },
-    headerRow: {
+
+    driverTop: {
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
+        gap: 14,
     },
-  actionRow: { flexDirection: "row", gap: 10, marginTop: 14 },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 8,
-  },
 
+    driverTitle: {
+        flex: 1,
+        gap: 6,
+    },
+
+    driverName: {
+        color: colors.textPrimary,
+        fontSize: 18,
+        fontWeight: "800",
+    },
+
+    contactBlock: {
+        backgroundColor: colors.background,
+        borderRadius: 12,
+        padding: 12,
+        gap: 8,
+    },
+
+    contactLine: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+
+    contactText: {
+        color: colors.textSecondary,
+        fontSize: 14,
+        flexShrink: 1,
+    },
+
+    contactEmpty: {
+        color: colors.textMuted,
+        fontSize: 13,
+    },
+
+    notes: {
+        color: colors.textMuted,
+        fontSize: 14,
+    },
+
+    cardActions: {
+        flexDirection: "row",
+        gap: 8,
+    },
+
+    modalCard: {
+        maxHeight: "90%",
+    },
+
+    formGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 14,
+        paddingVertical: 4,
+    },
+
+    formField: {
+        flexGrow: 1,
+        flexBasis: 220,
+    },
+
+    formFieldFull: {
+        flexBasis: "100%",
+    },
+
+    modalActions: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        gap: 10,
+        marginTop: 4,
+    },
 });
-

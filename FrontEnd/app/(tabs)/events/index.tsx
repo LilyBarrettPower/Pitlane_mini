@@ -4,16 +4,26 @@ import {
     StyleSheet,
     Text,
     View,
-    ActivityIndicator,
     Modal,
     Pressable,
     ScrollView,
     TextInput,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { globalStyles } from "../../../constants/styles";
+import { colors } from "../../../constants/theme";
 import { apiFetch } from "../../../assets/api";
 import { useAuth } from "../../../context/AuthContext";
+import {
+    Badge,
+    Button,
+    EmptyState,
+    ErrorBanner,
+    LoadingState,
+    PageHeader,
+    Screen,
+    SectionLabel,
+} from "../../../components/ui/kit";
 
 type Track = {
     _id: string;
@@ -260,6 +270,16 @@ export default function EventsPage() {
                     })
                 }
             >
+                {/* Calendar-style date tile */}
+                <View style={[styles.dateTile, live && styles.dateTileLive]}>
+                    <Text style={[styles.dateTileMonth, live && styles.dateTileMonthLive]}>
+                        {new Date(event.startDate)
+                            .toLocaleDateString("en-NZ", { month: "short" })
+                            .toUpperCase()}
+                    </Text>
+                    <Text style={styles.dateTileDay}>{new Date(event.startDate).getDate()}</Text>
+                </View>
+
                 <View style={styles.eventInfo}>
                     <Text style={styles.eventName}>{event.name}</Text>
                     <Text style={globalStyles.subText}>
@@ -274,10 +294,13 @@ export default function EventsPage() {
                 </View>
 
                 {showTiming ? (
-                    <Text style={[styles.badge, live ? styles.badgeLive : styles.badgeUpcoming]}>
-                        {live ? "Live" : daysUntilLabel(event.startDate)}
-                    </Text>
-                ) : null}
+                    <Badge
+                        label={live ? "● Live" : daysUntilLabel(event.startDate)}
+                        tone={live ? "live" : "neutral"}
+                    />
+                ) : (
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                )}
 
                 {/* <View style={styles.actionRow}>
                     <Pressable style={globalStyles.smallButton}
@@ -301,32 +324,41 @@ export default function EventsPage() {
     }
 
     return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.headerRow}>
-                    <Text style={globalStyles.title}>Events</Text>
+        <Screen>
+                <PageHeader
+                    eyebrow="Calendar"
+                    title="Events"
+                    subtitle={
+                        events.length
+                            ? `${upcomingEvents.length} upcoming · ${pastEvents.length} past`
+                            : undefined
+                    }
+                    actions={<Button label="Add Event" icon="add" onPress={openCreateModal} />}
+                />
 
-                    <Pressable style={globalStyles.buttonPrimary} onPress={openCreateModal}>
-                        <Text style={globalStyles.buttonPrimaryText}>Add Event</Text>
-                    </Pressable>
-                </View>
+                {!showModal ? <ErrorBanner message={errorMessage} /> : null}
 
-                {errorMessage ? <Text style={globalStyles.errorText}>{errorMessage}</Text> : null}
-
-                {isLoading ? (
-                    <ActivityIndicator color="#ffffff" />
+                {isLoading && events.length === 0 ? (
+                    <LoadingState />
                 ) : events.length === 0 ? (
-                    <Text style={globalStyles.text}>No events yet</Text>
+                    <View style={globalStyles.card}>
+                        <EmptyState
+                            icon="calendar-outline"
+                            title="No events yet"
+                            text="Add a race weekend or test day to start logging runs."
+                            action={<Button label="Add Event" icon="add" onPress={openCreateModal} />}
+                        />
+                    </View>
                 ) : (
                     <>
-                        <Text style={styles.sectionHeading}>UPCOMING</Text>
+                        <SectionLabel>Upcoming</SectionLabel>
                         {upcomingEvents.length === 0 ? (
                             <Text style={globalStyles.subText}>No upcoming events</Text>
                         ) : (
                             upcomingEvents.map((event) => renderEventCard(event, true))
                         )}
 
-                        <Text style={[styles.sectionHeading, styles.sectionHeadingSpaced]}>PAST</Text>
+                        <SectionLabel spaced>Past</SectionLabel>
                         {pastEvents.length === 0 ? (
                             <Text style={globalStyles.subText}>No past events</Text>
                         ) : (
@@ -349,7 +381,6 @@ export default function EventsPage() {
                         )}
                     </>
                 )}
-            </ScrollView>
 
             <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
                 <ScrollView contentContainerStyle={styles.modalContent}>
@@ -358,11 +389,17 @@ export default function EventsPage() {
                         <View style={globalStyles.modalCard}>
 
                             <Text style={globalStyles.modalTitle}>
-                                Create Event
+                                Add Event
                             </Text>
 
                             <Text style={globalStyles.label}>Event Name</Text>
-                            <TextInput style={globalStyles.input} value={name} onChangeText={setName} />
+                            <TextInput
+                                style={globalStyles.input}
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="e.g. Hampton Downs Round 2"
+                                placeholderTextColor={colors.textMuted}
+                            />
 
                             <Text style={globalStyles.label}>Track</Text>
                             {tracks.length === 0 ? (
@@ -378,7 +415,14 @@ export default function EventsPage() {
                                             ]}
                                             onPress={() => setTrackId(track._id)}
                                         >
-                                            <Text style={globalStyles.text}>{track.name}</Text>
+                                            <Text
+                                                style={[
+                                                    styles.selectItemText,
+                                                    trackId === track._id && styles.selectItemTextActive,
+                                                ]}
+                                            >
+                                                {track.name}
+                                            </Text>
                                         </Pressable>
                                     ))}
                                 </View>
@@ -421,24 +465,26 @@ export default function EventsPage() {
                             />
 
                             <Text style={globalStyles.label}>Notes</Text>
-                            <TextInput style={globalStyles.input} value={notes} onChangeText={setNotes} />
+                            <TextInput
+                                style={globalStyles.input}
+                                value={notes}
+                                onChangeText={setNotes}
+                                placeholder="Optional notes"
+                                placeholderTextColor={colors.textMuted}
+                            />
+
+                            <ErrorBanner message={errorMessage} />
 
                             <View style={styles.modalActions}>
-                                <Pressable
-                                    style={globalStyles.buttonDanger}
+                                <Button
+                                    label="Cancel"
+                                    variant="secondary"
                                     onPress={() => {
                                         clearForm();
                                         setShowModal(false);
                                     }}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                                </Pressable>
-
-                                <Pressable style={globalStyles.buttonPrimary} onPress={handleCreateEvent}>
-                                    <Text style={globalStyles.buttonPrimaryText}>
-                                        Create Event
-                                    </Text>
-                                </Pressable>
+                                />
+                                <Button label="Create Event" onPress={handleCreateEvent} loading={isLoading} />
                             </View>
 
                         </View>
@@ -446,106 +492,104 @@ export default function EventsPage() {
                     </View>
                 </ScrollView>
             </Modal>
-        </SafeAreaView>
+        </Screen>
     );
 }
 
 
 const styles = StyleSheet.create({
-    content: {
-        padding: 24,
-        gap: 16,
-    },
-    headerRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    actionRow: {
-        flexDirection: "row",
-        gap: 8,
-        marginTop: 14,
-    },
     modalContent: {
-        gap: 10,
-        paddingBottom: 24,
+        flexGrow: 1,
     },
     modalActions: {
         flexDirection: "row",
+        justifyContent: "flex-end",
         gap: 10,
-        marginTop: 14,
+        marginTop: 8,
         flexWrap: "wrap",
     },
     selectList: {
+        flexDirection: "row",
+        flexWrap: "wrap",
         gap: 8,
     },
     selectItem: {
-        backgroundColor: "#111827",
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: "#374151",
+        borderColor: colors.borderDark,
         borderRadius: 10,
-        padding: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
     },
     selectItemActive: {
-        backgroundColor: "#1d4ed8",
-        borderColor: "#2563eb",
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
     },
-
-    sectionHeading: {
-        color: "#9ca3af",
-        fontSize: 12,
-        fontWeight: "800",
-        letterSpacing: 1.2,
-        marginBottom: -4,
+    selectItemText: {
+        color: colors.textSecondary,
+        fontWeight: "600",
     },
-
-    sectionHeadingSpaced: {
-        marginTop: 12,
+    selectItemTextActive: {
+        color: colors.textPrimary,
     },
 
     eventCard: {
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
-        gap: 12,
+        gap: 16,
+        paddingVertical: 16,
     },
 
     eventCardLive: {
-        borderColor: "#22c55e",
+        borderColor: colors.live,
     },
 
     pressed: {
-        opacity: 0.8,
+        opacity: 0.85,
+    },
+
+    dateTile: {
+        width: 54,
+        height: 58,
+        borderRadius: 12,
+        backgroundColor: colors.background,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+
+    dateTileLive: {
+        borderColor: colors.live,
+        backgroundColor: colors.liveSoft,
+    },
+
+    dateTileMonth: {
+        color: colors.primaryLight,
+        fontSize: 11,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+
+    dateTileMonthLive: {
+        color: colors.live,
+    },
+
+    dateTileDay: {
+        color: colors.textPrimary,
+        fontSize: 22,
+        fontWeight: "800",
     },
 
     eventInfo: {
-        flexShrink: 1,
+        flex: 1,
         gap: 4,
     },
 
     eventName: {
-        color: "#ffffff",
-        fontSize: 18,
-        fontWeight: "700",
-    },
-
-    badge: {
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        fontSize: 11,
-        fontWeight: "700",
-        overflow: "hidden",
-    },
-
-    badgeLive: {
-        backgroundColor: "#166534",
-        color: "#dcfce7",
-    },
-
-    badgeUpcoming: {
-        backgroundColor: "#374151",
-        color: "#e5e7eb",
+        color: colors.textPrimary,
+        fontSize: 17,
+        fontWeight: "800",
     },
 
     showAllButton: {
@@ -553,7 +597,7 @@ const styles = StyleSheet.create({
     },
 
     showAllText: {
-        color: "#2563eb",
+        color: colors.primaryLight,
         fontWeight: "700",
     },
 });

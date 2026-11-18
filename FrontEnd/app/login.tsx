@@ -1,26 +1,21 @@
-import {useState, useEffect} from "react";
-import {router} from "expo-router";
-import{
-    ActivityIndicator, 
-    Pressable, 
-    StyleSheet,
-    Text,
-    TextInput,
-    View
-} from "react-native";
+import { useState, useEffect } from "react";
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
 import { globalStyles } from "../constants/styles";
-import {SafeAreaView} from "react-native-safe-area-context";
-import {apiFetch} from "../assets/api";
+import { colors } from "../constants/theme";
+import { apiFetch } from "../assets/api";
 import { useAuth } from "../context/AuthContext";
+import AuthLayout from "../components/ui/AuthLayout";
+import { Button, ErrorBanner } from "../components/ui/kit";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [successMessage, setSuccessMessage] = useState("");
 
-    const {login, token, isLoading: authLoading} = useAuth();
+    const { login, token, isLoading: authLoading } = useAuth();
 
     useEffect(() => {
         if (!authLoading && token) {
@@ -38,79 +33,73 @@ export default function LoginPage() {
             const data = await apiFetch("/auth/login", {
                 method: "POST",
                 body: JSON.stringify({
-                    email, 
+                    email,
                     password,
                 }),
             });
 
+            // Logging in updates the token, which redirects to the dashboard
             await login(data);
-
-            // View which user is logged in, for dev purposes
-            setSuccessMessage(
-                `Logged in as ${data.user.email}, (${data.user.role})\nOrganisation: ${data.organisation.name}`
-            );
-
-
         } catch (error) {
-            const message = 
-                error instanceof Error ? error.message : "Login Failed";
-            setErrorMessage(message);    
+            setErrorMessage(error instanceof Error ? error.message : "Login failed");
         } finally {
             setIsLoading(false);
         }
     }
 
     return (
-        <SafeAreaView style = {globalStyles.container}>
-            <View style = {globalStyles.content}>
-                <Text style = {globalStyles.title}>Login</Text>
-                <Text style = {globalStyles.subTitle}>Sign in to Pitlane Mini</Text>
-                <View style = {globalStyles.form}>
-                    <View>
-                        <Text style = {globalStyles.label}>Email</Text>
-                        <TextInput
-                            value={email}
-                            onChangeText={setEmail}
-                            placeholder="you@example.com"
-                            placeholderTextColor="#9ca3af"
-                            autoCapitalize="none"
-                            keyboardType="email-address"
-                            style={globalStyles.input}
-                            />
-                    </View>
-                    <View>
-                        <Text style = {globalStyles.label}>Password</Text>
-                        <TextInput
-                            value={password}
-                            onChangeText={setPassword}
-                            placeholder="Enter your password"
-                            placeholderTextColor="#9ca3af"
-                            secureTextEntry
-                            style={globalStyles.input}
-                            />
-                    </View>
-                    {errorMessage ? (
-                        <Text style={globalStyles.errorText}>{errorMessage}</Text>
-                    ): null}
-                    
-                     {/* This is for development purposes, can remove later*/}
-                    {successMessage ? (
-                        <Text style={globalStyles.successText}>{successMessage}</Text>
-                    ) : null}
-
-                    <Pressable
-                        style={[globalStyles.buttonPrimary, isLoading && globalStyles.buttonDisabled]}
-                        onPress={handleLogin}
-                        disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#ffffff"/>
-                            ) : (
-                                <Text style={globalStyles.buttonPrimaryText}>Login</Text>
-                            )}
-                        </Pressable>
-                </View>
+        <AuthLayout
+            title="Welcome back"
+            subtitle="Log in to your team's Pitlane Mini account."
+            footer={
+                <Pressable onPress={() => router.replace("/register")} hitSlop={8}>
+                    <Text style={styles.footerText}>
+                        New team? <Text style={styles.footerLink}>Register your organisation</Text>
+                    </Text>
+                </Pressable>
+            }
+        >
+            <View>
+                <Text style={globalStyles.label}>Email</Text>
+                <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="you@example.com"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    style={globalStyles.input}
+                />
             </View>
-        </SafeAreaView>
+
+            <View>
+                <Text style={globalStyles.label}>Password</Text>
+                <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    style={globalStyles.input}
+                    onSubmitEditing={handleLogin}
+                />
+            </View>
+
+            <ErrorBanner message={errorMessage} />
+
+            <Button label="Log in" onPress={handleLogin} loading={isLoading} />
+        </AuthLayout>
     );
 }
+
+const styles = StyleSheet.create({
+    footerText: {
+        color: colors.textMuted,
+        fontSize: 14,
+    },
+
+    footerLink: {
+        color: colors.primaryLight,
+        fontWeight: "700",
+    },
+});

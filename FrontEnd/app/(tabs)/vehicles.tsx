@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
-import {
-    StyleSheet,
-    Text,
-    View,
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    ScrollView,
-    TextInput,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
 import { globalStyles } from "../../constants/styles";
+import { colors } from "../../constants/theme";
 import { apiFetch } from "../../assets/api";
 import { useAuth } from "../../context/AuthContext";
+import {
+    Button,
+    EmptyState,
+    ErrorBanner,
+    Grid,
+    GridItem,
+    LoadingState,
+    PageHeader,
+    Screen,
+} from "../../components/ui/kit";
 
-// What does this actually do? Create a template for the vehicle?
 type Vehicle = {
     _id: string;
     name?: string;
@@ -23,37 +25,55 @@ type Vehicle = {
     model?: string;
     year?: string;
     owner?: string;
-    odo?: string;
+    odo?: number;
     racingNumber?: string;
     chassisNumber?: string;
     notes?: string;
 };
 
+// Fields on the "Add Vehicle" form, in display order
+const FORM_FIELDS = [
+    { key: "name", label: "Name", placeholder: "e.g. Civic Type R" },
+    { key: "racingNumber", label: "Race number", placeholder: "e.g. 7" },
+    { key: "make", label: "Make", placeholder: "e.g. Honda" },
+    { key: "model", label: "Model", placeholder: "e.g. FK8" },
+    { key: "year", label: "Year", placeholder: "e.g. 2019", numeric: true },
+    { key: "odo", label: "Odometer (km)", placeholder: "e.g. 12000", numeric: true },
+    { key: "owner", label: "Owner", placeholder: "Owner name" },
+    { key: "chassisNumber", label: "Chassis number", placeholder: "Chassis / VIN" },
+    { key: "notes", label: "Notes", placeholder: "Optional notes" },
+] as const;
 
+type FormKey = (typeof FORM_FIELDS)[number]["key"];
+
+const EMPTY_FORM: Record<FormKey, string> = {
+    name: "",
+    racingNumber: "",
+    make: "",
+    model: "",
+    year: "",
+    odo: "",
+    owner: "",
+    chassisNumber: "",
+    notes: "",
+};
+
+function vehicleTitle(vehicle: Vehicle) {
+    return vehicle.name || `${vehicle.make || ""} ${vehicle.model || ""}`.trim() || "Unnamed vehicle";
+}
 
 export default function VehiclesPage() {
-
-    //  Make sure there is a valid token to access this page 
     const { token } = useAuth();
-    // Check there is a front end message for when token has expired...
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [formError, setFormError] = useState("");
 
-    // Create the use states for the vehicle so you are able to create it 
-    const [name, setName] = useState("");
-    const [make, setMake] = useState("");
-    const [model, setModel] = useState("");
-    const [year, setYear] = useState("");
-    const [owner, setOwner] = useState(""); // Here it would be good to see previous owners saved too 
-    const [odo, setOdo] = useState("");
-    const [racingNumber, setRacingNumber] = useState("");
-    const [chassisNumber, setChassisNumber] = useState("");
-    const [notes, setNotes] = useState("");
+    const [form, setForm] = useState<Record<FormKey, string>>(EMPTY_FORM);
 
-    //  Get all vehicles associated with this organisation from the back end 
     async function fetchVehicles() {
         try {
             setIsLoading(true);
@@ -74,212 +94,290 @@ export default function VehiclesPage() {
         }
     }
 
-    //  Make sure there is a valid token before fetching the vehicles 
     useEffect(() => {
         if (token) fetchVehicles();
     }, [token]);
 
-    async function handleSaveVehicle() {
-        try {
-            setIsLoading(true);
-            setErrorMessage("");
+    function openCreateModal() {
+        setForm(EMPTY_FORM);
+        setFormError("");
+        setShowCreateModal(true);
+    }
 
-            const payload = {
-                name,
-                make,
-                model,
-                year: year ? Number(year) : undefined, // Convert to number on create
-                owner,
-                odo: odo ? Number(odo) : undefined, // convert to number on create
-                racingNumber,
-                chassisNumber,
-                notes,
-            }
+    async function handleSaveVehicle() {
+        if (!form.name.trim() || !form.racingNumber.trim()) {
+            setFormError("Name and race number are required");
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            setFormError("");
+
             await apiFetch("/vehicles", {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({
+                    ...form,
+                    year: form.year ? Number(form.year) : undefined,
+                    odo: form.odo ? Number(form.odo) : undefined,
+                }),
             });
 
-            setName("");
-            setMake("");
-            setModel("");
-            setYear("");
-            setOwner("");
-            setOdo("");
-            setRacingNumber("");
-            setChassisNumber("");
-            setNotes("");
             setShowCreateModal(false);
-
-            // Re fetch vehicles after creation to update
+            setForm(EMPTY_FORM);
             await fetchVehicles();
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Failed to create vehicle. Please try again");
+            setFormError(error instanceof Error ? error.message : "Failed to create vehicle. Please try again");
         } finally {
-            setIsLoading(false)
+            setIsSaving(false);
         }
     }
 
     return (
-        <SafeAreaView style={globalStyles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.headerRow}>
-                    <Text style={globalStyles.title}>Vehicles</Text>
+        <Screen>
+            <PageHeader
+                eyebrow="Garage"
+                title="Vehicles"
+                subtitle={
+                    vehicles.length
+                        ? `${vehicles.length} ${vehicles.length === 1 ? "vehicle" : "vehicles"}`
+                        : undefined
+                }
+                actions={<Button label="Add Vehicle" icon="add" onPress={openCreateModal} />}
+            />
 
-                    <Pressable style={globalStyles.buttonPrimary}
-                        onPress={() => {
-                            setName("");
-                            setMake("");
-                            setModel("");
-                            setYear("");
-                            setOwner("");
-                            setOdo("");
-                            setRacingNumber("");
-                            setChassisNumber("");
-                            setNotes("");
-                            setShowCreateModal(true);
-                        }}
-                    >
-                        <Text style={globalStyles.buttonPrimaryText}>Add Vehicle</Text>
-                    </Pressable>
+            <ErrorBanner message={errorMessage} />
+
+            {isLoading && vehicles.length === 0 ? (
+                <LoadingState />
+            ) : vehicles.length === 0 ? (
+                <View style={globalStyles.card}>
+                    <EmptyState
+                        icon="car-sport-outline"
+                        title="No vehicles yet"
+                        text="Add your first car to start tracking runs, tyres and setups."
+                        action={<Button label="Add Vehicle" icon="add" onPress={openCreateModal} />}
+                    />
                 </View>
+            ) : (
+                <Grid>
+                    {vehicles.map((vehicle) => (
+                        <GridItem key={vehicle._id} minWidth={320}>
+                            <Pressable
+                                style={({ pressed }) => [styles.vehicleCard, pressed && styles.pressed]}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: "/vehicles/[id]",
+                                        params: { id: vehicle._id },
+                                    })
+                                }
+                            >
+                                <View style={styles.vehicleTop}>
+                                    <View style={styles.numberTile}>
+                                        <Text style={styles.numberHash}>#</Text>
+                                        <Text style={styles.numberText}>{vehicle.racingNumber || "–"}</Text>
+                                    </View>
 
-                {errorMessage ? <Text style={globalStyles.errorText}>{errorMessage}</Text> : null}
+                                    <View style={styles.vehicleTitleBlock}>
+                                        <Text style={styles.vehicleName} numberOfLines={1}>
+                                            {vehicleTitle(vehicle)}
+                                        </Text>
+                                        <Text style={styles.vehicleMeta} numberOfLines={1}>
+                                            {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" · ") ||
+                                                "No make / model"}
+                                        </Text>
+                                    </View>
 
-                {isLoading ? (
-                    <ActivityIndicator color="#ffffff" />
-                ) : vehicles.length === 0 ? (
-                    <Text style={globalStyles.text}>No Vehicles Yet</Text>
-                ) : (
-                    vehicles.map((vehicle) => (
-                        <Pressable
-                            key={vehicle._id}
-                            style={globalStyles.card}
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/vehicles/[id]",
-                                    params: { id: vehicle._id },
-                                })
-                            }
-                        >
-                            <Text style={globalStyles.cardTitle}>
-                                {vehicle.racingNumber ? `#${vehicle.racingNumber} ` : ""}
-                                {vehicle.name || `${vehicle.make || ""} ${vehicle.model || ""}`}
-                            </Text>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                                </View>
 
-                            <Text style={globalStyles.cardText}>Make: {vehicle.make || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Model: {vehicle.model || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Year: {vehicle.year || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Owner: {vehicle.owner || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Odo: {vehicle.odo || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Chassis: {vehicle.chassisNumber || "-"}</Text>
-                            <Text style={globalStyles.cardText}>Notes: {vehicle.notes || "-"}</Text>
+                                <View style={styles.statsRow}>
+                                    <View style={styles.stat}>
+                                        <Text style={styles.statLabel}>ODO</Text>
+                                        <Text style={styles.statValue}>
+                                            {vehicle.odo != null
+                                                ? `${Math.round(Number(vehicle.odo)).toLocaleString("en-NZ")} km`
+                                                : "—"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.stat}>
+                                        <Text style={styles.statLabel}>CHASSIS</Text>
+                                        <Text style={styles.statValue} numberOfLines={1}>
+                                            {vehicle.chassisNumber || "—"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.stat}>
+                                        <Text style={styles.statLabel}>OWNER</Text>
+                                        <Text style={styles.statValue} numberOfLines={1}>
+                                            {vehicle.owner || "—"}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </Pressable>
+                        </GridItem>
+                    ))}
+                </Grid>
+            )}
 
-                            <View style={styles.linkGrid}>
-                                {[
-                                    "Events > Runs > Setups > Tyre Runs",
-                                    "Drivers",
-                                    "Setups",
-                                    "Tyres",
-                                    "Checklist Instances",
-                                ].map((label) => (
-                                    <Pressable key={label} style={styles.dummyButton}>
-                                        <Text style={styles.dummyButtonText}>{label}</Text>
-                                    </Pressable>
-                                ))}
-                            </View>
-                        </Pressable>
-                    ))
-                )}
-            </ScrollView>
+            <Modal
+                visible={showCreateModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowCreateModal(false)}
+            >
+                <View style={globalStyles.modalOverlay}>
+                    <View style={[globalStyles.modalCard, styles.modalCard]}>
+                        <Text style={globalStyles.modalTitle}>Add Vehicle</Text>
 
-            <Modal visible={showCreateModal} transparent animationType="fade">
-                <ScrollView>
-                    <View style={globalStyles.modalOverlay}>
+                        <ScrollView contentContainerStyle={styles.formGrid}>
+                            {FORM_FIELDS.map((field) => (
+                                <View
+                                    key={field.key}
+                                    style={[styles.formField, field.key === "notes" && styles.formFieldFull]}
+                                >
+                                    <Text style={globalStyles.label}>{field.label}</Text>
+                                    <TextInput
+                                        style={globalStyles.input}
+                                        placeholder={field.placeholder}
+                                        placeholderTextColor={colors.textMuted}
+                                        value={form[field.key]}
+                                        keyboardType={"numeric" in field ? "numeric" : "default"}
+                                        onChangeText={(text) =>
+                                            setForm((current) => ({ ...current, [field.key]: text }))
+                                        }
+                                    />
+                                </View>
+                            ))}
+                        </ScrollView>
 
-                        <View style={globalStyles.modalCard}>
-                            <Text style={globalStyles.modalTitle}>
-                                Create Vehicle
-                            </Text>
-                            <Text style={globalStyles.label}>Name</Text>
-                            <TextInput style={globalStyles.input} placeholder="Name" placeholderTextColor="9ca3af" value={name} onChangeText={setName} />
-                            <Text style={globalStyles.label}>Make</Text>
-                            <TextInput style={globalStyles.input} placeholder="Make" placeholderTextColor="9ca3af" value={make} onChangeText={setMake} />
-                            <Text style={globalStyles.label}>Model</Text>
-                            <TextInput style={globalStyles.input} placeholder="Model" placeholderTextColor="9ca3af" value={model} onChangeText={setModel} />
-                            <Text style={globalStyles.label}>Year</Text>
-                            <TextInput style={globalStyles.input} placeholder="Year" placeholderTextColor="9ca3af" value={year} onChangeText={setYear} />
-                            <Text style={globalStyles.label}>Owner</Text>
-                            <TextInput style={globalStyles.input} placeholder="Owner" placeholderTextColor="9ca3af" value={owner} onChangeText={setOwner} />
-                            <Text style={globalStyles.label}>Odometer</Text>
-                            <TextInput style={globalStyles.input} placeholder="ODO" placeholderTextColor="9ca3af" value={odo} onChangeText={setOdo} />
-                            <Text style={globalStyles.label}>Race Number</Text>
-                            <TextInput style={globalStyles.input} placeholder="Race Number" placeholderTextColor="9ca3af" value={racingNumber} onChangeText={setRacingNumber} />
-                            <Text style={globalStyles.label}>Chassis Number</Text>
-                            <TextInput style={globalStyles.input} placeholder="Chassis Number" placeholderTextColor="9ca3af" value={chassisNumber} onChangeText={setChassisNumber} />
-                            <Text style={globalStyles.label}>Notes</Text>
-                            <TextInput style={globalStyles.input} placeholder="Notes" placeholderTextColor="9ca3af" value={notes} onChangeText={setNotes} />
+                        <ErrorBanner message={formError} />
 
-                            <View style={styles.modalActions}>
-                                <Pressable style={globalStyles.buttonDanger} onPress={() => setShowCreateModal(false)}>
-                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                                </Pressable>
-
-                                <Pressable style={globalStyles.buttonPrimary} onPress={handleSaveVehicle}>
-                                    <Text style={globalStyles.buttonPrimaryText}>
-                                        Create Vehicle
-                                    </Text>
-                                </Pressable>
-                            </View>
-
+                        <View style={styles.modalActions}>
+                            <Button
+                                label="Cancel"
+                                variant="secondary"
+                                onPress={() => setShowCreateModal(false)}
+                                disabled={isSaving}
+                            />
+                            <Button label="Create Vehicle" onPress={handleSaveVehicle} loading={isSaving} />
                         </View>
-
-
                     </View>
-                </ScrollView>
+                </View>
             </Modal>
-        </SafeAreaView>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    content: {
-        padding: 24,
+    pressed: {
+        opacity: 0.85,
+    },
+
+    vehicleCard: {
+        backgroundColor: colors.card,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.borderDark,
+        padding: 18,
         gap: 16,
     },
-    headerRow: {
+
+    vehicleTop: {
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
+        gap: 14,
     },
-    actionRow: {
+
+    numberTile: {
+        width: 56,
+        height: 56,
+        borderRadius: 14,
+        backgroundColor: colors.primarySoft,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+
+    numberHash: {
+        color: colors.primaryLight,
+        fontSize: 14,
+        fontWeight: "700",
+        marginTop: 2,
+    },
+
+    numberText: {
+        color: colors.textPrimary,
+        fontSize: 22,
+        fontWeight: "800",
+    },
+
+    vehicleTitleBlock: {
+        flex: 1,
+        gap: 3,
+    },
+
+    vehicleName: {
+        color: colors.textPrimary,
+        fontSize: 18,
+        fontWeight: "800",
+    },
+
+    vehicleMeta: {
+        color: colors.textMuted,
+        fontSize: 14,
+    },
+
+    statsRow: {
         flexDirection: "row",
         gap: 10,
-        marginTop: 14,
+        backgroundColor: colors.background,
+        borderRadius: 12,
+        padding: 12,
     },
-    linkGrid: {
+
+    stat: {
+        flex: 1,
+        gap: 3,
+    },
+
+    statLabel: {
+        color: colors.textMuted,
+        fontSize: 10,
+        fontWeight: "800",
+        letterSpacing: 1,
+    },
+
+    statValue: {
+        color: colors.textPrimary,
+        fontSize: 14,
+        fontWeight: "700",
+    },
+
+    modalCard: {
+        maxHeight: "90%",
+    },
+
+    formGrid: {
         flexDirection: "row",
         flexWrap: "wrap",
-        gap: 8,
-        marginTop: 14,
+        gap: 14,
+        paddingVertical: 4,
     },
-    dummyButton: {
-        backgroundColor: "#111827",
-        borderColor: "#374151",
-        borderWidth: 1,
-        paddingVertical: 9,
-        paddingHorizontal: 12,
-        borderRadius: 8,
+
+    formField: {
+        flexGrow: 1,
+        flexBasis: 220,
     },
-    dummyButtonText: {
-        color: "#d1d5db",
-        fontWeight: "600",
+
+    formFieldFull: {
+        flexBasis: "100%",
     },
+
     modalActions: {
         flexDirection: "row",
         justifyContent: "flex-end",
-        gap: 12,
-        marginTop: 8,
+        gap: 10,
+        marginTop: 4,
     },
 });

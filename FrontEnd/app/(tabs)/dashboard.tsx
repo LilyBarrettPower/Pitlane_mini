@@ -556,9 +556,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 32,
     gap: 20,
-    maxWidth: 1180,
     width: "100%",
-    alignSelf: "center",
   },
 
   contentNarrow: {
