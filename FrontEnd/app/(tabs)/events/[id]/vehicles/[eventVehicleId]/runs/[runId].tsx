@@ -79,6 +79,11 @@ type TyrePressureCheck = {
     notes?: string;
 };
 
+type SetUpOption = {
+    _id: string;
+    version: string;
+};
+
 type TyreNote = {
     _id: string;
     tyreId: string;
@@ -161,6 +166,13 @@ export default function RunDetailPage() {
     // First tap on "Delete" arms this; second tap confirms.
     const [noteToDeleteId, setNoteToDeleteId] = useState<string | null>(null);
     const [isDeletingTyreNote, setIsDeletingTyreNote] = useState(false);
+
+    // The setup this run used (one per run) and the car's setups to choose from
+    const [runSetUp, setRunSetUp] = useState<SetUpOption | null>(null);
+    const [vehicleSetUps, setVehicleSetUps] = useState<SetUpOption[]>([]);
+    const [showSetUpModal, setShowSetUpModal] = useState(false);
+    const [selectedSetUpId, setSelectedSetUpId] = useState("");
+    const [isSavingSetUp, setIsSavingSetUp] = useState(false);
 
     const [eventVehicle, setEventVehicle] = useState<EventVehicle | null>(null);
     const [availableTyres, setAvailableTyres] = useState<Tyre[]>([]);
@@ -276,6 +288,58 @@ export default function RunDetailPage() {
         setTyreNotes(data.tyreNotes || []);
     }
 
+    async function fetchRunSetUp() {
+        const data = await apiFetch(`/run-setups/setup/${runId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const setUp = data.assignments?.[0]?.setUpId;
+        setRunSetUp(setUp ? { _id: setUp._id, version: setUp.version } : null);
+    }
+
+    async function fetchVehicleSetUps(vehicleId: string) {
+        const data = await apiFetch(`/setups?vehicleId=${vehicleId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setVehicleSetUps(data.setups || []);
+    }
+
+    function openSetUpModal() {
+        setSelectedSetUpId(runSetUp?._id || "");
+        setShowSetUpModal(true);
+    }
+
+    async function handleSaveRunSetUp() {
+        try {
+            setIsSavingSetUp(true);
+            setErrorMessage("");
+
+            await apiFetch(`/run-setups/run/${runId}`, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ setUpId: selectedSetUpId || null }),
+            });
+
+            setShowSetUpModal(false);
+            await fetchRunSetUp();
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Failed to save setup"
+            );
+        } finally {
+            setIsSavingSetUp(false);
+        }
+    }
+
     function openTyreNoteModal() {
         setNoteCorner("LF");
         setNoteCategory("General");
@@ -350,13 +414,17 @@ export default function RunDetailPage() {
                     fetchRun(),
                     fetchLapTimes(),
                     fetchTyreNotes(),
+                    fetchRunSetUp(),
                 ]);
 
                 const loadedEventVehicle =
                     await fetchEventVehicle();
 
                 if (loadedEventVehicle) {
-                    await fetchAvailableTyres(loadedEventVehicle);
+                    await Promise.all([
+                        fetchAvailableTyres(loadedEventVehicle),
+                        fetchVehicleSetUps(getVehicleId(loadedEventVehicle)),
+                    ]);
                 }
 
                 const loadedTyreRun = await fetchTyreRun();
@@ -1064,6 +1132,43 @@ export default function RunDetailPage() {
                 </View>
 
                 <View style={globalStyles.card}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={globalStyles.sectionTitle}>Setup</Text>
+                        <Pressable
+                            style={globalStyles.smallButton}
+                            onPress={openSetUpModal}
+                        >
+                            <Text style={globalStyles.smallButtonText}>
+                                {runSetUp ? "Change" : "Choose Setup"}
+                            </Text>
+                        </Pressable>
+                    </View>
+
+                    {runSetUp ? (
+                        <Pressable
+                            onPress={() =>
+                                eventVehicle &&
+                                router.push({
+                                    pathname: "/vehicles/[id]/setups/[setupId]",
+                                    params: {
+                                        id: getVehicleId(eventVehicle),
+                                        setupId: runSetUp._id,
+                                    },
+                                })
+                            }
+                        >
+                            <Text style={globalStyles.cardText}>
+                                Setup {runSetUp.version} ›
+                            </Text>
+                        </Pressable>
+                    ) : (
+                        <Text style={globalStyles.subText}>
+                            No setup recorded for this run.
+                        </Text>
+                    )}
+                </View>
+
+                <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Laps</Text>
                     {lapTimes.length === 0 ? (
                         <Text style={globalStyles.text}>No lap times yet</Text>
@@ -1504,6 +1609,76 @@ export default function RunDetailPage() {
                     <Text style={globalStyles.sectionTitle}>Notes</Text>
                     <Text style={globalStyles.cardText}>{run.notes || "-"}</Text>
                 </View>
+
+                <Modal
+                    visible={showSetUpModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowSetUpModal(false)}
+                >
+                    <View style={globalStyles.modalOverlay}>
+                        <View style={globalStyles.modalCard}>
+                            <Text style={globalStyles.modalTitle}>Setup Used</Text>
+
+                            {vehicleSetUps.length === 0 ? (
+                                <Text style={globalStyles.subText}>
+                                    This vehicle has no setups yet. Create one on the vehicle page.
+                                </Text>
+                            ) : (
+                                <View style={styles.setUpOptionGrid}>
+                                    {[{ _id: "", version: "None" }, ...vehicleSetUps].map((setUp) => {
+                                        const isSelected = selectedSetUpId === setUp._id;
+
+                                        return (
+                                            <Pressable
+                                                key={setUp._id || "none"}
+                                                style={[
+                                                    styles.setUpOption,
+                                                    isSelected && styles.lapTypeButtonSelected,
+                                                ]}
+                                                onPress={() => setSelectedSetUpId(setUp._id)}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.lapTypeButtonText,
+                                                        isSelected && styles.lapTypeButtonTextSelected,
+                                                    ]}
+                                                >
+                                                    {setUp._id ? `Setup ${setUp.version}` : "None"}
+                                                </Text>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+                            )}
+
+                            <View style={styles.actionRow}>
+                                <Pressable
+                                    style={globalStyles.buttonDanger}
+                                    onPress={() => setShowSetUpModal(false)}
+                                    disabled={isSavingSetUp}
+                                >
+                                    <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={[
+                                        globalStyles.buttonPrimary,
+                                        isSavingSetUp && globalStyles.buttonDisabled,
+                                    ]}
+                                    onPress={handleSaveRunSetUp}
+                                    disabled={isSavingSetUp}
+                                >
+                                    {isSavingSetUp ? (
+                                        <ActivityIndicator color="#ffffff" />
+                                    ) : (
+                                        <Text style={globalStyles.buttonPrimaryText}>Save Setup</Text>
+                                    )}
+                                </Pressable>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
 
                 <Modal
                     visible={showFuelEndModal}
@@ -2499,6 +2674,23 @@ const styles = StyleSheet.create({
 
     lapTypeButtonTextSelected: {
         color: "#ffffff",
+    },
+
+    setUpOptionGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 12,
+    },
+
+    setUpOption: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#4b5563",
+        borderRadius: 10,
+        paddingVertical: 11,
+        paddingHorizontal: 14,
+        alignItems: "center",
     },
     tyreNoteCard: {
         backgroundColor: "#111827",

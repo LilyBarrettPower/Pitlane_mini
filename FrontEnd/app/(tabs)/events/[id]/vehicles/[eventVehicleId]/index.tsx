@@ -88,6 +88,17 @@ type PressureCheck = {
     notes?: string;
 };
 
+type SetUpOption = {
+    _id: string;
+    version: string;
+};
+
+// From GET /run-setups/event-vehicle/:eventVehicleId
+type SetUpUsedItem = {
+    setUp: SetUpOption;
+    runs: { _id: string; name?: string }[];
+};
+
 type EventTyreHistoryItem = {
     run: {
         _id: string;
@@ -146,6 +157,12 @@ export default function EventVehicleDetailPage() {
     const [isLoadingTyres, setIsLoadingTyres] = useState(false);
 
     const [tyreHistory, setTyreHistory] = useState<EventTyreHistoryItem[]>([]);
+
+    // Setups: the car's setups for the Create Run picker (optional, "" = none),
+    // and which setups were used at this event for the "Setup Used" card
+    const [vehicleSetUps, setVehicleSetUps] = useState<SetUpOption[]>([]);
+    const [selectedSetUpId, setSelectedSetUpId] = useState("");
+    const [setUpsUsed, setSetUpsUsed] = useState<SetUpUsedItem[]>([]);
 
     const [tyreSelectionMode, setTyreSelectionMode] = useState<"set" | "custom">("set");
     const [selectedLF, setSelectedLF] = useState("");
@@ -245,12 +262,53 @@ export default function EventVehicleDetailPage() {
         setTyreHistory(data.history || []);
     }
 
+    async function fetchSetUpsUsed() {
+        if (!eventVehicleId || !token) return;
+
+        const data = await apiFetch(`/run-setups/event-vehicle/${eventVehicleId}`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        setSetUpsUsed(data.setUps || []);
+    }
+
+    // Loads the car's setups and pre-selects the one used on its most recent run
+    async function loadSetUpOptions() {
+        const vehicleId = getVehicleId();
+        if (!vehicleId || !token) return;
+
+        const [setUpsData, summaryData] = await Promise.all([
+            apiFetch(`/setups?vehicleId=${vehicleId}`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+            }),
+            apiFetch(`/run-setups/vehicle/${vehicleId}/summary`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+            }),
+        ]);
+
+        const setUps: SetUpOption[] = setUpsData.setups || [];
+        setVehicleSetUps(setUps);
+
+        const lastUsedId = summaryData.lastUsedSetUpId
+            ? String(summaryData.lastUsedSetUpId)
+            : "";
+        setSelectedSetUpId(
+            setUps.some((setUp) => setUp._id === lastUsedId) ? lastUsedId : ""
+        );
+    }
+
     useEffect(() => {
         if (eventId && eventVehicleId && token) {
             fetchEventVehicle();
             fetchEvent();
             fetchRuns();
             fetchTyreHistory();
+            fetchSetUpsUsed();
         }
     }, [eventId, eventVehicleId, token]);
 
@@ -259,6 +317,7 @@ export default function EventVehicleDetailPage() {
             if (eventVehicleId && token) {
                 fetchRuns();
                 fetchTyreHistory();
+                fetchSetUpsUsed().catch(() => {});
             }
         }, [eventVehicleId, token])
     );
@@ -284,6 +343,7 @@ export default function EventVehicleDetailPage() {
         setSelectedRF("");
         setSelectedRR("");
         setAvailableTyres([]);
+        setSelectedSetUpId("");
     }
 
     function getTyresForCorner(
@@ -424,10 +484,22 @@ export default function EventVehicleDetailPage() {
                 }),
             });
 
+            // 3. Link the setup, if one was chosen (optional)
+            if (selectedSetUpId) {
+                await apiFetch(`/run-setups/run/${createdRun._id}`, {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ setUpId: selectedSetUpId }),
+                });
+            }
+
             clearRunForm();
             setShowRunModal(false);
 
-            await fetchRuns();
+            await Promise.all([fetchRuns(), fetchSetUpsUsed()]);
         } catch (error) {
             setErrorMessage(
                 error instanceof Error
@@ -546,7 +618,14 @@ export default function EventVehicleDetailPage() {
         setSelectedTyreSetKey("");
         setShowRunModal(true);
 
-        await fetchAvailableTyres();
+        await Promise.all([
+            fetchAvailableTyres(),
+            loadSetUpOptions().catch((error) =>
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Failed to load setups"
+                )
+            ),
+        ]);
     }
 
 
@@ -649,7 +728,36 @@ export default function EventVehicleDetailPage() {
                 </View>
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>Setup Used</Text>
-                    <Text style={globalStyles.text}>Coming later... </Text>
+
+                    {setUpsUsed.length === 0 ? (
+                        <Text style={globalStyles.text}>
+                            No setups recorded for runs at this event yet.
+                        </Text>
+                    ) : (
+                        setUpsUsed.map((item) => (
+                            <Pressable
+                                key={item.setUp._id}
+                                style={styles.listItemCard}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: "/vehicles/[id]/setups/[setupId]",
+                                        params: {
+                                            id: getVehicleId(),
+                                            setupId: item.setUp._id,
+                                        },
+                                    })
+                                }
+                            >
+                                <Text style={globalStyles.cardText}>
+                                    Setup {item.setUp.version}
+                                </Text>
+                                <Text style={globalStyles.subText}>
+                                    {item.runs.length} {item.runs.length === 1 ? "run" : "runs"}:{" "}
+                                    {item.runs.map((run) => run.name || "Unnamed Run").join(", ")}
+                                </Text>
+                            </Pressable>
+                        ))
+                    )}
                 </View>
                 <View style={globalStyles.card}>
                     <Text style={globalStyles.sectionTitle}>
@@ -941,6 +1049,34 @@ export default function EventVehicleDetailPage() {
                                     onChangeText={setFuelStart}
                                     keyboardType="numeric"
                                 />
+
+                                <Text style={globalStyles.label}>Setup (optional)</Text>
+                                {vehicleSetUps.length === 0 ? (
+                                    <Text style={[globalStyles.subText, styles.setUpHint]}>
+                                        No setups for this vehicle yet
+                                    </Text>
+                                ) : (
+                                    <View style={styles.setUpOptionGrid}>
+                                        {[{ _id: "", version: "None" }, ...vehicleSetUps].map((setUp) => {
+                                            const isSelected = selectedSetUpId === setUp._id;
+
+                                            return (
+                                                <Pressable
+                                                    key={setUp._id || "none"}
+                                                    style={[
+                                                        styles.setUpOption,
+                                                        isSelected && styles.tyreModeButtonSelected,
+                                                    ]}
+                                                    onPress={() => setSelectedSetUpId(setUp._id)}
+                                                >
+                                                    <Text style={styles.tyreModeText}>
+                                                        {setUp._id ? `Setup ${setUp.version}` : "None"}
+                                                    </Text>
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                )}
 
                                 <Text style={globalStyles.label}>Tyre Set</Text>
                                 <View style={styles.tyreModeRow}>
@@ -1409,6 +1545,27 @@ const styles = StyleSheet.create({
     tyreModeText: {
         color: "#ffffff",
         fontWeight: "700",
+    },
+
+    setUpOptionGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 12,
+    },
+
+    setUpOption: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        alignItems: "center",
+    },
+
+    setUpHint: {
+        marginBottom: 12,
     },
 
     customTyreSection: {

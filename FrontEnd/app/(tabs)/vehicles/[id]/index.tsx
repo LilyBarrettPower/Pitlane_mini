@@ -75,6 +75,8 @@ export default function VehicleDetailPage() {
   const [isAssigningDriver, setIsAssigningDriver] = useState(false);
 
   const [setups, setSetups] = useState<SetUp[]>([]);
+  // setUpId -> names of the events that setup was used at (newest first)
+  const [setUpEventNames, setSetUpEventNames] = useState<Record<string, string[]>>({});
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [editingSetup, setEditingSetup] = useState<SetUp | null>(null);
 
@@ -148,14 +150,30 @@ export default function VehicleDetailPage() {
   }
 
   async function fetchSetups() {
-    const data = await apiFetch(`/setups?vehicleId=${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const [data, summaryData] = await Promise.all([
+      apiFetch(`/setups?vehicleId=${id}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+      apiFetch(`/run-setups/vehicle/${id}/summary`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+    ]);
 
     setSetups(data.setups || []);
+
+    const namesBySetUpId: Record<string, string[]> = {};
+    for (const item of summaryData.summary || []) {
+      namesBySetUpId[String(item.setUpId)] = (item.events || []).map(
+        (event: { eventName: string }) => event.eventName
+      );
+    }
+    setSetUpEventNames(namesBySetUpId);
   }
 
 
@@ -371,7 +389,6 @@ export default function VehicleDetailPage() {
         fetchSetups();
         fetchVehicleDrivers();
         fetchDrivers();
-        fetchSetups();
       }
     }, [id, token])
   );
@@ -521,7 +538,9 @@ export default function VehicleDetailPage() {
                     Version: {setup.version}
                   </Text>
                   <Text style={globalStyles.subText}>
-                    Events used at: Coming later
+                    {setUpEventNames[setup._id]?.length
+                      ? `Used at: ${setUpEventNames[setup._id].join(", ")}`
+                      : "Not used yet"}
                   </Text>
                 </View>
               </Pressable>

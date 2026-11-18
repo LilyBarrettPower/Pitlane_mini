@@ -25,6 +25,43 @@ type SetUp = {
     notes?: string;
 };
 
+// One row per event, from GET /run-setups/setup/:setUpId/events
+type SetUpEventSummary = {
+    eventId: string;
+    eventName: string;
+    startDate?: string;
+    endDate?: string;
+    trackName?: string;
+    runCount: number;
+    laps: number;
+    bestLapS: number | null;
+};
+
+// e.g. 92.415 -> "1:32.415"
+function formatLapTime(seconds: number | null) {
+    if (seconds === null || !Number.isFinite(seconds)) return "-";
+
+    const mins = Math.floor(seconds / 60);
+    const secs = (seconds % 60).toFixed(3).padStart(6, "0");
+
+    return `${mins}:${secs}`;
+}
+
+// e.g. "12 Apr 2026" or "12 Apr 2026 – 13 Apr 2026"
+function formatEventDates(startDate?: string, endDate?: string) {
+    const format = (date: string) =>
+        new Date(date).toLocaleDateString("en-NZ", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+        });
+
+    if (!startDate) return "";
+    const start = format(startDate);
+    const end = endDate ? format(endDate) : start;
+    return start === end ? start : `${start} – ${end}`;
+}
+
 export default function SetupDetailPage() {
     const { id, setupId } = useLocalSearchParams<{ id: string; setupId: string }>();
     const { token } = useAuth();
@@ -36,6 +73,23 @@ export default function SetupDetailPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showSetupModal, setShowSetupModal] = useState(false);
     const [allSetups, setAllSetups] = useState<SetUp[]>([]);
+    const [setUpEvents, setSetUpEvents] = useState<SetUpEventSummary[]>([]);
+
+    async function fetchSetUpEvents() {
+        try {
+            const data = await apiFetch(`/run-setups/setup/${setupId}/events`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            setSetUpEvents(data.events || []);
+        } catch (error) {
+            // Not critical - the rest of the setup page still works without it
+            console.error("Failed to load setup events", error);
+        }
+    }
 
 
     async function fetchSetup() {
@@ -70,7 +124,10 @@ export default function SetupDetailPage() {
     }
 
     useEffect(() => {
-        if (setupId && token) fetchSetup();
+        if (setupId && token) {
+            fetchSetup();
+            fetchSetUpEvents();
+        }
         if (id && token) fetchAllSetupsForVehicle();
     }, [id, setupId, token]);
 
@@ -169,6 +226,51 @@ export default function SetupDetailPage() {
                     <Text style={globalStyles.cardText}>Notes: {setup.notes || "-"}</Text>
                 </View>
 
+                <View style={globalStyles.card}>
+                    <Text style={globalStyles.sectionTitle}>Events Used At</Text>
+
+                    {setUpEvents.length === 0 ? (
+                        <Text style={globalStyles.cardText}>
+                            Not used at any events yet.
+                        </Text>
+                    ) : (
+                        setUpEvents.map((item) => (
+                            <Pressable
+                                key={item.eventId}
+                                style={({ pressed }) => [
+                                    styles.eventCard,
+                                    pressed && styles.pressed,
+                                ]}
+                                onPress={() =>
+                                    router.push({
+                                        pathname: "/events/[id]" as any,
+                                        params: { id: item.eventId },
+                                    })
+                                }
+                            >
+                                <Text style={styles.eventName}>{item.eventName}</Text>
+
+                                <Text style={globalStyles.subText}>
+                                    {[
+                                        formatEventDates(item.startDate, item.endDate),
+                                        item.trackName,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(" · ")}
+                                </Text>
+
+                                <Text style={globalStyles.cardText}>
+                                    {item.runCount} {item.runCount === 1 ? "run" : "runs"}
+                                    {" · "}
+                                    {item.laps} laps
+                                    {" · "}
+                                    Best {formatLapTime(item.bestLapS)}
+                                </Text>
+                            </Pressable>
+                        ))
+                    )}
+                </View>
+
                 <Modal
                     visible={showDeleteModal}
                     transparent
@@ -198,7 +300,7 @@ export default function SetupDetailPage() {
                             </View>
                         </View>
                     </View>
-                </Modal>l
+                </Modal>
 
                 <SetupModal 
                     visible={showSetupModal}
@@ -226,5 +328,22 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: 10,
         marginTop: 14,
-    }
+    },
+    eventCard: {
+        backgroundColor: "#111827",
+        borderWidth: 1,
+        borderColor: "#374151",
+        borderRadius: 12,
+        padding: 14,
+        marginTop: 12,
+        gap: 6,
+    },
+    eventName: {
+        color: "#ffffff",
+        fontSize: 16,
+        fontWeight: "800",
+    },
+    pressed: {
+        opacity: 0.75,
+    },
 });
