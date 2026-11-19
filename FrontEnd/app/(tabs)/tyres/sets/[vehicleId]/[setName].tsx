@@ -244,7 +244,7 @@ export default function TyreSetDetailPage() {
     if (tyres.length === 0) {
         return (
             <Screen>
-                <PageHeader title={String(setName || "Tyre set")} onBack={() => router.back()} backLabel="Tyres" />
+                <PageHeader title={String(setName || "Tyre set")} onBack={() => router.navigate("/tyres" as any)} backLabel="Tyres" />
                 <ErrorBanner message={errorMessage || "Tyre set not found"} />
             </Screen>
         );
@@ -256,7 +256,7 @@ export default function TyreSetDetailPage() {
                     eyebrow="Tyre set"
                     title={String(setName)}
                     subtitle={[getVehicleName(), tyres[0]?.brand, tyres[0]?.spec].filter(Boolean).join(" · ")}
-                    onBack={() => router.back()}
+                    onBack={() => router.navigate("/tyres" as any)}
                     backLabel="Tyres"
                     actions={
                         <Button

@@ -186,7 +186,7 @@ export default function SetupDetailPage() {
             setShowDeleteModal(false);
 
             // The setup is gone, so go back to the vehicle
-            router.back();
+            router.navigate({ pathname: "/vehicles/[id]", params: { id: String(id) } });
         } catch (error) {
             setErrorMessage(
                 error instanceof Error ? error.message : "Failed to remove setup"
@@ -207,7 +207,7 @@ export default function SetupDetailPage() {
     if (!setup) {
         return (
             <Screen>
-                <PageHeader title="Setup" onBack={() => router.back()} />
+                <PageHeader title="Setup" onBack={() => router.navigate({ pathname: "/vehicles/[id]", params: { id: String(id) } })} />
                 <ErrorBanner message={errorMessage || "Setup not found"} />
             </Screen>
         );
@@ -372,7 +372,7 @@ export default function SetupDetailPage() {
             <PageHeader
                 eyebrow="Setup sheet"
                 title={`Setup ${setup.version}`}
-                onBack={() => router.back()}
+                onBack={() => router.navigate({ pathname: "/vehicles/[id]", params: { id: String(id) } })}
                 backLabel="Vehicle"
                 actions={
                     <>

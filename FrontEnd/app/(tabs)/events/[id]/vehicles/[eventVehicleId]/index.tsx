@@ -652,7 +652,7 @@ export default function EventVehicleDetailPage() {
     if (!eventVehicle) {
         return (
             <Screen>
-                <PageHeader title="Event vehicle" onBack={() => router.back()} backLabel="Event" />
+                <PageHeader title="Event vehicle" onBack={() => router.navigate({ pathname: "/events/[id]" as any, params: { id: String(eventId) } })} backLabel="Event" />
                 <ErrorBanner message={errorMessage || "Event vehicle not found"} />
             </Screen>
         );
@@ -807,7 +807,7 @@ export default function EventVehicleDetailPage() {
                     eyebrow={event?.name || "Event"}
                     title={carName}
                     subtitle="Runs, tyres and setups at this event"
-                    onBack={() => router.back()}
+                    onBack={() => router.navigate({ pathname: "/events/[id]" as any, params: { id: String(eventId) } })}
                     backLabel="Event"
                     actions={<Button label="New Run" icon="add" onPress={openCreateRunModal} />}
                 />

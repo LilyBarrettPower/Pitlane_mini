@@ -23,7 +23,8 @@ async function adjustVehicleOdo(eventVehicleId, organisationId, km) {
 
     await Vehicle.updateOne(
         { _id: eventVehicle.vehicleId, organisationId },
-        [{ $set: { odo: { $add: [{ $ifNull: ["$odo", 0] }, km] } } }]
+        // Rounded to the metre so floating point errors don't pile up
+        [{ $set: { odo: { $round: [{ $add: [{ $ifNull: ["$odo", 0] }, km] }, 3] } } }]
     );
 }
 

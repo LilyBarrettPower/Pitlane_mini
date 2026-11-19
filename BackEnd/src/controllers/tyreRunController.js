@@ -21,7 +21,10 @@ async function updateTyreMileageForRun(
 
         const previousDistance = tyreRun.distanceKm?.[corner] ?? 0;
 
-        const mileageDifference = runDistanceKm - previousDistance;
+        // Rounded to the metre: track length x laps creates tiny floating
+        // point errors (e.g. 168.39999999) that would otherwise pile up
+        const mileageDifference =
+            Math.round((runDistanceKm - previousDistance) * 1000) / 1000;
 
         if (mileageDifference === 0) {
             continue;
@@ -36,10 +39,17 @@ async function updateTyreMileageForRun(
             [
                 {
                     $set: {
+                        // Rounding the new total also cleans up any long
+                        // decimals already saved on the tyre
                         kmTotal: {
-                            $add: [
-                                {$ifNull: ["$kmTotal", 0]},
-                                mileageDifference,
+                            $round: [
+                                {
+                                    $add: [
+                                        {$ifNull: ["$kmTotal", 0]},
+                                        mileageDifference,
+                                    ],
+                                },
+                                3,
                             ],
                         },
                     },

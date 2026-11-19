@@ -527,7 +527,7 @@ export default function VehicleDetailPage() {
   if (!vehicle) {
     return (
       <Screen>
-        <PageHeader title="Vehicle" onBack={() => router.back()} backLabel="Vehicles" />
+        <PageHeader title="Vehicle" onBack={() => router.navigate("/vehicles" as any)} backLabel="Vehicles" />
         <ErrorBanner message={errorMessage || "No vehicle found"} />
       </Screen>
     );
@@ -692,7 +692,7 @@ export default function VehicleDetailPage() {
         eyebrow={vehicle.racingNumber ? `Car #${vehicle.racingNumber}` : "Vehicle"}
         title={vehicle.name}
         subtitle={[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" · ") || undefined}
-        onBack={() => router.back()}
+        onBack={() => router.navigate("/vehicles" as any)}
         backLabel="Vehicles"
         actions={
           <>

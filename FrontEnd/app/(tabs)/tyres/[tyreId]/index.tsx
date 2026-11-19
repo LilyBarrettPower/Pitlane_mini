@@ -208,7 +208,7 @@ export default function TyreDetailPage() {
         setFiaSerial(selectedTyre.fiaSerial || "");
         setCondition(selectedTyre.condition || "");
         setHeatCycles(String(selectedTyre.heatCycles ?? 0));
-        setKmTotal(String(selectedTyre.kmTotal ?? 0));
+        setKmTotal(String(Math.round((selectedTyre.kmTotal ?? 0) * 10) / 10));
     }
 
     function openEditModal() {
@@ -297,7 +297,8 @@ export default function TyreDetailPage() {
             });
 
             setShowDeleteModal(false);
-            router.back();
+            // The tyre is gone - return to the tyres list
+            router.navigate("/tyres" as any);
         } catch (error) {
             setErrorMessage(
                 error instanceof Error ? error.message : "Failed to archive tyre"
@@ -357,7 +358,7 @@ export default function TyreDetailPage() {
     if (!tyre) {
         return (
             <Screen>
-                <PageHeader title="Tyre" onBack={() => router.back()} backLabel="Tyres" />
+                <PageHeader title="Tyre" onBack={() => router.navigate("/tyres" as any)} backLabel="Tyres" />
                 <ErrorBanner message={errorMessage || "Tyre not found"} />
             </Screen>
         );
@@ -480,7 +481,7 @@ export default function TyreDetailPage() {
                 eyebrow={tyre.currentSet ? `Set ${tyre.currentSet}` : "Tyre"}
                 title={`${tyre.position || "Tyre"}${tyre.currentSet ? ` · ${tyre.currentSet}` : ""}`}
                 subtitle={[tyre.brand, tyre.spec, getVehicleName(tyre)].filter(Boolean).join(" · ")}
-                onBack={() => router.back()}
+                onBack={() => router.navigate("/tyres" as any)}
                 backLabel="Tyres"
                 actions={
                     <>

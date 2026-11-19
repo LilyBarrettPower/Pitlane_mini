@@ -359,7 +359,7 @@ export default function EventDetailPage() {
     if (!event) {
         return (
             <Screen>
-                <PageHeader title="Event" onBack={() => router.back()} backLabel="Events" />
+                <PageHeader title="Event" onBack={() => router.navigate("/events" as any)} backLabel="Events" />
                 <ErrorBanner message={errorMessage || "Event not found"} />
             </Screen>
         );
@@ -481,7 +481,7 @@ export default function EventDetailPage() {
                 ]
                     .filter(Boolean)
                     .join(" · ")}
-                onBack={() => router.back()}
+                onBack={() => router.navigate("/events" as any)}
                 backLabel="Events"
                 actions={
                     <>

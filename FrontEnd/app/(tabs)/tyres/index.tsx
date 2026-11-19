@@ -656,8 +656,7 @@ export default function TyresPage() {
                                                                         styles.tyreDetailValue
                                                                     }
                                                                 >
-                                                                    {tyre.kmTotal ??
-                                                                        0}{" "}
+                                                                    {(tyre.kmTotal ?? 0).toFixed(1)}{" "}
                                                                     km
                                                                 </Text>
                                                             </View>

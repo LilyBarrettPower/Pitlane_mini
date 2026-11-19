@@ -136,7 +136,7 @@ type TyreSetOption = {
 
 
 export default function RunDetailPage() {
-    const { runId, eventVehicleId } = useLocalSearchParams<{
+    const { id: eventId, runId, eventVehicleId } = useLocalSearchParams<{
         id: string;
         eventVehicleId: string;
         runId: string;
@@ -1098,7 +1098,7 @@ export default function RunDetailPage() {
     if (!run) {
         return (
             <Screen>
-                <PageHeader title="Run" onBack={() => router.back()} backLabel="Runs" />
+                <PageHeader title="Run" onBack={() => router.navigate(`/events/${eventId}/vehicles/${eventVehicleId}` as any)} backLabel="Runs" />
                 <ErrorBanner message={errorMessage || "Run not found"} />
             </Screen>
         );
@@ -1299,7 +1299,7 @@ export default function RunDetailPage() {
                         ? `Out ${formatTime(run.outTime)}${run.inTime ? ` · In ${formatTime(run.inTime)}` : ""}`
                         : undefined
                 }
-                onBack={() => router.back()}
+                onBack={() => router.navigate(`/events/${eventId}/vehicles/${eventVehicleId}` as any)}
                 backLabel="Runs"
                 actions={headerActions}
             />
