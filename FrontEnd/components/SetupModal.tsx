@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, StyleSheet } from "react-native";
+import { Modal, ScrollView, Text, TextInput, View, StyleSheet } from "react-native";
 import { apiFetch } from "../assets/api";
 import { useAuth } from "../context/AuthContext";
 import { globalStyles } from "../constants/styles";
+import { Button } from "./ui/kit";
 
 export type SetUp = {
     _id: string;
@@ -210,7 +211,8 @@ export default function SetupModal({
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={globalStyles.modalOverlay}>
-                <View style={styles.setupModalCard}>
+                {/* Same card as every other modal; only adds a max height so the long form scrolls */}
+                <View style={[globalStyles.modalCard, styles.setupModalCard]}>
                     <ScrollView 
                         keyboardShouldPersistTaps="handled"
                         contentContainerStyle={styles.setupModalContent}>
@@ -273,48 +275,33 @@ export default function SetupModal({
                     <Text style={globalStyles.label}>Notes</Text>
                     <TextInput style={globalStyles.input} value={notes} onChangeText={setNotes} />
 
-                    <View style={{ flexDirection: "row", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-                        <Pressable
-                            style={globalStyles.buttonDanger}
+                    <View style={styles.modalActions}>
+                        <Button
+                            label="Cancel"
+                            variant="secondary"
                             onPress={() => {
                                 clearForm();
                                 onClose();
                             }}
                             disabled={isSaving}
-                        >
-                            <Text style={globalStyles.buttonPrimaryText}>Cancel</Text>
-                        </Pressable>
+                        />
 
                         {isEditing ? (
                             <>
-                                <Pressable
-                                    style={[globalStyles.buttonPrimary, isSaving && globalStyles.buttonDisabled]}
-                                    onPress={() => handleSave(false)}
-                                    disabled={isSaving}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Save Changes</Text>
-                                </Pressable>
-
-                                <Pressable
-                                    style={[globalStyles.buttonSecondary, isSaving && globalStyles.buttonDisabled]}
+                                <Button
+                                    label="Save as New Version"
+                                    variant="secondary"
                                     onPress={() => handleSave(true)}
                                     disabled={isSaving}
-                                >
-                                    <Text style={globalStyles.buttonPrimaryText}>Save as New Version</Text>
-                                </Pressable>
+                                />
+                                <Button
+                                    label="Save Changes"
+                                    onPress={() => handleSave(false)}
+                                    loading={isSaving}
+                                />
                             </>
                         ) : (
-                            <Pressable
-                                style={[globalStyles.buttonPrimary, isSaving && globalStyles.buttonDisabled]}
-                                onPress={() => handleSave(false)}
-                                disabled={isSaving}
-                            >
-                                {isSaving ? (
-                                    <ActivityIndicator color="#ffffff" />
-                                ) : (
-                                    <Text style={globalStyles.buttonPrimaryText}>Create Setup</Text>
-                                )}
-                            </Pressable>
+                            <Button label="Create Setup" onPress={() => handleSave(false)} loading={isSaving} />
                         )}
                     </View>
                     </ScrollView>
@@ -326,12 +313,14 @@ export default function SetupModal({
 
 const styles = StyleSheet.create({
     setupModalCard: {
-        width: "100%",
-        maxWidth: 700,
         maxHeight: "90%",
-        backgroundColor: "#1f2937",
-        borderRadius: 16,
-        padding: 20,
+    },
+    modalActions: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        flexWrap: "wrap",
+        gap: 10,
+        marginTop: 14,
     },
     setupModalContent: {
         gap: 10,
