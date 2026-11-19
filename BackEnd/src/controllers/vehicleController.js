@@ -77,7 +77,15 @@ exports.updateVehicle = async (req, res) => {
             return res.status(404).json({message: "Vehicle not found"});
         }
 
-        const updateData = {...req.body};
+        // Custom setup fields are managed through their own endpoints below,
+        // and these shouldn't be changed through a vehicle edit
+        const {
+            setupFields,
+            organisationId: _organisationId,
+            isActive: _isActive,
+            ownerHistory: _ownerHistory,
+            ...updateData
+        } = req.body;
 
         if (
             req.body.owner &&
@@ -158,5 +166,127 @@ exports.unarchiveVehicle = async (req, res) => {
     } catch (err) {
         console.error("unarchive Vehicle error", err);
         res.status(500).json({ message: "Server error " });
+    }
+};
+
+
+// ----- Custom setup fields -----
+// Extra fields that every setup for this vehicle records.
+
+const SETUP_FIELD_KINDS = ["frontRear", "single", "corners"];
+
+function activeSetupFields(vehicle) {
+    return (vehicle.setupFields || []).filter((field) => field.isActive !== false);
+}
+
+async function findVehicleForSetupFields(req, res) {
+    const vehicle = await Vehicle.findOne({
+        _id: req.params.id,
+        organisationId: req.user.organisationId,
+        isActive: true,
+    });
+
+    if (!vehicle) {
+        res.status(404).json({ message: "Vehicle not found" });
+        return null;
+    }
+
+    return vehicle;
+}
+
+// Checks a field name: required, not too long, not already used on this vehicle
+function setupFieldLabelProblem(vehicle, label, ignoreFieldId) {
+    const trimmed = String(label || "").trim();
+
+    if (!trimmed) return "Field name is required";
+    if (trimmed.length > 60) return "Field name must be 60 characters or fewer";
+
+    const duplicate = activeSetupFields(vehicle).some(
+        (field) =>
+            String(field._id) !== String(ignoreFieldId) &&
+            field.label.toLowerCase() === trimmed.toLowerCase()
+    );
+
+    return duplicate ? "This vehicle already has a field with that name" : null;
+}
+
+// POST - add a custom setup field to a vehicle
+exports.addSetupField = async (req, res) => {
+    try {
+        const vehicle = await findVehicleForSetupFields(req, res);
+        if (!vehicle) return;
+
+        const { label, unit, kind } = req.body;
+
+        const problem = setupFieldLabelProblem(vehicle, label);
+        if (problem) return res.status(400).json({ message: problem });
+
+        if (kind && !SETUP_FIELD_KINDS.includes(kind)) {
+            return res.status(400).json({ message: "Field type must be front/rear, single or corners" });
+        }
+
+        vehicle.setupFields.push({
+            label: String(label).trim(),
+            unit: String(unit || "").trim().slice(0, 15),
+            kind: kind || "frontRear",
+        });
+        await vehicle.save();
+
+        const field = vehicle.setupFields[vehicle.setupFields.length - 1];
+        res.status(201).json({ field, setupFields: activeSetupFields(vehicle) });
+    } catch (err) {
+        console.error("addSetupField error", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// PATCH - rename a custom setup field or change its unit
+exports.updateSetupField = async (req, res) => {
+    try {
+        const vehicle = await findVehicleForSetupFields(req, res);
+        if (!vehicle) return;
+
+        const field = vehicle.setupFields.id(req.params.fieldId);
+        if (!field || field.isActive === false) {
+            return res.status(404).json({ message: "Field not found" });
+        }
+
+        if (req.body.label !== undefined) {
+            const problem = setupFieldLabelProblem(vehicle, req.body.label, field._id);
+            if (problem) return res.status(400).json({ message: problem });
+            field.label = String(req.body.label).trim();
+        }
+
+        if (req.body.unit !== undefined) {
+            field.unit = String(req.body.unit || "").trim().slice(0, 15);
+        }
+
+        await vehicle.save();
+        res.json({ field, setupFields: activeSetupFields(vehicle) });
+    } catch (err) {
+        console.error("updateSetupField error", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// DELETE - remove a custom setup field. It's hidden from every setup, but
+// values already entered are kept.
+exports.removeSetupField = async (req, res) => {
+    try {
+        const vehicle = await findVehicleForSetupFields(req, res);
+        if (!vehicle) return;
+
+        const field = vehicle.setupFields.id(req.params.fieldId);
+        if (!field || field.isActive === false) {
+            return res.status(404).json({ message: "Field not found" });
+        }
+
+        field.isActive = false;
+        await vehicle.save();
+
+        res.json({ message: "Field removed", setupFields: activeSetupFields(vehicle) });
+    } catch (err) {
+        console.error("removeSetupField error", err);
+        res.status(500).json({ message: "Server error" });
     }
 };

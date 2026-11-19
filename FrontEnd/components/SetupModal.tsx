@@ -3,6 +3,16 @@ import { Modal, ScrollView, Text, TextInput, View, StyleSheet } from "react-nati
 import { apiFetch } from "../assets/api";
 import { useAuth } from "../context/AuthContext";
 import { globalStyles } from "../constants/styles";
+import {
+    CustomValueMap,
+    CustomValuePart,
+    EMPTY_CUSTOM_VALUE,
+    SetupCustomValue,
+    SetupField,
+    customValuesFromMap,
+    customValuesToMap,
+} from "../constants/setupFields";
+import SetupCustomFields from "./SetupCustomFields";
 import { Button } from "./ui/kit";
 
 export type SetUp = {
@@ -20,6 +30,7 @@ export type SetUp = {
     wingHole?: string;
     splitter?: string;
     notes?: string;
+    customValues?: SetupCustomValue[];
 };
 
 type Props = {
@@ -60,6 +71,10 @@ export default function SetupModal({
     const [splitter, setSplitter] = useState("");
     const [notes, setNotes] = useState("");
 
+    // The vehicle's custom fields and this setup's values for them
+    const [customFields, setCustomFields] = useState<SetupField[]>([]);
+    const [customValues, setCustomValues] = useState<CustomValueMap>({});
+
     const [isSaving, setIsSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
@@ -87,10 +102,29 @@ export default function SetupModal({
             setWingHole(setup.wingHole || "");
             setSplitter(setup.splitter || "");
             setNotes(setup.notes || "");
+            setCustomValues(customValuesToMap(setup.customValues));
         } else {
             clearForm();
         }
     }, [visible, setup]);
+
+    // Load the vehicle's custom setup fields each time the modal opens
+    useEffect(() => {
+        if (!visible || !vehicleId || !token) return;
+
+        apiFetch(`/vehicles/${vehicleId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then((data) => setCustomFields(data.vehicle?.setupFields || []))
+            .catch(() => setCustomFields([]));
+    }, [visible, vehicleId, token]);
+
+    function handleCustomValueChange(fieldId: string, part: CustomValuePart, text: string) {
+        setCustomValues((current) => {
+            const existing = current[fieldId] ?? EMPTY_CUSTOM_VALUE;
+            return { ...current, [fieldId]: { ...existing, [part]: text } };
+        });
+    }
 
     function clearForm() {
         setVersion("");
@@ -111,6 +145,7 @@ export default function SetupModal({
         setWingHole("");
         setSplitter("");
         setNotes("");
+        setCustomValues({});
         setErrorMessage("");
     }
 
@@ -178,6 +213,8 @@ export default function SetupModal({
             wingHole,
             splitter,
             notes,
+            // Includes values for removed fields too, so they're never lost
+            customValues: customValuesFromMap(customValues),
         };
 
         try {
@@ -272,6 +309,15 @@ export default function SetupModal({
                     <TextInput style={globalStyles.input} value={wingHole} onChangeText={setWingHole} />
                     <Text style={globalStyles.label}>Splitter</Text>
                     <TextInput style={globalStyles.input} value={splitter} onChangeText={setSplitter} />
+                    <SetupCustomFields
+                        vehicleId={vehicleId}
+                        token={token}
+                        fields={customFields}
+                        onFieldsChange={setCustomFields}
+                        values={customValues}
+                        onValueChange={handleCustomValueChange}
+                    />
+
                     <Text style={globalStyles.label}>Notes</Text>
                     <TextInput style={globalStyles.input} value={notes} onChangeText={setNotes} />
 

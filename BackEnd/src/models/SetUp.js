@@ -41,6 +41,25 @@ const SetUpSchema = new mongoose.Schema({
   wingHole: {type: String},
   splitter: {type: String},
   notes: { type: String, default: "" },
+  // Values for the vehicle's custom setup fields (Vehicle.setupFields).
+  // Stored as text so values like "-1.5°" or "3 turns" work.
+  customValues: {
+    type: [
+      {
+        fieldId: { type: mongoose.Schema.Types.ObjectId, required: true },
+        front: { type: String, default: "" },
+        rear: { type: String, default: "" },
+        value: { type: String, default: "" },
+        // Per-corner values for "corners" fields
+        lf: { type: String, default: "" },
+        rf: { type: String, default: "" },
+        lr: { type: String, default: "" },
+        rr: { type: String, default: "" },
+        _id: false,
+      },
+    ],
+    default: [],
+  },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 

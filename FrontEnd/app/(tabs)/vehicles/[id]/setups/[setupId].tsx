@@ -8,6 +8,13 @@ import { globalStyles } from "../../../../../constants/styles";
 import { colors } from "../../../../../constants/theme";
 import SetupModal from "../../../../../components/SetupModal";
 import {
+    SetupCustomValue,
+    SetupField,
+    CORNERS,
+    activeSetupFields,
+    customValuesToMap,
+} from "../../../../../constants/setupFields";
+import {
     Button,
     EmptyState,
     ErrorBanner,
@@ -35,6 +42,7 @@ type SetUp = {
     wingHole?: string;
     splitter?: string;
     notes?: string;
+    customValues?: SetupCustomValue[];
 };
 
 // One row per event, from GET /run-setups/setup/:setUpId/events
@@ -135,12 +143,29 @@ export default function SetupDetailPage() {
         setAllSetups(data.setups || []);
     }
 
+    // The vehicle's custom setup fields
+    const [vehicleFields, setVehicleFields] = useState<SetupField[]>([]);
+
+    async function fetchVehicleFields() {
+        try {
+            const data = await apiFetch(`/vehicles/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setVehicleFields(data.vehicle?.setupFields || []);
+        } catch {
+            // Not critical - the built-in fields still show
+        }
+    }
+
     useEffect(() => {
         if (setupId && token) {
             fetchSetup();
             fetchSetUpEvents();
         }
-        if (id && token) fetchAllSetupsForVehicle();
+        if (id && token) {
+            fetchAllSetupsForVehicle();
+            fetchVehicleFields();
+        }
     }, [id, setupId, token]);
 
 
@@ -188,14 +213,34 @@ export default function SetupDetailPage() {
         );
     }
 
+    // Custom fields: front/rear ones join the spec table, single ones the
+    // Drivetrain & Aero panel. Removed fields aren't shown.
+    const customFields = activeSetupFields(vehicleFields);
+    const customValues = customValuesToMap(setup.customValues);
+
     // Front / rear values shown as a two-column spec table
-    const frontRearRows: { label: string; front?: string | number; rear?: string | number; unit?: string }[] = [
-        { label: "Springs", front: setup.springNm?.front, rear: setup.springNm?.rear, unit: "N/mm" },
-        { label: "Anti-roll bar", front: setup.arbPos?.front, rear: setup.arbPos?.rear },
-        { label: "Ride height", front: setup.rideHeight?.front, rear: setup.rideHeight?.rear, unit: "mm" },
-        { label: "Camber", front: setup.camber?.front, rear: setup.camber?.rear },
-        { label: "Toe", front: setup.toe?.front, rear: setup.toe?.rear },
-        { label: "Packers", front: setup.packers?.front, rear: setup.packers?.rear },
+    const frontRearRows: {
+        key: string;
+        label: string;
+        front?: string | number;
+        rear?: string | number;
+        unit?: string;
+    }[] = [
+        { key: "springs", label: "Springs", front: setup.springNm?.front, rear: setup.springNm?.rear, unit: "N/mm" },
+        { key: "arb", label: "Anti-roll bar", front: setup.arbPos?.front, rear: setup.arbPos?.rear },
+        { key: "rideHeight", label: "Ride height", front: setup.rideHeight?.front, rear: setup.rideHeight?.rear, unit: "mm" },
+        { key: "camber", label: "Camber", front: setup.camber?.front, rear: setup.camber?.rear },
+        { key: "toe", label: "Toe", front: setup.toe?.front, rear: setup.toe?.rear },
+        { key: "packers", label: "Packers", front: setup.packers?.front, rear: setup.packers?.rear },
+        ...customFields
+            .filter((field) => field.kind === "frontRear")
+            .map((field) => ({
+                key: field._id,
+                label: field.label,
+                unit: field.unit,
+                front: customValues[field._id]?.front,
+                rear: customValues[field._id]?.rear,
+            })),
     ];
 
     const showValue = (value?: string | number) =>
@@ -211,7 +256,7 @@ export default function SetupDetailPage() {
 
             {frontRearRows.map((row, index) => (
                 <View
-                    key={row.label}
+                    key={row.key}
                     style={[styles.tableRow, index === frontRearRows.length - 1 && styles.tableRowLast]}
                 >
                     <View style={styles.colLabel}>
@@ -225,6 +270,40 @@ export default function SetupDetailPage() {
         </Panel>
     );
 
+    // Custom fields with a value per corner (only shown if the car has any)
+    const cornerFields = customFields.filter((field) => field.kind === "corners");
+
+    const cornersPanel =
+        cornerFields.length > 0 ? (
+            <Panel title="Per Corner" icon="grid-outline">
+                <View style={styles.tableHead}>
+                    <Text style={[styles.tableHeadText, styles.colLabel]}>SETTING</Text>
+                    {CORNERS.map((corner) => (
+                        <Text key={corner.key} style={[styles.tableHeadText, styles.colCorner]}>
+                            {corner.label}
+                        </Text>
+                    ))}
+                </View>
+
+                {cornerFields.map((field, index) => (
+                    <View
+                        key={field._id}
+                        style={[styles.tableRow, index === cornerFields.length - 1 && styles.tableRowLast]}
+                    >
+                        <View style={styles.colLabel}>
+                            <Text style={styles.rowLabel}>{field.label}</Text>
+                            {field.unit ? <Text style={styles.rowUnit}>{field.unit}</Text> : null}
+                        </View>
+                        {CORNERS.map((corner) => (
+                            <Text key={corner.key} style={[styles.rowValue, styles.colCorner]}>
+                                {showValue(customValues[field._id]?.[corner.key])}
+                            </Text>
+                        ))}
+                    </View>
+                ))}
+            </Panel>
+        ) : null;
+
     const otherPanel = (
         <Panel title="Drivetrain & Aero" icon="options-outline">
             <View style={styles.fieldGrid}>
@@ -232,6 +311,15 @@ export default function SetupDetailPage() {
                 <Field label="Brake bias" value={setup.brakeBias} />
                 <Field label="Wing hole" value={setup.wingHole} />
                 <Field label="Splitter" value={setup.splitter} />
+                {customFields
+                    .filter((field) => field.kind === "single")
+                    .map((field) => (
+                        <Field
+                            key={field._id}
+                            label={field.unit ? `${field.label} (${field.unit})` : field.label}
+                            value={customValues[field._id]?.value}
+                        />
+                    ))}
             </View>
         </Panel>
     );
@@ -310,6 +398,7 @@ export default function SetupDetailPage() {
                 <View style={styles.columns}>
                     <View style={styles.colMain}>
                         {suspensionPanel}
+                        {cornersPanel}
                         {eventsPanel}
                     </View>
                     <View style={styles.colSide}>
@@ -320,6 +409,7 @@ export default function SetupDetailPage() {
             ) : (
                 <>
                     {suspensionPanel}
+                    {cornersPanel}
                     {otherPanel}
                     {notesPanel}
                     {eventsPanel}
@@ -357,7 +447,11 @@ export default function SetupDetailPage() {
                 vehicleId={setup.vehicleId}
                 setup={setup}
                 existingSetups={allSetups}
-                onClose={() => setShowSetupModal(false)}
+                onClose={() => {
+                    setShowSetupModal(false);
+                    // Fields may have been added / renamed / removed in the modal
+                    fetchVehicleFields();
+                }}
                 onSaved={() => {
                     fetchSetup();
                     fetchAllSetupsForVehicle();
@@ -409,6 +503,10 @@ const styles = StyleSheet.create({
     },
     colValue: {
         flex: 1,
+        textAlign: "right",
+    },
+    colCorner: {
+        flex: 0.8,
         textAlign: "right",
     },
     rowLabel: {

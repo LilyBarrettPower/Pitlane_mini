@@ -1,48 +1,83 @@
+const mongoose = require("mongoose");
 const SetUp = require("../models/SetUp");
 const Vehicle = require("../models/Vehicle");
 
-// Create a setup 
+// The setup fields a create / update is allowed to set
+const EDITABLE_FIELDS = [
+    "version",
+    "springNm",
+    "arbPos",
+    "rideHeight",
+    "camber",
+    "toe",
+    "packers",
+    "diffPreload",
+    "brakeBias",
+    "wingHole",
+    "splitter",
+    "notes",
+];
+
+const MAX_CUSTOM_VALUE_LENGTH = 60;
+
+// Keeps only well-formed custom values: a valid field id plus text values
+function cleanCustomValues(customValues) {
+    if (!Array.isArray(customValues)) return [];
+
+    const text = (value) => String(value ?? "").trim().slice(0, MAX_CUSTOM_VALUE_LENGTH);
+
+    return customValues
+        .filter((item) => item && mongoose.isValidObjectId(item.fieldId))
+        .map((item) => ({
+            fieldId: item.fieldId,
+            front: text(item.front),
+            rear: text(item.rear),
+            value: text(item.value),
+            lf: text(item.lf),
+            rf: text(item.rf),
+            lr: text(item.lr),
+            rr: text(item.rr),
+        }));
+}
+
+// Picks the editable fields out of a request body
+function setUpDataFromBody(body) {
+    const data = {};
+
+    for (const field of EDITABLE_FIELDS) {
+        if (body[field] !== undefined) data[field] = body[field];
+    }
+
+    if (body.customValues !== undefined) {
+        data.customValues = cleanCustomValues(body.customValues);
+    }
+
+    return data;
+}
+
+// Create a setup
 
 exports.createSetUp = async(req, res) => {
     try {
         const organisationId = req.user.organisationId;
-
-        const {
-            vehicleId,
-            version, 
-            springNm, 
-            arbPos,
-            rideHeight,
-            camber,
-            toe,
-            packers,
-            diffPreload,
-            brakeBias,
-            wingHole,
-            splitter,
-            notes
-        } = req.body;
+        const { vehicleId, version } = req.body;
 
         if (!vehicleId || !version ) {
             return res.status(400).json({ message: "VehicleId and version are required" });
         }
 
+        // The vehicle must belong to this organisation
+        const vehicle = await Vehicle.findOne({ _id: vehicleId, organisationId });
+        if (!vehicle) {
+            return res.status(404).json({ message: "Vehicle not found" });
+        }
+
         const setup = await SetUp.create({
+            ...setUpDataFromBody(req.body),
             organisationId,
             vehicleId,
-            version, 
-            springNm, 
-            arbPos,
-            rideHeight,
-            camber,
-            toe,
-            packers,
-            diffPreload,
-            brakeBias,
-            wingHole,
-            splitter,
-            notes: notes || "",
-        })
+            notes: req.body.notes || "",
+        });
 
         res.status(201).json({setup});
     } catch (err) {
@@ -105,10 +140,12 @@ exports.updateSetUp = async (req, res) => {
         const { id } = req.params;
         const organisationId = req.user.organisationId;
 
+        // Only editable fields - can't move a setup to another vehicle or
+        // organisation, or archive it, through a plain update
         const setup = await SetUp.findOneAndUpdate(
             { _id: id, organisationId, isActive: true },
-            req.body,
-            { new: true }
+            setUpDataFromBody(req.body),
+            { new: true, runValidators: true }
         );
 
         if (!setup) {
