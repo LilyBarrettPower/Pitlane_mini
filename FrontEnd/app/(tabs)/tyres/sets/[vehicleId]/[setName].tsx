@@ -7,6 +7,7 @@ import { useAuth } from "../../../../../context/AuthContext";
 import { globalStyles } from "../../../../../constants/styles";
 import { colors } from "../../../../../constants/theme";
 import { Button, ErrorBanner, LoadingState, PageHeader, Panel, Screen } from "../../../../../components/ui/kit";
+import PressureProgression from "../../../../../components/PressureProgression";
 
 
 type Vehicle = {
@@ -310,94 +311,18 @@ export default function TyreSetDetailPage() {
                                 key={`${item.tyreRunId}-${index}`}
                                 style={styles.historyCard}
                             >
-                                <Text style={styles.eventTitle}>
-                                    {item.eventName}
-                                </Text>
-
-                                <Text style={styles.runTitle}>
-                                    {item.runName}
-                                </Text>
-
-                                <Text style={globalStyles.subText}>
-                                    Laps: {item.lapsDone ?? "-"}
-                                </Text>
-
-                                {item.pressureChecks.length === 0 ? (
-                                    <Text style={globalStyles.subText}>
-                                        No checks recorded
+                                <View style={styles.historyHeader}>
+                                    <Text style={styles.eventTitle}>
+                                        {item.eventName}
                                     </Text>
-                                ) : (
-                                    item.pressureChecks.map((check) => (
-                                        <View
-                                            key={check._id}
-                                            style={styles.checkCard}
-                                        >
-                                            <View style={styles.checkHeader}>
-                                                <Text style={styles.checkTitle}>
-                                                    {check.stage.toUpperCase()}
-                                                </Text>
+                                    <Text style={globalStyles.subText}>
+                                        {item.runName} · {item.lapsDone ?? 0} laps
+                                    </Text>
+                                </View>
 
-                                                <Text style={styles.checkLap}>
-                                                    {check.lapNumber != null
-                                                        ? `Lap ${check.lapNumber}`
-                                                        : ""}
-                                                </Text>
-                                            </View>
+                                {/* Start -> Mid -> End for this run, side by side */}
+                                <PressureProgression checks={item.pressureChecks} />
 
-                                            <View style={styles.pressureGrid}>
-                                                {(
-                                                    ["LF", "RF", "LR", "RR"] as const
-                                                ).map((corner) => (
-                                                    <View
-                                                        key={corner}
-                                                        style={styles.cornerCard}
-                                                    >
-                                                        <Text
-                                                            style={
-                                                                styles.cornerLabel
-                                                            }
-                                                        >
-                                                            {corner}
-                                                        </Text>
-
-                                                        <Text
-                                                            style={
-                                                                styles.pressureValue
-                                                            }
-                                                        >
-                                                            {check.pressurePsi?.[
-                                                                corner
-                                                            ] ?? "-"}{" "}
-                                                            psi
-                                                        </Text>
-
-                                                        <Text
-                                                            style={
-                                                                styles.rimTempValue
-                                                            }
-                                                        >
-                                                            Rim:{" "}
-                                                            {check.rimTempC?.[
-                                                                corner
-                                                            ] ?? "-"}
-                                                            °C
-                                                        </Text>
-                                                    </View>
-                                                ))}
-                                            </View>
-
-                                            {check.notes ? (
-                                                <Text
-                                                    style={
-                                                        styles.checkNotes
-                                                    }
-                                                >
-                                                    {check.notes}
-                                                </Text>
-                                            ) : null}
-                                        </View>
-                                    ))
-                                )}
                             </View>
                         ))
                     )}
@@ -564,13 +489,17 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     historyCard: {
-        backgroundColor: "#111827",
+        backgroundColor: colors.background,
         borderWidth: 1,
-        borderColor: "#374151",
-        borderRadius: 12,
-        padding: 14,
+        borderColor: colors.borderDark,
+        borderRadius: 14,
+        padding: 16,
         marginTop: 12,
-        gap: 8,
+        gap: 14,
+    },
+
+    historyHeader: {
+        gap: 3,
     },
 
     eventTitle: {
