@@ -69,6 +69,8 @@ export default function ForgotPasswordPage() {
                             placeholderTextColor={colors.textMuted}
                             autoCapitalize="none"
                             keyboardType="email-address"
+                            autoComplete="email"
+                            textContentType="username"
                             style={globalStyles.input}
                             onSubmitEditing={handleSubmit}
                         />

@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/ui/AuthLayout";
 import { Button, ErrorBanner } from "../components/ui/kit";
 import { INVALID_EMAIL_MESSAGE, isValidEmail } from "../constants/validation";
+import { forgetRememberedEmail, getRememberedEmail, rememberEmail } from "../assets/rememberedEmail";
 
 export default function LoginPage() {
     // Set when the app logged the user out, e.g. removed from the organisation
@@ -18,6 +19,8 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState(reason ? String(reason) : "");
     const [isLoading, setIsLoading] = useState(false);
+    // The email was filled in from the last login on this device
+    const [isRememberedEmail, setIsRememberedEmail] = useState(false);
 
     const { login, token, isLoading: authLoading } = useAuth();
 
@@ -27,7 +30,24 @@ export default function LoginPage() {
         }
     }, [token, authLoading]);
 
+    // Fill in the email used last time (only if nothing's been typed yet)
+    useEffect(() => {
+        getRememberedEmail().then((saved) => {
+            if (saved) {
+                setEmail((current) => current || saved);
+                setIsRememberedEmail(true);
+            }
+        });
+    }, []);
+
     if (authLoading) return null;
+
+    async function handleUseDifferentEmail() {
+        await forgetRememberedEmail();
+        setEmail("");
+        setPassword("");
+        setIsRememberedEmail(false);
+    }
 
     async function handleLogin() {
         // Email format only - password rules aren't applied at login
@@ -52,6 +72,9 @@ export default function LoginPage() {
                 }),
             });
 
+            // Remember the email (never the password) for next time
+            await rememberEmail(email);
+
             // Logging in updates the token, which redirects to the dashboard
             await login(data);
         } catch (error) {
@@ -74,14 +97,30 @@ export default function LoginPage() {
             }
         >
             <View>
-                <Text style={globalStyles.label}>Email</Text>
+                <View style={styles.passwordLabelRow}>
+                    <Text style={globalStyles.label}>Email</Text>
+                    {isRememberedEmail && email ? (
+                        <Pressable onPress={handleUseDifferentEmail} hitSlop={8}>
+                            <Text style={styles.forgotLink}>Not you? Use a different email</Text>
+                        </Pressable>
+                    ) : null}
+                </View>
+                {/* autoComplete / textContentType let browsers, iCloud Keychain and
+                    Google Password Manager save and fill in this login */}
                 <TextInput
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(text) => {
+                        setEmail(text);
+                        setIsRememberedEmail(false);
+                    }}
                     placeholder="you@example.com"
                     placeholderTextColor={colors.textMuted}
                     autoCapitalize="none"
+                    autoCorrect={false}
                     keyboardType="email-address"
+                    autoComplete="email"
+                    textContentType="username"
+                    importantForAutofill="yes"
                     style={globalStyles.input}
                 />
             </View>
@@ -99,6 +138,11 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="current-password"
+                    textContentType="password"
+                    importantForAutofill="yes"
                     style={globalStyles.input}
                     onSubmitEditing={handleLogin}
                 />

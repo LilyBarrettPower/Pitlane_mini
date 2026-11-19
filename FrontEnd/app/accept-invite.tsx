@@ -115,9 +115,15 @@ export default function AcceptInvitePage() {
         >
             <View>
                 <Text style={globalStyles.label}>Email</Text>
-                <View style={styles.readonlyField}>
-                    <Text style={styles.readonlyText}>{invite.email}</Text>
-                </View>
+                {/* A locked input (not plain text) so password managers save the
+                    new password against this email */}
+                <TextInput
+                    value={invite.email}
+                    editable={false}
+                    autoComplete="username"
+                    textContentType="username"
+                    style={[styles.readonlyField, styles.readonlyText]}
+                />
             </View>
 
             <View>

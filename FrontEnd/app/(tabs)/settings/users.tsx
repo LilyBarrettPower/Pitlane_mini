@@ -280,6 +280,9 @@ export default function UsersPage() {
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                // This is someone else's email - don't autofill the admin's own
+                autoComplete="off"
+                textContentType="none"
                 style={globalStyles.input}
               />
             </View>

@@ -109,6 +109,8 @@ export default function RegisterPage() {
                     placeholderTextColor={colors.textMuted}
                     autoCapitalize="none"
                     keyboardType="email-address"
+                    autoComplete="email"
+                    textContentType="username"
                     style={globalStyles.input}
                 />
             </View>
@@ -121,6 +123,8 @@ export default function RegisterPage() {
                     placeholder="Choose a password"
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
+                    autoComplete="new-password"
+                    textContentType="newPassword"
                     autoCapitalize="none"
                     style={globalStyles.input}
                     onSubmitEditing={handleRegister}

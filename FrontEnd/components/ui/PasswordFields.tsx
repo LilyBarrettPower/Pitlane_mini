@@ -65,6 +65,10 @@ export default function PasswordFields({
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     autoCapitalize="none"
+                    autoCorrect={false}
+                    // Lets browsers / password managers suggest and save a new password
+                    autoComplete="new-password"
+                    textContentType="newPassword"
                     style={globalStyles.input}
                 />
                 <PasswordChecklist password={password} />
@@ -79,6 +83,9 @@ export default function PasswordFields({
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="new-password"
+                    textContentType="newPassword"
                     style={globalStyles.input}
                     onSubmitEditing={onSubmit}
                 />
