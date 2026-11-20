@@ -12,6 +12,9 @@ const TrackSchema = new mongoose.Schema(
         country: { type: String, required: true, trim: true },
         city: {type: String, trim: true},
         notes: { type: String, default: "" },
+        // Set when the track was added from the built-in library
+        // (data/trackLibrary.js), so it isn't added twice
+        libraryKey: { type: String, default: null },
         isActive: { type: Boolean, default: true },
     },
     { timestamps: true }

@@ -27,6 +27,12 @@ const NAV_ITEMS: { label: string; href: string; icon: IconName; match: (path: st
     match: (path) => path.includes("/settings/users"),
   },
   {
+    label: "Tracks",
+    href: "/settings/tracks",
+    icon: "flag-outline",
+    match: (path) => path.includes("/settings/tracks"),
+  },
+  {
     label: "Organisation",
     href: "/settings/organisation",
     icon: "business-outline",

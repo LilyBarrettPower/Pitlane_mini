@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "../../../../assets/api";
 import { useAuth } from "../../../../context/AuthContext";
 import { globalStyles } from "../../../../constants/styles";
+import TrackPicker from "../../../../components/TrackPicker";
 import { colors } from "../../../../constants/theme";
 import {
     Button,
@@ -612,36 +613,12 @@ export default function EventDetailPage() {
                                     Track
                                 </Text>
 
-                                {tracks.length === 0 ? (
-                                    <Text style={globalStyles.text}>
-                                        No tracks available
-                                    </Text>
-                                ) : (
-                                    <View style={styles.selectList}>
-                                        {tracks.map((track) => {
-                                            const isSelected =
-                                                trackId === track._id;
-
-                                            return (
-                                                <Pressable
-                                                    key={track._id}
-                                                    style={[
-                                                        styles.selectItem,
-                                                        isSelected &&
-                                                        styles.selectItemActive,
-                                                    ]}
-                                                    onPress={() =>
-                                                        setTrackId(track._id)
-                                                    }
-                                                >
-                                                    <Text style={globalStyles.text}>
-                                                        {track.name}
-                                                    </Text>
-                                                </Pressable>
-                                            );
-                                        })}
-                                    </View>
-                                )}
+                                <TrackPicker
+                                    token={token}
+                                    selectedTrackId={trackId}
+                                    onSelect={(track) => setTrackId(track._id)}
+                                    onTracksChanged={() => fetchTracks().catch(() => {})}
+                                />
 
                                 <Text style={globalStyles.label}>
                                     Type

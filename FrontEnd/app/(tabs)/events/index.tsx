@@ -14,6 +14,7 @@ import { globalStyles } from "../../../constants/styles";
 import { colors } from "../../../constants/theme";
 import { apiFetch } from "../../../assets/api";
 import { useAuth } from "../../../context/AuthContext";
+import TrackPicker from "../../../components/TrackPicker";
 import {
     Badge,
     Button,
@@ -402,31 +403,12 @@ export default function EventsPage() {
                             />
 
                             <Text style={globalStyles.label}>Track</Text>
-                            {tracks.length === 0 ? (
-                                <Text style={globalStyles.text}>No tracks available</Text>
-                            ) : (
-                                <View style={styles.selectList}>
-                                    {tracks.map((track) => (
-                                        <Pressable
-                                            key={track._id}
-                                            style={[
-                                                styles.selectItem,
-                                                trackId === track._id && styles.selectItemActive,
-                                            ]}
-                                            onPress={() => setTrackId(track._id)}
-                                        >
-                                            <Text
-                                                style={[
-                                                    styles.selectItemText,
-                                                    trackId === track._id && styles.selectItemTextActive,
-                                                ]}
-                                            >
-                                                {track.name}
-                                            </Text>
-                                        </Pressable>
-                                    ))}
-                                </View>
-                            )}
+                            <TrackPicker
+                                token={token}
+                                selectedTrackId={trackId}
+                                onSelect={(track) => setTrackId(track._id)}
+                                onTracksChanged={() => fetchTracks().catch(() => {})}
+                            />
 
                             <Text style={globalStyles.label}>Type</Text>
                             <TextInput
