@@ -152,6 +152,11 @@ export default function RunDetailPage() {
     const [fuelEndInput, setFuelEndInput] = useState("");
     const [isSavingFuelEnd, setIsSavingFuelEnd] = useState(false);
 
+    const [showNotesModal, setShowNotesModal] = useState(false);
+    const [notesInput, setNotesInput] = useState("");
+    const [isSavingNotes, setIsSavingNotes] = useState(false);
+    const [notesError, setNotesError] = useState("");
+
     const [lapTimes, setLapTimes] = useState<LapTime[]>([]);
     const [showLapModal, setShowLapModal] = useState(false);
     const [isSavingLap, setIsSavingLap] = useState(false);
@@ -674,6 +679,26 @@ export default function RunDetailPage() {
             setErrorMessage(error instanceof Error ? error.message : "Failed to save fuel end");
         } finally {
             setIsSavingFuelEnd(false);
+        }
+    }
+
+    async function handleSaveNotes() {
+        try {
+            setIsSavingNotes(true);
+            setNotesError("");
+
+            await apiFetch(`/runs/${runId}`, {
+                method: "PATCH",
+                headers: { Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ notes: notesInput.trim() }),
+            });
+
+            setShowNotesModal(false);
+            await fetchRun();
+        } catch (error) {
+            setNotesError(error instanceof Error ? error.message : "Failed to save notes");
+        } finally {
+            setIsSavingNotes(false);
         }
     }
 
@@ -1655,10 +1680,21 @@ export default function RunDetailPage() {
                     />
                 </Panel>
 
-                <View style={globalStyles.card}>
-                    <Text style={globalStyles.sectionTitle}>Notes</Text>
-                    <Text style={globalStyles.cardText}>{run.notes || "-"}</Text>
-                </View>
+                <Panel
+                    title="Notes"
+                    icon="document-text-outline"
+                    actionLabel={run.notes ? "Edit" : "Add"}
+                    onAction={() => {
+                        setNotesInput(run.notes || "");
+                        setShowNotesModal(true);
+                    }}
+                >
+                    {run.notes ? (
+                        <Text style={styles.runNotes}>{run.notes}</Text>
+                    ) : (
+                        <Text style={styles.runNotesEmpty}>No notes for this run.</Text>
+                    )}
+                </Panel>
                 </View>
             </View>
 
@@ -1782,6 +1818,41 @@ export default function RunDetailPage() {
                         </View>
                     </View>
                 </Modal>
+                <Modal
+                    visible={showNotesModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowNotesModal(false)}
+                >
+                    <View style={globalStyles.modalOverlay}>
+                        <View style={globalStyles.modalCard}>
+                            <Text style={globalStyles.modalTitle}>Run Notes</Text>
+
+                            <TextInput
+                                style={[globalStyles.input, styles.notesInput]}
+                                value={notesInput}
+                                onChangeText={setNotesInput}
+                                multiline
+                                maxLength={2000}
+                                placeholder="e.g. Understeer in T3, driver wants more front wing"
+                                placeholderTextColor={colors.textMuted}
+                            />
+
+                            <ErrorBanner message={notesError} />
+
+                            <View style={styles.notesActions}>
+                                <Button
+                                    label="Cancel"
+                                    variant="secondary"
+                                    onPress={() => setShowNotesModal(false)}
+                                    disabled={isSavingNotes}
+                                />
+                                <Button label="Save Notes" onPress={handleSaveNotes} loading={isSavingNotes} />
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+
                 <Modal
                     visible={showLapModal}
                     transparent
@@ -2490,6 +2561,28 @@ export default function RunDetailPage() {
 }
 
 const styles = StyleSheet.create({
+    runNotes: {
+        color: colors.textSecondary,
+        fontSize: 14,
+        lineHeight: 20,
+    },
+
+    runNotesEmpty: {
+        color: colors.textMuted,
+        fontSize: 14,
+    },
+
+    notesInput: {
+        minHeight: 120,
+        textAlignVertical: "top",
+    },
+
+    notesActions: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        gap: 10,
+    },
+
     content: {
         padding: 24,
         gap: 16,

@@ -228,7 +228,7 @@ exports.createRun = async (req, res) => {
             fuelUsed: 0,
             fuelPerLap: 0,
             averageLapS: 0,
-            notes: notes || "",
+            notes: String(notes || "").slice(0, 2000),
         });
 
         res.status(201).json({ run });
@@ -308,6 +308,9 @@ exports.updateRun = async (req, res) => {
         // both of which keep the vehicle's ODO in step - don't let a plain
         // update change them.
         const { distanceKm, isActive, ...updates } = req.body;
+        if (updates.notes !== undefined) {
+            updates.notes = String(updates.notes || "").slice(0, 2000);
+        }
         Object.assign(run, updates);
 
         if (run.fuelStart != null && run.fuelEnd != null) {

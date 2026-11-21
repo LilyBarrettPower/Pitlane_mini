@@ -25,6 +25,7 @@ const RunSchema = new mongoose.Schema(
         fuelPerLap: { type: Number},
         averageLapS: {type: Number},
         bestLapS: {type: Number},
+        notes: { type: String, default: "", trim: true, maxlength: 2000 },
         // Distance (laps x track length) this run has added to the vehicle's
         // ODO. Kept so a repeat "car in" only adds the difference.
         distanceKm: { type: Number, default: 0, min: 0 },
