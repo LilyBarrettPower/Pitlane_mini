@@ -186,7 +186,16 @@ exports.getMe = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.json({ user });
+        // Same shape as the login response's user, so the app can refresh
+        // its copy (e.g. after an admin changes this person's role)
+        res.json({
+            user: {
+                id: user._id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            },
+        });
     } catch (err) {
         console.error("getMe error", err);
         res.status(500).json({ message: "Server error" });
@@ -225,8 +234,8 @@ exports.inviteUser = async (req, res) => {
             return res.status(400).json({ message: INVALID_EMAIL_MESSAGE });
         }
 
-        if (role && !ALLOWED_ROLES.includes(role)) {
-            return res.status(400).json({ message: "Invalid role" });
+        if (!ALLOWED_ROLES.includes(role)) {
+            return res.status(400).json({ message: "Choose a role for this user" });
         }
 
         const organisationId = getOrganisationId(req);
@@ -257,7 +266,7 @@ exports.inviteUser = async (req, res) => {
             user.status = "invited";
             user.passwordHash = undefined;
             user.name = name || user.name || "";
-            user.role = role || "viewer";
+            user.role = role;
             user.invitedBy = req.user.userId;
             await user.save();
         } else {
@@ -265,7 +274,7 @@ exports.inviteUser = async (req, res) => {
                 organisationId,
                 email: normalisedEmail,
                 name: name || "",
-                role: role || "viewer",
+                role,
                 status: "invited",
                 invitedBy: req.user.userId,
             });
@@ -510,6 +519,46 @@ exports.removeUser = async (req, res) => {
         res.json({ message: "User removed", user: publicUser(user) });
     } catch (err) {
         console.error("removeUser error", err);
+        if (err.name === "CastError") {
+            return res.status(400).json({ message: "Invalid user id" });
+        }
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// PATCH - admin changes a user's role. Takes effect on the user's next
+// request (the auth middleware reads the role from the database).
+exports.changeRole = async (req, res) => {
+    try {
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ message: "Only admins can change roles" });
+        }
+
+        const { userId } = req.params;
+        const { role } = req.body;
+        const organisationId = getOrganisationId(req);
+
+        if (!ALLOWED_ROLES.includes(role)) {
+            return res.status(400).json({ message: "Invalid role" });
+        }
+
+        // Stops an admin locking themselves out by accident
+        if (String(userId) === String(req.user.userId)) {
+            return res.status(400).json({ message: "You can't change your own role" });
+        }
+
+        const user = await User.findOne({ _id: userId, organisationId, isActive: true });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.role = role;
+        await user.save();
+
+        res.json({ user: publicUser(user) });
+    } catch (err) {
+        console.error("changeRole error", err);
         if (err.name === "CastError") {
             return res.status(400).json({ message: "Invalid user id" });
         }

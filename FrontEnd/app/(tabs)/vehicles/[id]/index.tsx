@@ -4,6 +4,7 @@ import { Text, View, StyleSheet, ActivityIndicator, Pressable, ScrollView, Modal
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "../../../../assets/api";
 import { useAuth } from "../../../../context/AuthContext";
+import { useCan } from "../../../../constants/permissions";
 import { globalStyles } from "../../../../constants/styles";
 import { colors } from "../../../../constants/theme";
 import SetupModal from "../../../../components/SetupModal";
@@ -120,6 +121,8 @@ type SetUp = {
 export default function VehicleDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, token } = useAuth();
+  const canManage = useCan("manage");
+  const canSetups = useCan("setups");
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -155,7 +158,6 @@ export default function VehicleDetailPage() {
   const [chassisNumber, setChassisNumber] = useState("");
   const [notes, setNotes] = useState("");
 
-  const isAdmin = user?.role === "admin";
   const isWide = useIsWide();
 
   async function fetchVehicle() {
@@ -588,13 +590,18 @@ export default function VehicleDetailPage() {
   );
 
   const driversPanel = (
-    <Panel title="Drivers" icon="id-card-outline" actionLabel="Assign" onAction={() => setShowAssignedDriverModal(true)}>
+    <Panel
+      title="Drivers"
+      icon="id-card-outline"
+      actionLabel={canManage ? "Assign" : undefined}
+      onAction={canManage ? () => setShowAssignedDriverModal(true) : undefined}
+    >
       {vehicleDrivers.length === 0 ? (
         <EmptyState
           icon="id-card-outline"
           text="No drivers assigned"
           action={
-            <Button
+            canManage && <Button
               label="Assign Driver"
               icon="person-add-outline"
               size="sm"
@@ -615,13 +622,15 @@ export default function VehicleDetailPage() {
                   .join(" · ") || "No details"}
               </Text>
             </View>
-            <Pressable
-              hitSlop={8}
-              onPress={() => handleRemoveDriverAssignment(item._id)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-            >
-              <Ionicons name="close" size={18} color={colors.textMuted} />
-            </Pressable>
+            {canManage ? (
+              <Pressable
+                hitSlop={8}
+                onPress={() => handleRemoveDriverAssignment(item._id)}
+                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+              >
+                <Ionicons name="close" size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
           </View>
         ))
       )}
@@ -629,13 +638,20 @@ export default function VehicleDetailPage() {
   );
 
   const setupsPanel = (
-    <Panel title="Setups" icon="construct-outline" actionLabel="New setup" onAction={openCreateSetupModal}>
+    <Panel
+      title="Setups"
+      icon="construct-outline"
+      actionLabel={canSetups ? "New setup" : undefined}
+      onAction={canSetups ? openCreateSetupModal : undefined}
+    >
       {setups.length === 0 ? (
         <EmptyState
           icon="construct-outline"
           text="No setups for this vehicle yet"
           action={
-            <Button label="Create Setup" icon="add" size="sm" variant="secondary" onPress={openCreateSetupModal} />
+            canSetups && (
+              <Button label="Create Setup" icon="add" size="sm" variant="secondary" onPress={openCreateSetupModal} />
+            )
           }
         />
       ) : (
@@ -695,9 +711,9 @@ export default function VehicleDetailPage() {
         onBack={() => router.navigate("/vehicles" as any)}
         backLabel="Vehicles"
         actions={
-          <>
-            <Button label="Edit" icon="create-outline" variant="secondary" onPress={openEditVehicleModal} />
-            {isAdmin ? (
+          canManage && (
+            <>
+              <Button label="Edit" icon="create-outline" variant="secondary" onPress={openEditVehicleModal} />
               <Button
                 label="Delete"
                 icon="trash-outline"
@@ -707,8 +723,8 @@ export default function VehicleDetailPage() {
                   setShowDeleteVehicleModal(true);
                 }}
               />
-            ) : null}
-          </>
+            </>
+          )
         }
       />
 

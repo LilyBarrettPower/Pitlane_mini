@@ -8,6 +8,7 @@ import { apiFetch } from "../../../assets/api";
 import { globalStyles } from "../../../constants/styles";
 import { colors } from "../../../constants/theme";
 import { INVALID_EMAIL_MESSAGE, isValidEmail } from "../../../constants/validation";
+import { ROLE_DESCRIPTIONS, ROLES, Role, useCan } from "../../../constants/permissions";
 import {
   Avatar,
   Badge,
@@ -18,8 +19,6 @@ import {
   Panel,
 } from "../../../components/ui/kit";
 
-type Role = "admin" | "engineer" | "mechanic" | "viewer";
-
 type ListedUser = {
   id?: string;
   _id?: string;
@@ -29,8 +28,6 @@ type ListedUser = {
   status?: "invited" | "active";
 };
 
-const ROLES: Role[] = ["admin", "engineer", "mechanic", "viewer"];
-
 const ROLE_TONE: Record<string, "primary" | "live" | "warning" | "neutral"> = {
   admin: "primary",
   engineer: "live",
@@ -38,16 +35,59 @@ const ROLE_TONE: Record<string, "primary" | "live" | "warning" | "neutral"> = {
   viewer: "neutral",
 };
 
+function roleLabel(role: string) {
+  return role[0].toUpperCase() + role.slice(1);
+}
+
+function userId(listedUser: ListedUser | null) {
+  return listedUser?.id || listedUser?._id;
+}
+
+// One option per role, with what that role can do
+function RolePicker({ value, onChange }: { value: Role | null; onChange: (role: Role) => void }) {
+  return (
+    <View style={styles.roleList}>
+      {ROLES.map((roleOption) => {
+        const selected = value === roleOption;
+
+        return (
+          <Pressable
+            key={roleOption}
+            style={({ pressed }) => [styles.roleOption, selected && styles.roleOptionActive, pressed && styles.pressed]}
+            onPress={() => onChange(roleOption)}
+          >
+            <Ionicons
+              name={selected ? "radio-button-on" : "radio-button-off"}
+              size={18}
+              color={selected ? colors.primaryLight : colors.textMuted}
+            />
+            <View style={styles.roleOptionText}>
+              <Text style={styles.roleOptionTitle}>{roleLabel(roleOption)}</Text>
+              <Text style={styles.roleOptionDescription}>{ROLE_DESCRIPTIONS[roleOption]}</Text>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function UsersPage() {
   const { user, organisation, token } = useAuth();
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = useCan("admin");
 
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<Role>("viewer");
+  const [role, setRole] = useState<Role | null>(null);
+
+  // Change role
+  const [userToChange, setUserToChange] = useState<ListedUser | null>(null);
+  const [newRole, setNewRole] = useState<Role | null>(null);
+  const [isChangingRole, setIsChangingRole] = useState(false);
+  const [roleError, setRoleError] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -89,7 +129,7 @@ export default function UsersPage() {
   function openCreateModal() {
     setName("");
     setEmail("");
-    setRole("viewer");
+    setRole(null);
     setFormError("");
     setShowCreateModal(true);
   }
@@ -98,6 +138,11 @@ export default function UsersPage() {
   async function handleInviteUser() {
     if (!isValidEmail(email)) {
       setFormError(INVALID_EMAIL_MESSAGE);
+      return;
+    }
+
+    if (!role) {
+      setFormError("Choose a role for this user");
       return;
     }
 
@@ -153,6 +198,42 @@ export default function UsersPage() {
       setUserToRemove(null);
     } finally {
       setIsRemoving(false);
+    }
+  }
+
+  function openChangeRole(listedUser: ListedUser) {
+    setUserToChange(listedUser);
+    setNewRole(listedUser.role as Role);
+    setRoleError("");
+  }
+
+  async function handleChangeRole() {
+    const id = userId(userToChange);
+    if (!userToChange || !id || !newRole) return;
+
+    if (newRole === userToChange.role) {
+      setUserToChange(null);
+      return;
+    }
+
+    try {
+      setIsChangingRole(true);
+      setRoleError("");
+
+      await apiFetch(`/auth/users/${id}/role`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      setErrorMessage("");
+      setSuccessMessage(`${userToChange.name || userToChange.email} is now ${newRole === "admin" || newRole === "engineer" ? "an" : "a"} ${newRole}`);
+      setUserToChange(null);
+      await fetchUsers();
+    } catch (error) {
+      setRoleError(error instanceof Error ? error.message : "Failed to change role");
+    } finally {
+      setIsChangingRole(false);
     }
   }
 
@@ -217,7 +298,20 @@ export default function UsersPage() {
               </View>
               <View style={styles.userBadges}>
                 {listedUser.status === "invited" ? <Badge label="INVITED" tone="warning" /> : null}
-                <Badge label={listedUser.role.toUpperCase()} tone={ROLE_TONE[listedUser.role] || "neutral"} />
+                {/* Admins tap the role to change it (not their own) */}
+                {isAdmin && userId(listedUser) !== user?.id ? (
+                  <Pressable
+                    hitSlop={6}
+                    accessibilityLabel={`Change role for ${listedUser.name || listedUser.email}`}
+                    style={({ pressed }) => [styles.roleBadgeButton, pressed && styles.pressed]}
+                    onPress={() => openChangeRole(listedUser)}
+                  >
+                    <Badge label={listedUser.role.toUpperCase()} tone={ROLE_TONE[listedUser.role] || "neutral"} />
+                    <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
+                  </Pressable>
+                ) : (
+                  <Badge label={listedUser.role.toUpperCase()} tone={ROLE_TONE[listedUser.role] || "neutral"} />
+                )}
               </View>
               {isAdmin && listedUser.status === "invited" ? (
                 <Button
@@ -244,7 +338,11 @@ export default function UsersPage() {
           ))
         )}
 
-        {!isAdmin ? <Text style={styles.helper}>Only admins can invite users.</Text> : null}
+        {isAdmin ? (
+          <Text style={styles.helper}>Tap someone&apos;s role to change it.</Text>
+        ) : (
+          <Text style={styles.helper}>Only admins can invite users and change roles.</Text>
+        )}
       </Panel>
 
       <Modal
@@ -289,19 +387,7 @@ export default function UsersPage() {
 
             <View>
               <Text style={globalStyles.label}>Role</Text>
-              <View style={styles.roleRow}>
-                {ROLES.map((roleOption) => (
-                  <Pressable
-                    key={roleOption}
-                    style={[styles.roleButton, role === roleOption && styles.roleButtonActive]}
-                    onPress={() => setRole(roleOption)}
-                  >
-                    <Text style={[styles.roleButtonText, role === roleOption && styles.roleButtonTextActive]}>
-                      {roleOption[0].toUpperCase() + roleOption.slice(1)}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              <RolePicker value={role} onChange={setRole} />
             </View>
 
             <ErrorBanner message={formError} />
@@ -314,6 +400,37 @@ export default function UsersPage() {
                 disabled={isSaving}
               />
               <Button label="Send Invite" icon="send-outline" onPress={handleInviteUser} loading={isSaving} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Change role */}
+      <Modal
+        visible={!!userToChange}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setUserToChange(null)}
+      >
+        <View style={globalStyles.modalOverlay}>
+          <View style={globalStyles.modalCard}>
+            <Text style={globalStyles.modalTitle}>Change role</Text>
+            <Text style={styles.modalIntro}>
+              {userToChange?.name || userToChange?.email} · changes apply straight away.
+            </Text>
+
+            <RolePicker value={newRole} onChange={setNewRole} />
+
+            <ErrorBanner message={roleError} />
+
+            <View style={styles.modalActions}>
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onPress={() => setUserToChange(null)}
+                disabled={isChangingRole}
+              />
+              <Button label="Save Role" onPress={handleChangeRole} loading={isChangingRole} />
             </View>
           </View>
         </View>
@@ -430,34 +547,47 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
 
-  roleRow: {
+  roleBadgeButton: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 2,
+  },
+
+  roleList: {
     gap: 8,
   },
 
-  roleButton: {
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+  roleOption: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.borderDark,
   },
 
-  roleButtonActive: {
-    backgroundColor: colors.primary,
+  roleOptionActive: {
+    backgroundColor: colors.primarySoft,
     borderColor: colors.primary,
   },
 
-  roleButtonText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "600",
+  roleOptionText: {
+    flex: 1,
+    gap: 2,
   },
 
-  roleButtonTextActive: {
+  roleOptionTitle: {
     color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  roleOptionDescription: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
 
   modalActions: {

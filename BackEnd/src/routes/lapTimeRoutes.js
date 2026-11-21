@@ -1,5 +1,6 @@
 const express = require("express");
 const authMiddleware = require("../middleware/auth");
+const { requirePermission } = require("../middleware/permissions");
 const lapTimeController = require("../controllers/lapTimesController");
 
 const router = express.Router();
@@ -7,19 +8,19 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // Create 
-router.post("/", lapTimeController.createLapTime);
+router.post("/", requirePermission("trackside"), lapTimeController.createLapTime);
 
 // Read
 router.get("/", lapTimeController.getLapTimes);
 router.get("/:id", lapTimeController.getLapTimeById);
 
 // Update
-router.patch("/:id", lapTimeController.updateLapTime);
+router.patch("/:id", requirePermission("trackside"), lapTimeController.updateLapTime);
 
 // Archive
-router.delete("/:id", lapTimeController.archiveLapTime);
+router.delete("/:id", requirePermission("trackside"), lapTimeController.archiveLapTime);
 
 // Unarchive
-router.patch("/:id/unarchive", lapTimeController.unarchiveLapTime);
+router.patch("/:id/unarchive", requirePermission("manage"), lapTimeController.unarchiveLapTime);
 
 module.exports = router;

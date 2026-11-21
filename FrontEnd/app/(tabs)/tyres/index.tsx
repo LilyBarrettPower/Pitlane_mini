@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { apiFetch } from "../../../assets/api";
 import { useAuth } from "../../../context/AuthContext";
+import { useCan } from "../../../constants/permissions";
 import { globalStyles } from "../../../constants/styles";
 import { colors } from "../../../constants/theme";
 import { Button, EmptyState, ErrorBanner, LoadingState, PageHeader, Screen } from "../../../components/ui/kit";
@@ -58,6 +59,7 @@ type VehicleTyreGroup = {
 
 export default function TyresPage() {
     const { token } = useAuth();
+    const canManage = useCan("manage");
 
     const [tyres, setTyres] = useState<Tyre[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -389,7 +391,7 @@ export default function TyresPage() {
                             ? `${tyres.length} ${tyres.length === 1 ? "tyre" : "tyres"} · ${groupedTyreSets.length} ${groupedTyreSets.length === 1 ? "set" : "sets"}`
                             : undefined
                     }
-                    actions={<Button label="Add Tyre" icon="add" onPress={openCreate} />}
+                    actions={canManage ? <Button label="Add Tyre" icon="add" onPress={openCreate} /> : undefined}
                 />
 
                 <View style={styles.searchBox}>
@@ -421,7 +423,7 @@ export default function TyresPage() {
                                     : "No tyres match your search."
                             }
                             action={
-                                tyres.length === 0 ? (
+                                tyres.length === 0 && canManage ? (
                                     <Button label="Add Tyre" icon="add" onPress={openCreate} />
                                 ) : undefined
                             }

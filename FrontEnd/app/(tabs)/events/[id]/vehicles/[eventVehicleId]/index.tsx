@@ -4,6 +4,7 @@ import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { apiFetch } from "../../../../../../assets/api";
 import { useAuth } from "../../../../../../context/AuthContext";
+import { useCan } from "../../../../../../constants/permissions";
 import { globalStyles } from "../../../../../../constants/styles";
 import { colors } from "../../../../../../constants/theme";
 import {
@@ -139,6 +140,7 @@ export default function EventVehicleDetailPage() {
     }>();
 
     const { token } = useAuth();
+    const canTrackside = useCan("trackside");
     const isWide = useIsWide();
 
     const [eventVehicle, setEventVehicle] = useState<EventVehicle | null>(null);
@@ -706,12 +708,12 @@ export default function EventVehicleDetailPage() {
     );
 
     const runsPanel = (
-        <Panel title="Runs" icon="stopwatch-outline" actionLabel="New run" onAction={openCreateRunModal}>
+        <Panel title="Runs" icon="stopwatch-outline" actionLabel={canTrackside ? "New run" : undefined} onAction={canTrackside ? openCreateRunModal : undefined}>
             {runs.length === 0 ? (
                 <EmptyState
                     icon="stopwatch-outline"
                     text="No runs yet for this car."
-                    action={<Button label="Create Run" icon="add" size="sm" onPress={openCreateRunModal} />}
+                    action={canTrackside ? <Button label="Create Run" icon="add" size="sm" onPress={openCreateRunModal} /> : undefined}
                 />
             ) : (
                 <>
@@ -809,7 +811,7 @@ export default function EventVehicleDetailPage() {
                     subtitle="Runs, tyres and setups at this event"
                     onBack={() => router.navigate({ pathname: "/events/[id]" as any, params: { id: String(eventId) } })}
                     backLabel="Event"
-                    actions={<Button label="New Run" icon="add" onPress={openCreateRunModal} />}
+                    actions={canTrackside ? <Button label="New Run" icon="add" onPress={openCreateRunModal} /> : undefined}
                 />
 
                 {!showRunModal ? <ErrorBanner message={errorMessage} /> : null}

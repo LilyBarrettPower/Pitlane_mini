@@ -1,19 +1,20 @@
 const express = require("express");
 const authMiddleware = require("../middleware/auth");
+const { requirePermission } = require("../middleware/permissions");
 const EventVehicleController = require("../controllers/eventVehicleController");
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-router.post("/", EventVehicleController.createAssignment);
+router.post("/", requirePermission("manage"), EventVehicleController.createAssignment);
 // Return a list of events that this vehicle has/ is attending
 router.get("/event/:vehicleId", EventVehicleController.getEventForVehicle);
 //  Get a list of vehicles that are attending/ did attend an event
 router.get("/vehicle/:eventId", EventVehicleController.getVehicleForEvent);
 // Get one specific EventVehicle assignment
 router.get("/:id", EventVehicleController.getEventVehicleById);
-router.delete("/:id", EventVehicleController.archiveAssignment);
-router.patch("/:id/unarchive", EventVehicleController.unArchiveAssignment);
+router.delete("/:id", requirePermission("manage"), EventVehicleController.archiveAssignment);
+router.patch("/:id/unarchive", requirePermission("manage"), EventVehicleController.unArchiveAssignment);
 
 module.exports = router;

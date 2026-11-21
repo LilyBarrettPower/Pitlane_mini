@@ -7,6 +7,7 @@ import { globalStyles } from "../../constants/styles";
 import { colors } from "../../constants/theme";
 import { apiFetch } from "../../assets/api";
 import { useAuth } from "../../context/AuthContext";
+import { useCan } from "../../constants/permissions";
 import {
     Button,
     EmptyState,
@@ -64,6 +65,7 @@ function vehicleTitle(vehicle: Vehicle) {
 
 export default function VehiclesPage() {
     const { token } = useAuth();
+    const canManage = useCan("manage");
 
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -144,7 +146,7 @@ export default function VehiclesPage() {
                         ? `${vehicles.length} ${vehicles.length === 1 ? "vehicle" : "vehicles"}`
                         : undefined
                 }
-                actions={<Button label="Add Vehicle" icon="add" onPress={openCreateModal} />}
+                actions={canManage ? <Button label="Add Vehicle" icon="add" onPress={openCreateModal} /> : undefined}
             />
 
             <ErrorBanner message={errorMessage} />
@@ -157,7 +159,7 @@ export default function VehiclesPage() {
                         icon="car-sport-outline"
                         title="No vehicles yet"
                         text="Add your first car to start tracking runs, tyres and setups."
-                        action={<Button label="Add Vehicle" icon="add" onPress={openCreateModal} />}
+                        action={canManage ? <Button label="Add Vehicle" icon="add" onPress={openCreateModal} /> : undefined}
                     />
                 </View>
             ) : (

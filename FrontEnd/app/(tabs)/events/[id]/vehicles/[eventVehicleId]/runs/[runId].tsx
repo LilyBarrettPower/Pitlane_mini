@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { apiFetch } from "../../../../../../../assets/api";
 import { useAuth } from "../../../../../../../context/AuthContext";
+import { useCan } from "../../../../../../../constants/permissions";
 import { globalStyles } from "../../../../../../../constants/styles";
 import { colors } from "../../../../../../../constants/theme";
 import {
@@ -143,6 +144,7 @@ export default function RunDetailPage() {
     }>();
 
     const { token } = useAuth();
+    const canTrackside = useCan("trackside");
     const isWide = useIsWide();
     const [run, setRun] = useState<Run | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -1132,16 +1134,20 @@ export default function RunDetailPage() {
     const runState = !run.outTime ? "ready" : !run.inTime ? "onTrack" : "complete";
 
     const headerActions =
-        runState === "ready" ? (
+        runState === "complete" ? (
+            <Badge label="Run complete" tone="primary" />
+        ) : !canTrackside ? (
+            runState === "onTrack" ? <Badge label="On track" tone="live" /> : null
+        ) : runState === "ready" ? (
             <Button label="Car Out" icon="play" onPress={handleCarOut} />
         ) : runState === "onTrack" ? (
             <>
                 <Button label="Add Lap" icon="add" variant="secondary" onPress={openAddLapModal} />
                 <Button label="Car In" icon="flag" variant="danger" onPress={handleCarIn} />
             </>
-        ) : (
-            <Badge label="Run complete" tone="primary" />
-        );
+        ) : null;
+
+    const canAddLap = canTrackside && runState === "onTrack";
 
     const statTiles = (
         <View style={styles.statRow}>
@@ -1209,12 +1215,14 @@ export default function RunDetailPage() {
                         <Text style={styles.setupNone}>None recorded</Text>
                     )}
                 </View>
-                <Button
-                    label={runSetUp ? "Change" : "Choose"}
-                    size="sm"
-                    variant="secondary"
-                    onPress={openSetUpModal}
-                />
+                {canTrackside ? (
+                    <Button
+                        label={runSetUp ? "Change" : "Choose"}
+                        size="sm"
+                        variant="secondary"
+                        onPress={openSetUpModal}
+                    />
+                ) : null}
             </View>
         </Panel>
     );
@@ -1223,21 +1231,25 @@ export default function RunDetailPage() {
         <Panel
             title="Lap Times"
             icon="stopwatch-outline"
-            actionLabel={runState === "onTrack" ? "Add lap" : undefined}
-            onAction={runState === "onTrack" ? openAddLapModal : undefined}
+            actionLabel={canAddLap ? "Add lap" : undefined}
+            onAction={canAddLap ? openAddLapModal : undefined}
         >
             {lapTimes.length === 0 ? (
                 <EmptyState
                     icon="stopwatch-outline"
                     text={
                         runState === "ready"
-                            ? "Press Car Out to start the run, then add laps."
+                            ? canTrackside
+                                ? "Press Car Out to start the run, then add laps."
+                                : "This run hasn't started yet."
                             : runState === "onTrack"
-                                ? "No laps yet. Add the first lap time."
+                                ? canTrackside
+                                    ? "No laps yet. Add the first lap time."
+                                    : "No laps yet."
                                 : "No lap times were recorded for this run."
                     }
                     action={
-                        runState === "onTrack" ? (
+                        canAddLap ? (
                             <Button label="Add Lap" icon="add" size="sm" onPress={openAddLapModal} />
                         ) : undefined
                     }
@@ -1285,20 +1297,24 @@ export default function RunDetailPage() {
                                 </Text>
 
                                 <View style={[styles.colActions, styles.lapActions]}>
-                                    <Pressable
-                                        hitSlop={6}
-                                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                                        onPress={() => openEditLapModal(lap)}
-                                    >
-                                        <Ionicons name="create-outline" size={17} color={colors.textMuted} />
-                                    </Pressable>
-                                    <Pressable
-                                        hitSlop={6}
-                                        style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                                        onPress={() => setLapToDelete(lap)}
-                                    >
-                                        <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
-                                    </Pressable>
+                                    {canTrackside ? (
+                                        <>
+                                            <Pressable
+                                                hitSlop={6}
+                                                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                                                onPress={() => openEditLapModal(lap)}
+                                            >
+                                                <Ionicons name="create-outline" size={17} color={colors.textMuted} />
+                                            </Pressable>
+                                            <Pressable
+                                                hitSlop={6}
+                                                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                                                onPress={() => setLapToDelete(lap)}
+                                            >
+                                                <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
+                                            </Pressable>
+                                        </>
+                                    ) : null}
                                 </View>
                             </View>
                         );
@@ -1347,7 +1363,7 @@ export default function RunDetailPage() {
                                 No tyre set assigned to this run
                             </Text>
 
-                            <View style={styles.actionRow}>
+                            {canTrackside ? <View style={styles.actionRow}>
                                 <Pressable
                                     style={globalStyles.buttonPrimary}
                                     onPress={() => {
@@ -1364,11 +1380,11 @@ export default function RunDetailPage() {
                                         Assign Tyre Set
                                     </Text>
                                 </Pressable>
-                            </View>
+                            </View> : null}
                         </>
                     ) : (
                         <>
-                            <View style={styles.pressureActionRow}>
+                            {canTrackside ? <View style={styles.pressureActionRow}>
                                 <Pressable
                                     style={globalStyles.smallButton}
                                     onPress={() =>
@@ -1407,7 +1423,7 @@ export default function RunDetailPage() {
                                         End Check
                                     </Text>
                                 </Pressable>
-                            </View>
+                            </View> : null}
 
                             {pressureChecks.length === 0 ? (
                                 <Text style={globalStyles.text}>
@@ -1515,7 +1531,7 @@ export default function RunDetailPage() {
                         Tyre Notes
                     </Text>
 
-                    {tyreRun ? (
+                    {!canTrackside ? null : tyreRun ? (
                         <Pressable
                             style={globalStyles.buttonPrimary}
                             onPress={openTyreNoteModal}
@@ -1559,7 +1575,7 @@ export default function RunDetailPage() {
                                         {new Date(item.createdAt).toLocaleString("en-NZ")}
                                     </Text>
 
-                                    {noteToDeleteId === item._id ? (
+                                    {!canTrackside ? null : noteToDeleteId === item._id ? (
                                         <View style={styles.tyreNoteActions}>
                                             <Pressable
                                                 style={globalStyles.smallButton}
@@ -1667,27 +1683,33 @@ export default function RunDetailPage() {
                             value={run.fuelUsed != null ? `${Math.round(run.fuelUsed * 100) / 100} L` : undefined}
                         />
                     </View>
-                    <Button
-                        label={run.fuelEnd == null ? "Enter Fuel End" : "Edit Fuel End"}
-                        icon="create-outline"
-                        size="sm"
-                        variant="secondary"
-                        style={styles.fuelButton}
-                        onPress={() => {
-                            setFuelEndInput(run.fuelEnd ? String(run.fuelEnd) : "");
-                            setShowFuelEndModal(true);
-                        }}
-                    />
+                    {canTrackside ? (
+                        <Button
+                            label={run.fuelEnd == null ? "Enter Fuel End" : "Edit Fuel End"}
+                            icon="create-outline"
+                            size="sm"
+                            variant="secondary"
+                            style={styles.fuelButton}
+                            onPress={() => {
+                                setFuelEndInput(run.fuelEnd ? String(run.fuelEnd) : "");
+                                setShowFuelEndModal(true);
+                            }}
+                        />
+                    ) : null}
                 </Panel>
 
                 <Panel
                     title="Notes"
                     icon="document-text-outline"
-                    actionLabel={run.notes ? "Edit" : "Add"}
-                    onAction={() => {
-                        setNotesInput(run.notes || "");
-                        setShowNotesModal(true);
-                    }}
+                    actionLabel={canTrackside ? (run.notes ? "Edit" : "Add") : undefined}
+                    onAction={
+                        canTrackside
+                            ? () => {
+                                  setNotesInput(run.notes || "");
+                                  setShowNotesModal(true);
+                              }
+                            : undefined
+                    }
                 >
                     {run.notes ? (
                         <Text style={styles.runNotes}>{run.notes}</Text>

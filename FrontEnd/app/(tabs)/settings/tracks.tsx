@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import SettingsShell from "../../../components/settingsShell";
 import TrackPicker, { Track } from "../../../components/TrackPicker";
 import { useAuth } from "../../../context/AuthContext";
+import { useCan } from "../../../constants/permissions";
 import { apiFetch } from "../../../assets/api";
 import { globalStyles } from "../../../constants/styles";
 import { colors } from "../../../constants/theme";
@@ -16,6 +17,7 @@ import { Badge, Button, EmptyState, ErrorBanner, LoadingState, Panel } from "../
 
 export default function TracksSettingsPage() {
     const { token } = useAuth();
+    const canManage = useCan("manage");
 
     const [tracks, setTracks] = useState<Track[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -127,7 +129,7 @@ export default function TracksSettingsPage() {
         <SettingsShell
             title="Tracks"
             subtitle={tracks.length ? `${tracks.length} ${tracks.length === 1 ? "track" : "tracks"}` : undefined}
-            actions={<Button label="Add Track" icon="add" onPress={() => setShowAddModal(true)} />}
+            actions={canManage ? <Button label="Add Track" icon="add" onPress={() => setShowAddModal(true)} /> : undefined}
         >
             <ErrorBanner message={errorMessage} />
 
@@ -138,7 +140,7 @@ export default function TracksSettingsPage() {
                     <EmptyState
                         icon="flag-outline"
                         text="No tracks yet. Add New Zealand tracks from the list, or create your own."
-                        action={<Button label="Add Track" icon="add" size="sm" onPress={() => setShowAddModal(true)} />}
+                        action={canManage ? <Button label="Add Track" icon="add" size="sm" onPress={() => setShowAddModal(true)} /> : undefined}
                     />
                 ) : (
                     tracks.map((track, index) => (
@@ -149,6 +151,7 @@ export default function TracksSettingsPage() {
                                 index === tracks.length - 1 && styles.rowLast,
                                 pressed && styles.pressed,
                             ]}
+                            disabled={!canManage}
                             onPress={() => openEdit(track)}
                         >
                             <View style={styles.rowText}>
@@ -166,7 +169,7 @@ export default function TracksSettingsPage() {
                             ) : (
                                 <Badge label="No length" tone="warning" />
                             )}
-                            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                            {canManage ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null}
                         </Pressable>
                     ))
                 )}

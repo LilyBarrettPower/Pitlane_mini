@@ -6,6 +6,7 @@ import { globalStyles } from "../../constants/styles";
 import { colors } from "../../constants/theme";
 import { apiFetch } from "../../assets/api";
 import { useAuth } from "../../context/AuthContext";
+import { useCan } from "../../constants/permissions";
 import {
     Avatar,
     Badge,
@@ -61,6 +62,7 @@ function ContactLine({ icon, value }: { icon: IconName; value?: string }) {
 
 export default function DriversPage() {
     const { user, token } = useAuth();
+    const canManage = useCan("manage");
 
     const [drivers, setDrivers] = useState<Driver[]>([]);
     const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -75,7 +77,6 @@ export default function DriversPage() {
 
     const [driverToDelete, setDriverToDelete] = useState<Driver | null>(null);
 
-    const isAdmin = user?.role === "admin";
 
     async function fetchDrivers() {
         try {
@@ -192,7 +193,7 @@ export default function DriversPage() {
                         ? `${drivers.length} ${drivers.length === 1 ? "driver" : "drivers"}`
                         : undefined
                 }
-                actions={<Button label="Add Driver" icon="add" onPress={openCreateModal} />}
+                actions={canManage ? <Button label="Add Driver" icon="add" onPress={openCreateModal} /> : undefined}
             />
 
             <ErrorBanner message={errorMessage} />
@@ -205,7 +206,7 @@ export default function DriversPage() {
                         icon="id-card-outline"
                         title="No drivers yet"
                         text="Add your drivers so you can assign them to vehicles."
-                        action={<Button label="Add Driver" icon="add" onPress={openCreateModal} />}
+                        action={canManage ? <Button label="Add Driver" icon="add" onPress={openCreateModal} /> : undefined}
                     />
                 </View>
             ) : (
@@ -238,15 +239,15 @@ export default function DriversPage() {
                                     </Text>
                                 ) : null}
 
-                                <View style={styles.cardActions}>
-                                    <Button
-                                        label="Edit"
-                                        icon="create-outline"
-                                        size="sm"
-                                        variant="secondary"
-                                        onPress={() => openEditModal(driver)}
-                                    />
-                                    {isAdmin ? (
+                                {canManage ? (
+                                    <View style={styles.cardActions}>
+                                        <Button
+                                            label="Edit"
+                                            icon="create-outline"
+                                            size="sm"
+                                            variant="secondary"
+                                            onPress={() => openEditModal(driver)}
+                                        />
                                         <Button
                                             label="Delete"
                                             icon="trash-outline"
@@ -254,8 +255,8 @@ export default function DriversPage() {
                                             variant="ghost"
                                             onPress={() => setDriverToDelete(driver)}
                                         />
-                                    ) : null}
-                                </View>
+                                    </View>
+                                ) : null}
                             </View>
                         </GridItem>
                     ))}

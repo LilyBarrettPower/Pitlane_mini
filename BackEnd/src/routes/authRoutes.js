@@ -10,6 +10,7 @@ router.post("/login", authController.login);
 router.get("/me", authMiddleware, authController.getMe);
 router.get("/users", authMiddleware, authController.getUsers);
 router.delete("/users/:userId", authMiddleware, authController.removeUser);
+router.patch("/users/:userId/role", authMiddleware, authController.changeRole);
 
 // Invites (admin invites by email, the new user sets their own password)
 router.post("/invite", authMiddleware, authController.inviteUser);

@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { apiFetch } from "../../../../assets/api";
 import { useAuth } from "../../../../context/AuthContext";
+import { useCan } from "../../../../constants/permissions";
 import { globalStyles } from "../../../../constants/styles";
 import { colors } from "../../../../constants/theme";
 import {
@@ -66,6 +67,7 @@ type TyreNote = {
 
 export default function TyreDetailPage() {
     const { token } = useAuth();
+    const canManage = useCan("manage");
     const { tyreId } = useLocalSearchParams<{ tyreId: string }>();
     const isWide = useIsWide();
 
@@ -484,7 +486,7 @@ export default function TyreDetailPage() {
                 onBack={() => router.navigate("/tyres" as any)}
                 backLabel="Tyres"
                 actions={
-                    <>
+                    canManage && <>
                         <Button label="Edit" icon="create-outline" variant="secondary" onPress={openEditModal} />
                         <Button
                             label="Delete"

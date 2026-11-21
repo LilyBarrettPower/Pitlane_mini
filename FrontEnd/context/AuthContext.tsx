@@ -2,7 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {createContext, ReactNode, useContext, useEffect, useRef, useState} from "react";
 import { router } from "expo-router";
 import { AuthOrganisation, AuthUser, LoginResponse } from "../assets/auth";
-import { setUnauthorizedHandler } from "../assets/api";
+import { apiFetch, setUnauthorizedHandler } from "../assets/api";
+import { AppState } from "react-native";
 
 type AuthContextType = {
     token: string | null,
@@ -81,6 +82,36 @@ export function AuthProvider({children}: {children: ReactNode}) {
             throw error;
         } 
     }
+
+    // Re-read the user from the backend so a role change made by an admin
+    // shows up (buttons appear / disappear) without logging out and in.
+    // Runs on load and whenever the app comes back to the foreground.
+    async function refreshUser(currentToken: string) {
+        try {
+            const data = await apiFetch("/auth/me", {
+                headers: { Authorization: `Bearer ${currentToken}` },
+            });
+            if (data?.user) {
+                setUser(data.user);
+                await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.user));
+            }
+        } catch {
+            // Offline or logged out - keep what we have (a 401 is handled
+            // by the unauthorised handler above)
+        }
+    }
+
+    useEffect(() => {
+        if (!token) return;
+
+        refreshUser(token);
+
+        const subscription = AppState.addEventListener("change", (state) => {
+            if (state === "active") refreshUser(token);
+        });
+
+        return () => subscription.remove();
+    }, [token]);
 
     async function logout() {
         try {

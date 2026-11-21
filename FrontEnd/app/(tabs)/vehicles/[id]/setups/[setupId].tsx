@@ -4,6 +4,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch } from "../../../../../assets/api";
 import { useAuth } from "../../../../../context/AuthContext";
+import { useCan } from "../../../../../constants/permissions";
 import { globalStyles } from "../../../../../constants/styles";
 import { colors } from "../../../../../constants/theme";
 import SetupModal from "../../../../../components/SetupModal";
@@ -85,6 +86,8 @@ function formatEventDates(startDate?: string, endDate?: string) {
 export default function SetupDetailPage() {
     const { id, setupId } = useLocalSearchParams<{ id: string; setupId: string }>();
     const { token } = useAuth();
+    const canManage = useCan("manage");
+    const canSetups = useCan("setups");
 
     const [setup, setSetup] = useState<SetUp | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -376,18 +379,22 @@ export default function SetupDetailPage() {
                 backLabel="Vehicle"
                 actions={
                     <>
-                        <Button
-                            label="Edit"
-                            icon="create-outline"
-                            variant="secondary"
-                            onPress={() => setShowSetupModal(true)}
-                        />
-                        <Button
-                            label="Delete"
-                            icon="trash-outline"
-                            variant="ghost"
-                            onPress={() => setShowDeleteModal(true)}
-                        />
+                        {canSetups ? (
+                            <Button
+                                label="Edit"
+                                icon="create-outline"
+                                variant="secondary"
+                                onPress={() => setShowSetupModal(true)}
+                            />
+                        ) : null}
+                        {canManage ? (
+                            <Button
+                                label="Delete"
+                                icon="trash-outline"
+                                variant="ghost"
+                                onPress={() => setShowDeleteModal(true)}
+                            />
+                        ) : null}
                     </>
                 }
             />

@@ -14,6 +14,7 @@ import { globalStyles } from "../../../constants/styles";
 import { colors } from "../../../constants/theme";
 import { apiFetch } from "../../../assets/api";
 import { useAuth } from "../../../context/AuthContext";
+import { useCan } from "../../../constants/permissions";
 import TrackPicker from "../../../components/TrackPicker";
 import {
     Badge,
@@ -75,6 +76,7 @@ function daysUntilLabel(startDate: string) {
 export default function EventsPage() {
 
     const { user, token } = useAuth();
+    const canManage = useCan("manage");
 
     const [events, setEvents] = useState<Event[]>([]);
     const [tracks, setTracks] = useState<Track[]>([]);
@@ -334,7 +336,7 @@ export default function EventsPage() {
                             ? `${upcomingEvents.length} upcoming · ${pastEvents.length} past`
                             : undefined
                     }
-                    actions={<Button label="Add Event" icon="add" onPress={openCreateModal} />}
+                    actions={canManage ? <Button label="Add Event" icon="add" onPress={openCreateModal} /> : undefined}
                 />
 
                 {!showModal ? <ErrorBanner message={errorMessage} /> : null}
@@ -347,7 +349,7 @@ export default function EventsPage() {
                             icon="calendar-outline"
                             title="No events yet"
                             text="Add a race weekend or test day to start logging runs."
-                            action={<Button label="Add Event" icon="add" onPress={openCreateModal} />}
+                            action={canManage ? <Button label="Add Event" icon="add" onPress={openCreateModal} /> : undefined}
                         />
                     </View>
                 ) : (

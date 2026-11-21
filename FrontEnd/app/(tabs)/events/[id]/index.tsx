@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { apiFetch } from "../../../../assets/api";
 import { useAuth } from "../../../../context/AuthContext";
+import { useCan } from "../../../../constants/permissions";
 import { globalStyles } from "../../../../constants/styles";
 import TrackPicker from "../../../../components/TrackPicker";
 import { colors } from "../../../../constants/theme";
@@ -63,6 +64,7 @@ type EventVehicle = {
 export default function EventDetailPage() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { token } = useAuth();
+    const canManage = useCan("manage");
     const isWide = useIsWide();
 
     const [event, setEvent] = useState<Event | null>(null);
@@ -404,15 +406,15 @@ export default function EventDetailPage() {
         <Panel
             title="Cars Entered"
             icon="car-sport-outline"
-            actionLabel="Assign vehicle"
-            onAction={() => setShowAssignModal(true)}
+            actionLabel={canManage ? "Assign vehicle" : undefined}
+            onAction={canManage ? () => setShowAssignModal(true) : undefined}
         >
             {eventVehicles.length === 0 ? (
                 <EmptyState
                     icon="car-sport-outline"
                     text="No cars entered in this event yet."
                     action={
-                        <Button
+                        canManage && <Button
                             label="Assign Vehicle"
                             icon="add"
                             size="sm"
@@ -454,16 +456,18 @@ export default function EventDetailPage() {
                                 </Text>
                             </View>
 
-                            <Pressable
-                                hitSlop={8}
-                                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                                onPress={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveVehicleAssignment(item._id);
-                                }}
-                            >
-                                <Ionicons name="close" size={18} color={colors.textMuted} />
-                            </Pressable>
+                            {canManage ? (
+                                <Pressable
+                                    hitSlop={8}
+                                    style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveVehicleAssignment(item._id);
+                                    }}
+                                >
+                                    <Ionicons name="close" size={18} color={colors.textMuted} />
+                                </Pressable>
+                            ) : null}
                         </Pressable>
                     ))}
                 </View>
@@ -485,7 +489,7 @@ export default function EventDetailPage() {
                 onBack={() => router.navigate("/events" as any)}
                 backLabel="Events"
                 actions={
-                    <>
+                    canManage && <>
                         <Button label="Edit" icon="create-outline" variant="secondary" onPress={openEditModal} />
                         <Button
                             label="Delete"

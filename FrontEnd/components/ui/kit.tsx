@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { colors, spacing, WIDE_BREAKPOINT } from "../../constants/theme";
+import { useAuth } from "../../context/AuthContext";
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -80,6 +81,11 @@ export function PageHeader({
   backLabel?: string;
   actions?: ReactNode;
 }) {
+  // Viewers can't change anything - say so, so missing buttons don't look like a bug
+  const { user } = useAuth();
+  const isViewOnly = user?.role === "viewer";
+  const headerActions = isViewOnly ? <Badge label="View only" tone="neutral" /> : actions;
+
   return (
     <View style={styles.pageHeader}>
       {onBack ? (
@@ -96,7 +102,7 @@ export function PageHeader({
           {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
         </View>
 
-        {actions ? <View style={styles.pageHeaderActions}>{actions}</View> : null}
+        {headerActions ? <View style={styles.pageHeaderActions}>{headerActions}</View> : null}
       </View>
     </View>
   );

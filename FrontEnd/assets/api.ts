@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:5000";
+// Set EXPO_PUBLIC_API_URL when the backend lives somewhere else (e.g. when hosted)
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000";
 
 // Called when a logged-in request is rejected (removed user or expired
 // login). AuthContext registers a handler that logs the user out.

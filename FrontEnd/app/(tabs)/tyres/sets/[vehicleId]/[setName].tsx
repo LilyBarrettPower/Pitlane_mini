@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { apiFetch } from "../../../../../assets/api";
 import { useAuth } from "../../../../../context/AuthContext";
+import { useCan } from "../../../../../constants/permissions";
 import { globalStyles } from "../../../../../constants/styles";
 import { colors } from "../../../../../constants/theme";
 import { Button, ErrorBanner, LoadingState, PageHeader, Panel, Screen } from "../../../../../components/ui/kit";
@@ -60,6 +61,7 @@ type TyreSetHistoryItem = {
 
 export default function TyreSetDetailPage() {
     const { token } = useAuth();
+    const canManage = useCan("manage");
 
     const { vehicleId, setName } =
         useLocalSearchParams<{
@@ -260,7 +262,7 @@ export default function TyreSetDetailPage() {
                     onBack={() => router.navigate("/tyres" as any)}
                     backLabel="Tyres"
                     actions={
-                        <Button
+                        canManage && <Button
                             label="Delete Set"
                             icon="trash-outline"
                             variant="ghost"

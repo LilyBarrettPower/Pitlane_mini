@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import SettingsShell from "../../../components/settingsShell";
 import { useAuth } from "../../../context/AuthContext";
 import { colors } from "../../../constants/theme";
+import { ROLE_DESCRIPTIONS, Role } from "../../../constants/permissions";
 import { Avatar, Badge, Button, Field, Panel } from "../../../components/ui/kit";
 
 export default function SettingsPage() {
@@ -30,6 +31,10 @@ export default function SettingsPage() {
           <Field label="Organisation" value={organisation?.name} />
           <Field label="Role" value={user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : undefined} />
         </View>
+
+        {user?.role && ROLE_DESCRIPTIONS[user.role as Role] ? (
+          <Text style={styles.roleHint}>What you can do: {ROLE_DESCRIPTIONS[user.role as Role]}.</Text>
+        ) : null}
       </Panel>
 
       <Panel title="Session" icon="log-out-outline">
@@ -77,6 +82,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: colors.borderDark,
+  },
+
+  roleHint: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: 12,
   },
 
   sessionText: {
